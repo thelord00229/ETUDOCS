@@ -1,145 +1,198 @@
 # 📄 EtuDocs
 
-> La plateforme qui permet aux étudiants de l'UAC de demander, suivre et télécharger leurs documents administratifs universitaires en ligne, sans déplacement ni attente.
+> Plateforme web de digitalisation du processus de demande, de traitement et de délivrance des documents administratifs universitaires à l'UAC.
 
 ---
 
 ## 🎯 Contexte & Problème
 
-Au sein de l'Université d'Abomey-Calavi, l'obtention d'un document administratif (attestation, relevé, diplôme…) repose encore majoritairement sur un processus physique :
+À l’Université d’Abomey-Calavi (UAC), l’obtention d’un document administratif (attestation, relevé de notes, etc.) repose encore sur un processus physique :
 
+- Déplacements multiples
 - Dépôt de dossier papier
-- Déplacements répétés
 - Absence de suivi en temps réel
-- Délais de traitement longs
+- Délais longs (1 à 2 semaines)
+- Aucune notification
 
-EtuDocs digitalise intégralement ce processus pour supprimer ces frictions.
+**EtuDocs** digitalise entièrement ce processus en respectant le workflow administratif réel.
 
 ---
 
-## ✨ Fonctionnalités principales
+## ✨ Fonctionnalités (MVP)
 
-### Côté Étudiant
-- Création de compte & authentification sécurisée
-- Soumission de demande en ligne (formulaire multi-étapes)
-- Upload des pièces justificatives
-- Suivi en temps réel (Soumise → En traitement → Validée / Rejetée)
-- Téléchargement du document final en PDF
+### 🎓 Côté Étudiant
+- Création de compte avec numéro étudiant
+- Authentification sécurisée (JWT)
+- Soumission de demande en 3 étapes :
+  1. Choix du type de document
+  2. Upload des pièces justificatives
+  3. Confirmation
+- Suivi en temps réel du statut
+- Timeline détaillée des étapes de validation
+- Téléchargement du document (limité à 3 fois)
+- QR code d’authenticité
 - Notifications email automatiques
 
-### Côté Administration
-- Dashboard avec indicateurs et alertes (demandes > 48h)
-- Vérification et validation des pièces une par une
-- Validation ou rejet global de la demande
-- Génération automatique du document officiel avec signature institutionnelle
+---
 
-### Documents disponibles
-- Attestation d'inscription
-- Relevé de notes / Bulletin
-- Attestation de succès
-- Attestation d'admissibilité
-- Attestation de diplôme + Diplôme Licence
-- Attestation de diplôme + Diplôme Master
-- Autre / Demande personnalisée
+### 🏛 Workflow administratif (6 niveaux)
 
-### Vérification d'authenticité
-- QR code unique sur chaque document
-- Page publique de vérification (sans connexion requise)
+1. Secrétaire adjoint
+2. Secrétaire général
+3. Chef de division (Examens / Scolarité)
+4. Directeur adjoint
+5. Directeur
+6. Notification à l’étudiant
+
+Chaque action est tracée via un historique complet (`WorkflowHistory`).
+
+---
+
+### 📄 Documents disponibles (MVP uniquement)
+
+- ✅ Attestation d’inscription
+- ✅ Relevé de notes (par semestre)
+
+Les autres documents seront ajoutés en V2.
+
+---
+
+### 🔎 Vérification d’authenticité
+
+- Référence unique générée par document
+- QR code intégré dans le PDF
+- Page publique `/verify/:reference`
+- Vérification sans connexion
 
 ---
 
 ## 👥 Rôles utilisateurs
 
 | Rôle | Description |
-|------|-------------|
-| **Étudiant** | Soumet des demandes, suit l'évolution, télécharge les documents |
-| **Agent administratif** | Vérifie les pièces, valide ou rejette les demandes |
-| **Super Admin** | Gère les comptes agents, configure les templates et signatures par institution |
-| **Vérificateur externe** | Scanne le QR code pour vérifier l'authenticité d'un document |
+|------|------------|
+| ETUDIANT | Soumet et suit ses demandes |
+| SECRETAIRE_ADJOINT | Vérifie complétude du dossier |
+| SECRETAIRE_GENERAL | Transmet vers le bon service |
+| CHEF_DIVISION | Valide les pièces et génère le document |
+| DIRECTEUR_ADJOINT | Signe le document |
+| DIRECTEUR | Signature finale |
+| SUPER_ADMIN | Configure institutions et comptes |
 
 ---
 
-## 🏗️ Architecture technique
+## 🏗️ Architecture Technique
 
 | Couche | Technologie |
 |--------|-------------|
 | Frontend | Next.js + Tailwind CSS |
-| Backend | Node.js + Express.js |
+| Backend | Node.js + Express |
+| ORM | Prisma |
 | Base de données | PostgreSQL |
 | Authentification | JWT |
 | Génération PDF | Puppeteer |
-| QR Code | qrcode.js |
+| QR Code | qrcode |
 | Emails | Nodemailer + Brevo |
-| Déploiement | Vercel + Railway |
+| Déploiement | Vercel (frontend) + Railway (backend & DB) |
 
-Architecture 3 couches : `Client → API REST → Base de données + Services (PDF, QR, Email)`
+Architecture 3 couches :
+
+Client → API REST → PostgreSQL + Services (PDF, Email, QR)
 
 ---
 
-## 🚀 Installation & lancement
+## 🗄️ Base de données
+
+La base est gérée via **Prisma ORM**.
+
+Les principales entités :
+
+- Institution
+- Utilisateur
+- Demande
+- PieceJustificative
+- WorkflowHistory
+- Document
+- PieceRequise
+
+Les migrations sont versionnées dans `backend/prisma/migrations`.
+
+⚠️ La base PostgreSQL n’est pas versionnée.  
+Chaque développeur recrée sa base localement via Prisma.
+
+---
+
+## 🚀 Installation & Lancement
 
 ### Prérequis
+
 - Node.js >= 18
-- PostgreSQL
-- npm ou yarn
+- PostgreSQL installé localement
+- npm
 
-### Cloner le projet
-```bash
-git clone https://github.com/ton-username/etudocs.git](https://github.com/thelord00229/Digital_Minds_HACKBYIFRI_2026.git
-cd etudocs
-```
+---
 
-### Backend
+### 1️⃣ Cloner le projet
+
 ```bash
+git clone https://github.com/thelord00229/Digital_Minds_HACKBYIFRI_2026.git
+cd Digital_Minds_HACKBYIFRI_2026
+
+2️⃣ Configuration Backend
+Bash
+Copier le code
 cd backend
-cp .env.example .env
-# Remplir les variables dans .env
 npm install
+Créer un fichier .env :
+Env
+Copier le code
+DATABASE_URL="postgresql://postgres:motdepasse@localhost:5432/etudocs"
+JWT_SECRET=change_me
+Créer la base PostgreSQL :
+SQL
+Copier le code
+CREATE DATABASE etudocs;
+Appliquer les migrations :
+Bash
+Copier le code
+npx prisma migrate dev
+Lancer le serveur :
+Bash
+Copier le code
 npm run dev
-```
-
-### Frontend
-```bash
+3️⃣ Configuration Frontend
+Bash
+Copier le code
 cd frontend
-cp .env.example .env
 npm install
 npm run dev
-```
+Application disponible sur :
+Copier le code
 
-L'application sera disponible sur `http://localhost:3000`
+http://localhost:3000
+🌍 Institutions supportées (MVP)
+IFRI
+EPAC
+FSS
+Architecture extensible pour d’autres universités.
+⚠️ Limites actuelles (MVP)
+Paiement non intégré (upload de quittance)
+Signature scannée (non cryptographique)
+Pas encore d’OCR
+Pas encore d’application mobile
+📁 Structure du projet
+Copier le code
 
----
-
-## 🌍 Institutions supportées
-
-- IFRI
-- EPAC
-- FSS
-
-> Architecture extensible pour intégrer de nouvelles institutions facilement.
-
----
-
-## ⚠️ Limites actuelles (MVP)
-
-- Paiement non intégré (upload de quittance à la place)
-- Signature non cryptographique
-- Données fictives utilisées pour la démonstration
-
----
-
-## 📁 Structure du projet
-
-```
-etudocs/
-├── frontend/        # Application Next.js
-├── backend/         # API Express.js
-├── .env.example     # Variables d'environnement (modèle)
+Digital_Minds_HACKBYIFRI_2026/
+│
+├── frontend/
+├── backend/
+│   ├── prisma/
+│   │   ├── schema.prisma
+│   │   └── migrations/
+│   ├── src/
+│   └── package.json
+│
 └── README.md
-```
 
----
-
-## 📜 Licence
-
+📜 Licence
 MIT
