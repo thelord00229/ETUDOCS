@@ -85,7 +85,7 @@ Architecture 3 couches : `Client → API REST → Base de données + Services (P
 
 ### Cloner le projet
 ```bash
-git clone https://github.com/ton-username/etudocs.git
+git clone https://github.com/ton-username/etudocs.git](https://github.com/thelord00229/Digital_Minds_HACKBYIFRI_2026.git
 cd etudocs
 ```
 
