@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Service {
+  EXAMENS
+  SCOLARITE
+}
+
+enum Role {
+  ETUDIANT
+  SECRETAIRE_ADJOINT
+  SECRETAIRE_GENERAL
+  CHEF_DIVISION
+  DIRECTEUR_ADJOINT
+  DIRECTEUR
+  SUPER_ADMIN
+}
+
+enum TypeDocument {
+  ATTESTATION_INSCRIPTION
+  RELEVE_NOTES
+}
+
+enum StatutDemande {
+  SOUMISE
+  CORRECTION_DEMANDEE
+  TRANSMISE_SECRETAIRE_GENERAL
+  TRANSMISE_CHEF_DIVISION
+  DOCUMENT_GENERE
+  ATTENTE_SIGNATURE_DIRECTEUR_ADJOINT
+  ATTENTE_SIGNATURE_DIRECTEUR
+  DISPONIBLE
+  REJETEE
+}
+
+enum TypePiece {
+  CIP
+  QUITTANCE
+  ACTE_NAISSANCE
+  ATTESTATION_INSCRIPTION
+}
+
+enum StatutPiece {
+  SOUMISE
+  VALIDEE
+  REJETEE
+}
+
+model Institution {
+  id        String   @id @default(uuid())
+  nom       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  utilisateurs Utilisateur[]
+  demandes     Demande[]
+  piecesRequises PieceRequise[]
+
+  logoUrl                     String?
+  tamponDirecteurUrl          String?
+  tamponDirecteurAdjointUrl   String?
+
+  directeurNom          String?
+  directeurTitre        String?
+  directeurAdjointNom   String?
+  directeurAdjointTitre String?
+
+  signatureDirecteurUrl         String?
+  signatureDirecteurAdjointUrl  String?
+}
+
+model Utilisateur {
+  id        String   @id @default(uuid())
+  nom       String
+  prenom    String
+  email     String   @unique
+  password  String
+  role      Role     @default(ETUDIANT)
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  numeroEtudiant String? @unique
+  service        Service?
+
+  institutionId String?
+  institution   Institution? @relation(fields: [institutionId], references: [id])
+
+  demandes Demande[]
+  piecesValidees PieceJustificative[] @relation("PieceValideePar")
+  actionsWorkflow WorkflowHistory[] @relation("ActorWorkflow")
+}
+
+model Demande {
+  id           String        @id @default(uuid())
+  typeDocument TypeDocument
+  semestre     Int?
+  serviceCible Service
+
+  statut       StatutDemande @default(SOUMISE)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  utilisateurId String
+  utilisateur   Utilisateur  @relation(fields: [utilisateurId], references: [id])
+
+  institutionId String
+  institution   Institution  @relation(fields: [institutionId], references: [id])
+
+  pieces     PieceJustificative[]
+  historique WorkflowHistory[]
+
+  // 1 document final par demande (MVP)
+  document   Document?
+}
+
+model WorkflowHistory {
+  id          String       @id @default(uuid())
+  statut      StatutDemande
+  commentaire String?
+  createdAt   DateTime     @default(now())
+
+  demandeId   String
+  demande     Demande      @relation(fields: [demandeId], references: [id])
+
+  actorId     String?
+  actor       Utilisateur? @relation("ActorWorkflow", fields: [actorId], references: [id])
+}
+
+model Document {
+  id            String   @id @default(uuid())
+
+  // Référence unique métier (ex: ETD-2026-IFRI-S1-00847-XK29)
+  reference     String   @unique
+
+  // Pour QR code + page /verify/:reference
+  qrPayload     String   @unique
+
+  urlPdf        String
+  createdAt     DateTime @default(now())
+  deliveredAt   DateTime?
+
+  downloadCount Int      @default(0)
+  maxDownloads  Int      @default(3)
+  blockedAt     DateTime?
+
+  demandeId     String   @unique
+  demande       Demande  @relation(fields: [demandeId], references: [id])
+}
+
+model PieceJustificative {
+  id           String      @id @default(uuid())
+  typePiece    TypePiece
+  nom          String
+  url          String
+  createdAt    DateTime    @default(now())
+
+  statut       StatutPiece @default(SOUMISE)
+  commentaire  String?
+  valideeAt    DateTime?
+  valideeParId String?
+  valideePar   Utilisateur? @relation("PieceValideePar", fields: [valideeParId], references: [id])
+
+  demandeId    String
+  demande      Demande @relation(fields: [demandeId], references: [id])
+}
+
+model PieceRequise {
+  id           String       @id @default(uuid())
+  typeDocument TypeDocument
+  typePiece    TypePiece
+  obligatoire  Boolean      @default(true)
+
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id])
+
+  @@unique([institutionId, typeDocument, typePiece])
+}
