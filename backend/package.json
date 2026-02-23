@@ -30,6 +30,9 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
     "nodemailer": "^8.0.1",
+    "pdf-lib": "^1.17.1",
+    "puppeteer": "^24.37.5",
+    "qrcode": "^1.5.4",
     "uuid": "^13.0.0"
   }
 }

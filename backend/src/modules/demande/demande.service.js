@@ -8,10 +8,7 @@ const getServiceCible = (typeDocument) =>
 exports.soumettre = async (utilisateurId, institutionId, body, files) => {
   const { typeDocument, semestre } = body;
 
-  // Transformer req.files (objet) en tableau
-  const allFiles = files
-    ? Object.values(files).flat()
-    : [];
+  const allFiles = files ? Object.values(files).flat() : [];
 
   return prisma.demande.create({
     data: {
@@ -90,6 +87,7 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
     where: { id: demandeId },
     include: { utilisateur: true }
   });
+
   if (!demande) {
     const err = new Error('Demande introuvable'); err.statusCode = 404; throw err;
   }
@@ -100,37 +98,68 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
     const err = new Error('Action non permise pour votre rôle'); err.statusCode = 403; throw err;
   }
 
-  // Cas spécial : génération du document + création record Document
-    if (action === 'GENERER_DOCUMENT') {
+  // Cas spécial : génération du document
+  if (action === 'GENERER_DOCUMENT') {
     const { v4: uuidv4 } = require('uuid');
     const pdfService = require('../../services/pdf.service');
     const qrcodeService = require('../../services/qrcode.service');
 
-    const institution = await prisma.institution.findUnique({ where: { id: institutionId } });
-    const etudiant = await prisma.utilisateur.findUnique({ where: { id: demande.utilisateurId } });
+    // Vérifier qu'un document n'existe pas déjà pour cette demande
+    const docExistant = await prisma.document.findUnique({
+      where: { demandeId: demande.id }
+    });
+    if (docExistant) {
+      const err = new Error('Un document existe déjà pour cette demande');
+      err.statusCode = 400; throw err;
+    }
 
+    const institution = await prisma.institution.findUnique({
+      where: { id: institutionId }
+    });
+    const etudiant = await prisma.utilisateur.findUnique({
+      where: { id: demande.utilisateurId }
+    });
+
+    // Référence unique avec le sigle de l'institution (plus IFRI en dur)
     const annee = new Date().getFullYear();
-    const reference = `ETD-${annee}-IFRI-S${demande.semestre || 0}-${String(demande.id).substring(0,5).toUpperCase()}-${uuidv4().substring(0,4).toUpperCase()}`;
+    const sigle = institution.sigle || 'UAC';
+    const shortId = uuidv4().substring(0, 4).toUpperCase();
+    const reference = `ETD-${annee}-${sigle}-S${demande.semestre || 0}-${shortId}`;
     const baseUrl = process.env.APP_URL || 'http://localhost:5000';
     const qrData = `${baseUrl}/verify/${reference}`;
 
+    // Récupérer les notes si c'est un relevé
     let notes = null;
     if (demande.typeDocument === 'RELEVE_NOTES') {
-        notes = await prisma.noteUE.findMany({
-        where: { notesEtudiant: { utilisateurId: demande.utilisateurId, semestre: demande.semestre } },
+      notes = await prisma.noteUE.findMany({
+        where: {
+          notesEtudiant: {
+            utilisateurId: demande.utilisateurId,
+            semestre: demande.semestre
+          }
+        },
         include: { ue: true }
-        });
+      });
     }
 
-    const pdfPath = await pdfService.generateDocument(demande, etudiant, notes, reference, institution);
+    // Générer PDF et QR code
+    const pdfPath = await pdfService.generateDocument(
+      demande, etudiant, notes, reference, institution
+    );
     await qrcodeService.generate(qrData, reference);
 
+    // Sauvegarder en base
     await prisma.document.create({
-        data: { reference, qrPayload: qrData, urlPdf: pdfPath, demandeId: demande.id }
+      data: {
+        reference,
+        qrPayload: qrData,
+        urlPdf: pdfPath,
+        demandeId: demande.id
+      }
     });
-    }
+  }
 
-
+  // Avancer le statut
   const prochainStatut = getNextStatut(demande.statut, action);
   const updated = await prisma.demande.update({
     where: { id: demandeId },
@@ -145,15 +174,18 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
       }
     }
   });
+
+  // Notification email — on ignore les erreurs SMTP pour ne pas bloquer le workflow
   try {
-  await emailService.sendStatutChange(
-    demande.utilisateur.email,
-    demande.utilisateur.prenom,
-    prochainStatut
-  );
+    await emailService.sendStatutChange(
+      demande.utilisateur.email,
+      demande.utilisateur.prenom,
+      prochainStatut
+    );
   } catch (e) {
-  console.log('[EMAIL SKIPPED]', e.message);
-  }  
+    console.log('[EMAIL SKIPPED]', e.message);
+  }
+
   return updated;
 };
 
