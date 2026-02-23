@@ -8,6 +8,7 @@ const _rawDbUrl = process.env.DATABASE_URL;
 const _dbUrl = typeof _rawDbUrl === 'string' && _rawDbUrl.startsWith('"') && _rawDbUrl.endsWith('"')
   ? _rawDbUrl.slice(1, -1)
   : _rawDbUrl;
+
 const adapter = new AdapterPg({ connectionString: _dbUrl });
 const prisma = new PrismaClient({ adapter });
 
@@ -17,10 +18,11 @@ async function main() {
   // 1️⃣ Institution IFRI (upsert sécurisé)
   const ifri = await prisma.institution.upsert({
     where: { id: 'institution-ifri-seed' },
-    update: {},
+    update: { sigle: 'IFRI' }, // ✅ met à jour si déjà existant
     create: {
       id: 'institution-ifri-seed',
       nom: 'Institut de Formation et de Recherche en Informatique',
+      sigle: 'IFRI', // ✅ ajouté
       directeurNom: 'Prof. GNIMPIEBA',
       directeurTitre: "Directeur de l'IFRI",
       directeurAdjointNom: 'Dr. ADJOINT',
@@ -82,7 +84,7 @@ async function main() {
     });
   }
 
-  console.log('✅ Comptes de test créés\n');
+  console.log('Comptes de test créés\n');
 
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('Mot de passe universel : Password123!');
