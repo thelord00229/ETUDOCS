@@ -104,7 +104,7 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
     const pdfService = require('../../services/pdf.service');
     const qrcodeService = require('../../services/qrcode.service');
 
-    // Vérifier qu'un document n'existe pas déjà pour cette demande
+    // Vérifier qu'un document n'existe pas déjà
     const docExistant = await prisma.document.findUnique({
       where: { demandeId: demande.id }
     });
@@ -120,35 +120,22 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
       where: { id: demande.utilisateurId }
     });
 
-    // Référence unique avec le sigle de l'institution (plus IFRI en dur)
     const annee = new Date().getFullYear();
     const sigle = institution.sigle || 'UAC';
     const shortId = uuidv4().substring(0, 4).toUpperCase();
-    const reference = `ETD-${annee}-${sigle}-S${demande.semestre || 0}-${shortId}`;
+    const reference = `ETD-${annee}-${sigle}-S${demande.semestre || 0}-${String(demande.id).substring(0,5).toUpperCase()}-${uuidv4().substring(0,4).toUpperCase()}`;
     const baseUrl = process.env.APP_URL || 'http://localhost:5000';
     const qrData = `${baseUrl}/verify/${reference}`;
 
-    // Récupérer les notes si c'est un relevé
+    // En MVP : notes générées aléatoirement dans pdf.service.js
+    // En production : appel API système notes université
     let notes = null;
-    if (demande.typeDocument === 'RELEVE_NOTES') {
-      notes = await prisma.noteUE.findMany({
-        where: {
-          notesEtudiant: {
-            utilisateurId: demande.utilisateurId,
-            semestre: demande.semestre
-          }
-        },
-        include: { ue: true }
-      });
-    }
 
-    // Générer PDF et QR code
     const pdfPath = await pdfService.generateDocument(
-      demande, etudiant, notes, reference, institution
+      demande, etudiant, notes, reference, institution, qrData
     );
     await qrcodeService.generate(qrData, reference);
 
-    // Sauvegarder en base
     await prisma.document.create({
       data: {
         reference,
@@ -159,7 +146,6 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
     });
   }
 
-  // Avancer le statut
   const prochainStatut = getNextStatut(demande.statut, action);
   const updated = await prisma.demande.update({
     where: { id: demandeId },
@@ -175,7 +161,6 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
     }
   });
 
-  // Notification email — on ignore les erreurs SMTP pour ne pas bloquer le workflow
   try {
     await emailService.sendStatutChange(
       demande.utilisateur.email,
