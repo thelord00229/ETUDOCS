@@ -99,6 +99,38 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
   if (!peutAgir(role, demande.statut)) {
     const err = new Error('Action non permise pour votre rôle'); err.statusCode = 403; throw err;
   }
+
+  // Cas spécial : génération du document + création record Document
+    if (action === 'GENERER_DOCUMENT') {
+    const { v4: uuidv4 } = require('uuid');
+    const pdfService = require('../../services/pdf.service');
+    const qrcodeService = require('../../services/qrcode.service');
+
+    const institution = await prisma.institution.findUnique({ where: { id: institutionId } });
+    const etudiant = await prisma.utilisateur.findUnique({ where: { id: demande.utilisateurId } });
+
+    const annee = new Date().getFullYear();
+    const reference = `ETD-${annee}-IFRI-S${demande.semestre || 0}-${String(demande.id).substring(0,5).toUpperCase()}-${uuidv4().substring(0,4).toUpperCase()}`;
+    const baseUrl = process.env.APP_URL || 'http://localhost:5000';
+    const qrData = `${baseUrl}/verify/${reference}`;
+
+    let notes = null;
+    if (demande.typeDocument === 'RELEVE_NOTES') {
+        notes = await prisma.noteUE.findMany({
+        where: { notesEtudiant: { utilisateurId: demande.utilisateurId, semestre: demande.semestre } },
+        include: { ue: true }
+        });
+    }
+
+    const pdfPath = await pdfService.generateDocument(demande, etudiant, notes, reference, institution);
+    await qrcodeService.generate(qrData, reference);
+
+    await prisma.document.create({
+        data: { reference, qrPayload: qrData, urlPdf: pdfPath, demandeId: demande.id }
+    });
+    }
+
+
   const prochainStatut = getNextStatut(demande.statut, action);
   const updated = await prisma.demande.update({
     where: { id: demandeId },
@@ -113,11 +145,15 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
       }
     }
   });
+  try {
   await emailService.sendStatutChange(
     demande.utilisateur.email,
     demande.utilisateur.prenom,
     prochainStatut
   );
+  } catch (e) {
+  console.log('[EMAIL SKIPPED]', e.message);
+  }  
   return updated;
 };
 
