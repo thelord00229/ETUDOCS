@@ -12,6 +12,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/auth', require('./modules/auth/auth.routes'));
+app.use('/uploads', express.static('uploads'));
+app.use('/api/demandes', require('./modules/demande/demande.routes'));
 
 // Route de test
 app.get('/api/health', (req, res) => {

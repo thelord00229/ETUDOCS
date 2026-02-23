@@ -1,0 +1,49 @@
+const router = require('express').Router();
+const ctrl = require('./demande.controller');
+const auth = require('../../middlewares/auth.middleware');
+const role = require('../../middlewares/role.middleware');
+const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
+const path = require('path');
+
+// Configuration stockage fichiers
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => cb(null, `${uuidv4()}${path.extname(file.originalname)}`)
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB max
+});
+
+// Étudiant soumet une demande
+router.post(
+  '/',
+  auth,
+  role('ETUDIANT'),
+  upload.fields([
+    { name: 'CIP', maxCount: 1 },
+    { name: 'QUITTANCE', maxCount: 1 }
+  ]),
+  ctrl.soumettre
+);
+
+// Liste des demandes selon rôle
+router.get('/', auth, ctrl.getDemandes);
+
+// Détail d’une demande
+router.get('/:id', auth, ctrl.getById);
+
+// Avancer dans le workflow
+router.post('/:id/avancer', auth, ctrl.avancer);
+
+// Valider une pièce (chef division uniquement)
+router.patch(
+  '/pieces/:pieceId',
+  auth,
+  role('CHEF_DIVISION'),
+  ctrl.validerPiece
+);
+
+module.exports = router;
