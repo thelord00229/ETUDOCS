@@ -54,24 +54,24 @@ enum StatutPiece {
 model Institution {
   id        String   @id @default(uuid())
   nom       String
+  sigle     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   utilisateurs Utilisateur[]
   demandes     Demande[]
-  piecesRequises PieceRequise[]
 
-  logoUrl                     String?
-  tamponDirecteurUrl          String?
-  tamponDirecteurAdjointUrl   String?
+  pieceRequises PieceRequise[]
 
-  directeurNom          String?
-  directeurTitre        String?
-  directeurAdjointNom   String?
-  directeurAdjointTitre String?
-
-  signatureDirecteurUrl         String?
-  signatureDirecteurAdjointUrl  String?
+  logoUrl                      String?
+  tamponDirecteurUrl           String?
+  tamponDirecteurAdjointUrl    String?
+  directeurNom                 String?
+  directeurTitre               String?
+  directeurAdjointNom          String?
+  directeurAdjointTitre        String?
+  signatureDirecteurUrl        String?
+  signatureDirecteurAdjointUrl String?
 }
 
 model Utilisateur {
@@ -81,93 +81,99 @@ model Utilisateur {
   email     String   @unique
   password  String
   role      Role     @default(ETUDIANT)
-  actif     Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  numeroEtudiant String? @unique
-  service        Service?
 
   institutionId String?
   institution   Institution? @relation(fields: [institutionId], references: [id])
 
-  demandes Demande[]
-  piecesValidees PieceJustificative[] @relation("PieceValideePar")
-  actionsWorkflow WorkflowHistory[] @relation("ActorWorkflow")
+  demandes        Demande[]
+  piecesValidees  PieceJustificative[] @relation("PieceValideePar")
+  actionsWorkflow WorkflowHistory[]    @relation("ActorWorkflow")
+
+  numeroEtudiant String?  @unique
+  service        Service?
+
+  // Auth / état du compte
+  actif              Boolean   @default(true)
+  emailVerifie       Boolean   @default(false)
+  tokenVerification  String?
+  tokenResetPassword String?
+  tokenResetExpiry   DateTime?
 }
 
 model Demande {
-  id           String        @id @default(uuid())
+  id           String       @id @default(uuid())
   typeDocument TypeDocument
   semestre     Int?
   serviceCible Service
 
-  statut       StatutDemande @default(SOUMISE)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  statut    StatutDemande @default(SOUMISE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
   utilisateurId String
-  utilisateur   Utilisateur  @relation(fields: [utilisateurId], references: [id])
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id])
 
   institutionId String
-  institution   Institution  @relation(fields: [institutionId], references: [id])
+  institution   Institution @relation(fields: [institutionId], references: [id])
 
   pieces     PieceJustificative[]
   historique WorkflowHistory[]
 
   // 1 document final par demande (MVP)
-  document   Document?
+  document Document?
 }
 
 model WorkflowHistory {
-  id          String       @id @default(uuid())
+  id          String        @id @default(uuid())
   statut      StatutDemande
   commentaire String?
-  createdAt   DateTime     @default(now())
+  createdAt   DateTime      @default(now())
 
-  demandeId   String
-  demande     Demande      @relation(fields: [demandeId], references: [id])
+  demandeId String
+  demande   Demande @relation(fields: [demandeId], references: [id])
 
-  actorId     String?
-  actor       Utilisateur? @relation("ActorWorkflow", fields: [actorId], references: [id])
+  actorId String?
+  actor   Utilisateur? @relation("ActorWorkflow", fields: [actorId], references: [id])
 }
 
 model Document {
-  id            String   @id @default(uuid())
+  id String @id @default(uuid())
 
   // Référence unique métier (ex: ETD-2026-IFRI-S1-00847-XK29)
-  reference     String   @unique
+  reference String @unique
 
   // Pour QR code + page /verify/:reference
-  qrPayload     String   @unique
+  qrPayload String @unique
 
-  urlPdf        String
-  createdAt     DateTime @default(now())
-  deliveredAt   DateTime?
+  urlPdf      String
+  createdAt   DateTime  @default(now())
+  deliveredAt DateTime?
 
-  downloadCount Int      @default(0)
-  maxDownloads  Int      @default(3)
+  downloadCount Int       @default(0)
+  maxDownloads  Int       @default(3)
   blockedAt     DateTime?
 
-  demandeId     String   @unique
-  demande       Demande  @relation(fields: [demandeId], references: [id])
+  demandeId String  @unique
+  demande   Demande @relation(fields: [demandeId], references: [id])
 }
 
 model PieceJustificative {
-  id           String      @id @default(uuid())
-  typePiece    TypePiece
-  nom          String
-  url          String
-  createdAt    DateTime    @default(now())
+  id        String    @id @default(uuid())
+  typePiece TypePiece
+  nom       String
+  url       String
+  createdAt DateTime  @default(now())
 
-  statut       StatutPiece @default(SOUMISE)
+  statut       StatutPiece  @default(SOUMISE)
   commentaire  String?
   valideeAt    DateTime?
   valideeParId String?
   valideePar   Utilisateur? @relation("PieceValideePar", fields: [valideeParId], references: [id])
 
-  demandeId    String
-  demande      Demande @relation(fields: [demandeId], references: [id])
+  demandeId String
+  demande   Demande @relation(fields: [demandeId], references: [id])
 }
 
 model PieceRequise {
