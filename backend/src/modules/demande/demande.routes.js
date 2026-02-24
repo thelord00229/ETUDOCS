@@ -24,7 +24,9 @@ router.post(
   role('ETUDIANT'),
   upload.fields([
     { name: 'CIP', maxCount: 1 },
-    { name: 'QUITTANCE', maxCount: 1 }
+    { name: 'QUITTANCE', maxCount: 1 },
+    { name: 'JUSTIFICATIF_INSCRIPTION', maxCount: 1 },
+    { name: 'ACTE_NAISSANCE', maxCount: 1 }
   ]),
   ctrl.soumettre
 );

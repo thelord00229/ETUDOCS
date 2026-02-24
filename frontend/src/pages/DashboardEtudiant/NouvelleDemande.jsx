@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
 import Stepper from "../../components/DashboardEtudiant/Stepper.jsx";
 
@@ -15,6 +15,24 @@ const css = `
     transition:border-color .2s, box-shadow .2s, background .15s;
     background:#fff;
   }
+  .doc-card { 
+    position: relative; 
+  }
+
+  .coming-badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    font-size: .72rem;
+    font-weight: 800;
+    padding: 6px 10px;
+    border-radius: 999px;
+    letter-spacing: .2px;
+  }
+
   .doc-card:hover   { border-color:#1a2744; box-shadow:0 4px 16px rgba(26,39,68,.08); }
   .doc-card.selected { border-color:#1a2744; background:#f0f4ff; box-shadow:0 4px 16px rgba(26,39,68,.1); }
   .doc-card__icon {
@@ -110,13 +128,26 @@ const css = `
 `;
 
 const DOCS = [
-  { id:1, title:"Attestation d'inscription",        delai:"24-48h",    pieces:"CIP, Quittance" },
-  { id:2, title:"Relevé de notes / Bulletin",        delai:"48-72h",    pieces:"CIP, Quittance" },
-  { id:3, title:"Attestation de succès",             delai:"24-48h",    pieces:"CIP, Quittance" },
-  { id:4, title:"Attestation d'admissibilité",       delai:"24-48h",    pieces:"CIP, Quittance" },
-  { id:5, title:"Attestation de diplôme + Licence",  delai:"5-7 jours", pieces:"CIP, Quittance, Photo d'identité" },
-  { id:6, title:"Attestation de diplôme + Master",   delai:"5-7 jours", pieces:"CIP, Quittance, Photo d'identité" },
-  { id:7, title:"Autre / Demande personnalisée",     delai:"Variable",  pieces:"CIP, Quittance", full:true },
+  {
+    id: 1,
+    title: "Attestation d'inscription",
+    delai: "24-48h",
+    pieces: "Fiche de préinscription / Attestation d'inscription (année concernée), Acte de naissance, CIP, Quittance",
+    enabled: true
+  },
+  {
+    id: 2,
+    title: "Relevé de notes / Bulletin",
+    delai: "48-72h",
+    pieces: "Fiche de préinscription validée / Attestation d'inscription, Acte de naissance, CIP, Quittance",
+    enabled: true
+  },
+
+  { id:3, title:"Attestation de succès", delai:"24-48h", pieces:"CIP, Quittance", enabled:false },
+  { id:4, title:"Attestation d'admissibilité", delai:"24-48h", pieces:"CIP, Quittance", enabled:false },
+  { id:5, title:"Attestation de diplôme + Licence", delai:"5-7 jours", pieces:"CIP, Quittance, Photo d'identité", enabled:false },
+  { id:6, title:"Attestation de diplôme + Master", delai:"5-7 jours", pieces:"CIP, Quittance, Photo d'identité", enabled:false },
+  { id:7, title:"Autre / Demande personnalisée", delai:"Variable", pieces:"CIP, Quittance", enabled:false, full:true },
 ];
 
 const DocIcon = ({ color="#475569" }) => (
@@ -147,18 +178,60 @@ const CheckCircle = () => (
 );
 
 export default function NouvelleDemande() {
-  const [step, setStep]       = useState(0);
+  const [step, setStep] = useState(0);
   const [selected, setSelected] = useState(null);
-  const [cipFile, setCipFile]   = useState("CIP_Koffi_AGUEH.pdf (1.2 Mo)");
-  const [qttFile, setQttFile]   = useState("Quittance_2026.pdf (890 Ko)");
 
-  const selectedDoc = DOCS.find(d => d.id === selected);
+  const [cipFile, setCipFile] = useState(null);
+  const [qttFile, setQttFile] = useState(null);
+  const [acteFile, setActeFile] = useState(null);
+  const [justifFile, setJustifFile] = useState(null);
+
+  const cipInputRef = useRef(null);
+  const qttInputRef = useRef(null);
+  const acteInputRef = useRef(null);
+  const justifInputRef = useRef(null);
+
+  const selectedDoc = DOCS.find((d) => d.id === selected);
+
+  // ✅ Les 2 types dispo: id 1 (Attestation) et id 2 (Relevé)
+  const needFourPieces = selectedDoc?.id === 1 || selectedDoc?.id === 2;
+
+  // prix
+  const PRIX_ATTESTATION = 1000;
+  const PRIX_RELEVE_PAR_SEM = 500;
+
+  // choix semestre pour RELEVE_NOTES
+  const [semestreChoix, setSemestreChoix] = useState(""); // "S1" | "S2" | "S1S2"
+
+  const isAttestation = selectedDoc?.id === 1; // Attestation d'inscription
+  const isReleve = selectedDoc?.id === 2;      // Relevé de notes / Bulletin
+
+  const montant = (() => {
+    if (isAttestation) return PRIX_ATTESTATION;
+    if (isReleve) {
+      if (semestreChoix === "S1S2") return PRIX_RELEVE_PAR_SEM * 2;
+      if (semestreChoix === "S1" || semestreChoix === "S2") return PRIX_RELEVE_PAR_SEM;
+      return 0;
+    }
+    return 0;
+  })();
+
+  // ✅ empêcher de continuer si relevé sans semestre
+  const step1Ok = !!selected && (!isReleve || !!semestreChoix);
+
+  const step2Ok =
+    !!cipFile &&
+    !!qttFile &&
+    (!needFourPieces || (!!acteFile && !!justifFile));
 
   return (
     <DashboardLayout>
       <style>{css}</style>
 
-      <Stepper steps={["Choix du document", "Pièces justificatives", "Récapitulatif"]} current={step} />
+      <Stepper
+        steps={["Choix du document", "Pièces justificatives", "Récapitulatif"]}
+        current={step}
+      />
 
       {/* ── ÉTAPE 1 ── */}
       {step === 0 && (
@@ -167,33 +240,128 @@ export default function NouvelleDemande() {
             <h2 className="nd-title">Quel document souhaitez-vous obtenir ?</h2>
             <p className="nd-sub">Sélectionnez le type de document dont vous avez besoin</p>
           </div>
+
           <div className="doc-grid">
-            {DOCS.map(d => (
+            {DOCS.map((d) => (
               <div
                 key={d.id}
                 className={`doc-card${selected === d.id ? " selected" : ""}${d.full ? " " : ""}`}
-                style={d.full ? { gridColumn:"1 / -1" } : {}}
-                onClick={() => setSelected(d.id)}
+                style={d.full ? { gridColumn: "1 / -1" } : {}}
+                onClick={() => {
+                  if (!d.enabled) return;
+                  setSelected(d.id);
+                }}
               >
+                {!d.enabled && <span className="coming-badge">Bientôt disponible</span>}
+
                 <div className="doc-card__icon">
                   <DocIcon color={selected === d.id ? "#1a2744" : "#475569"} />
                 </div>
+
                 <div>
                   <div className="doc-card__title">{d.title}</div>
                   <div className="doc-card__meta">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
                     </svg>
                     Délai estimé: {d.delai}
                   </div>
+
                   <div className="doc-card__pieces">Pièces requises: {d.pieces}</div>
                 </div>
               </div>
             ))}
           </div>
+
+          {isReleve && (
+            <div
+              style={{
+                background: "#fff",
+                border: "1px solid #e2e8f0",
+                borderRadius: 14,
+                padding: "14px 16px",
+                marginTop: 14,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "Sora,sans-serif",
+                  fontWeight: 700,
+                  color: "#1a2744",
+                  marginBottom: 10,
+                }}
+              >
+                Pour quel semestre ?
+              </div>
+
+              <label
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  alignItems: "center",
+                  marginBottom: 8,
+                  color: "#475569",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="sem"
+                  checked={semestreChoix === "S1"}
+                  onChange={() => setSemestreChoix("S1")}
+                />
+                Semestre 1 (500 FCFA)
+              </label>
+
+              <label
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  alignItems: "center",
+                  marginBottom: 8,
+                  color: "#475569",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="sem"
+                  checked={semestreChoix === "S2"}
+                  onChange={() => setSemestreChoix("S2")}
+                />
+                Semestre 2 (500 FCFA)
+              </label>
+
+              <label
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  alignItems: "center",
+                  color: "#475569",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="sem"
+                  checked={semestreChoix === "S1S2"}
+                  onChange={() => setSemestreChoix("S1S2")}
+                />
+                Semestre 1 + Semestre 2 (1 000 FCFA)
+              </label>
+            </div>
+          )}
+
           <div className="step-nav">
             <div />
-            <button className="btn-next" disabled={!selected} onClick={() => setStep(1)}>
+            <button className="btn-next" disabled={!step1Ok} onClick={() => setStep(1)} type="button">
               Continuer <span>→</span>
             </button>
           </div>
@@ -207,44 +375,187 @@ export default function NouvelleDemande() {
             <h2 className="nd-title">Pièces justificatives</h2>
             <p className="nd-sub">Uploadez les documents requis pour votre demande</p>
           </div>
+
           <div className="step2-grid">
-            <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-              {/* CIP */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* ✅ Justificatif inscription */}
+              {needFourPieces && (
+                <div className="upload-card">
+                  <div className="upload-card__header">
+                    <span className="upload-card__title">
+                      Fiche de préinscription / Attestation d'inscription *
+                    </span>
+                    {justifFile && <CheckCircle />}
+                  </div>
+
+                  <div className="upload-card__fmt">Format: JPG, PNG, PDF • Max: 5 Mo</div>
+
+                  <div
+                    className="upload-zone"
+                    onClick={() => justifInputRef.current?.click()}
+                  >
+                    <UploadIcon />
+                    <span className="upload-zone__text">
+                      Glissez-déposez votre fichier ici ou
+                    </span>
+
+                    <button
+                      type="button"
+                      className="btn-browse"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        justifInputRef.current?.click();
+                      }}
+                    >
+                      Parcourir
+                    </button>
+
+                    <input
+                      ref={justifInputRef}
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      style={{ display: "none" }}
+                      onChange={(e) => setJustifFile(e.target.files?.[0] || null)}
+                    />
+                  </div>
+
+                  {justifFile && (
+                    <div className="upload-file">
+                      <DocIcon color="#16a34a" />
+                      {justifFile.name}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ✅ Acte de naissance */}
+              {needFourPieces && (
+                <div className="upload-card">
+                  <div className="upload-card__header">
+                    <span className="upload-card__title">Acte de naissance *</span>
+                    {acteFile && <CheckCircle />}
+                  </div>
+
+                  <div className="upload-card__fmt">Format: JPG, PNG, PDF • Max: 5 Mo</div>
+
+                  <div
+                    className="upload-zone"
+                    onClick={() => acteInputRef.current?.click()}
+                  >
+                    <UploadIcon />
+                    <span className="upload-zone__text">
+                      Glissez-déposez votre fichier ici ou
+                    </span>
+
+                    <button
+                      type="button"
+                      className="btn-browse"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        acteInputRef.current?.click();
+                      }}
+                    >
+                      Parcourir
+                    </button>
+
+                    <input
+                      ref={acteInputRef}
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      style={{ display: "none" }}
+                      onChange={(e) => setActeFile(e.target.files?.[0] || null)}
+                    />
+                  </div>
+
+                  {acteFile && (
+                    <div className="upload-file">
+                      <DocIcon color="#16a34a" />
+                      {acteFile.name}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ✅ CIP */}
               <div className="upload-card">
                 <div className="upload-card__header">
-                  <span className="upload-card__title">Carte d'Identification Personnelle (CIP) *</span>
+                  <span className="upload-card__title">
+                    Carte d'Identification Personnelle (CIP) *
+                  </span>
                   {cipFile && <CheckCircle />}
                 </div>
+
                 <div className="upload-card__fmt">Format: JPG, PNG, PDF • Max: 5 Mo</div>
-                <div className="upload-zone">
+
+                <div className="upload-zone" onClick={() => cipInputRef.current?.click()}>
                   <UploadIcon />
                   <span className="upload-zone__text">Glissez-déposez votre fichier ici ou</span>
-                  <button className="btn-browse">Parcourir</button>
+
+                  <button
+                    type="button"
+                    className="btn-browse"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      cipInputRef.current?.click();
+                    }}
+                  >
+                    Parcourir
+                  </button>
+
+                  <input
+                    ref={cipInputRef}
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    style={{ display: "none" }}
+                    onChange={(e) => setCipFile(e.target.files?.[0] || null)}
+                  />
                 </div>
+
                 {cipFile && (
                   <div className="upload-file">
                     <DocIcon color="#16a34a" />
-                    {cipFile}
+                    {cipFile.name}
                   </div>
                 )}
               </div>
 
-              {/* Quittance */}
+              {/* ✅ Quittance */}
               <div className="upload-card">
                 <div className="upload-card__header">
                   <span className="upload-card__title">Quittance de paiement *</span>
                   {qttFile && <CheckCircle />}
                 </div>
+
                 <div className="upload-card__fmt">Format: JPG, PNG, PDF • Max: 5 Mo</div>
-                <div className="upload-zone">
+
+                <div className="upload-zone" onClick={() => qttInputRef.current?.click()}>
                   <UploadIcon />
                   <span className="upload-zone__text">Glissez-déposez votre fichier ici ou</span>
-                  <button className="btn-browse">Parcourir</button>
+
+                  <button
+                    type="button"
+                    className="btn-browse"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      qttInputRef.current?.click();
+                    }}
+                  >
+                    Parcourir
+                  </button>
+
+                  <input
+                    ref={qttInputRef}
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    style={{ display: "none" }}
+                    onChange={(e) => setQttFile(e.target.files?.[0] || null)}
+                  />
                 </div>
+
                 {qttFile && (
                   <div className="upload-file">
                     <DocIcon color="#16a34a" />
-                    {qttFile}
+                    {qttFile.name}
                   </div>
                 )}
               </div>
@@ -253,31 +564,93 @@ export default function NouvelleDemande() {
             {/* Info paiement */}
             <div className="paiement-card">
               <div className="paiement-card__title">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f5a623" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                  <line x1="1" y1="10" x2="23" y2="10"/>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#f5a623"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                  <line x1="1" y1="10" x2="23" y2="10" />
                 </svg>
                 Informations de paiement
               </div>
-              <div className="paiement-card__opts">Options de paiement:</div>
+
+              <div className="paiement-card__opts">Paiement des frais d’étude de dossier</div>
+
               <ul className="paiement-card__list">
-                <li>Mobile Money (MTN, Moov)</li>
-                <li>Guichet de votre institution</li>
+                <li>
+                  Dépôt sur le compte IFRI (Trésor Public) : <b>BJ6600100100000104477437</b>
+                </li>
+                <li>
+                  Intitulé du compte : <b>IFRI</b>
+                </li>
+                <li>
+                  Paiement en ligne :{" "}
+                  <a
+                    href="https://equittancetresor.finances.bj:9051/paiement/"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: "#1a2744", fontWeight: 700 }}
+                  >
+                    eQuittance Trésor
+                  </a>
+                </li>
               </ul>
+
               <div className="paiement-card__note">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:1}}>
-                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
-                Effectuez votre paiement, puis uploadez la quittance ici pour valider votre demande
+                Sur le site, choisissez <b>DEPOT SUR COMPTE DES CORRESPONDANTS (SERVICE EPARGNE)</b>,
+                puis saisissez le compte IFRI (24 chiffres).
               </div>
-              <div className="paiement-card__amount-label">Montant:</div>
-              <div className="paiement-card__amount">2 000 FCFA</div>
+
+              <div className="paiement-card__note">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ flexShrink: 0, marginTop: 1 }}
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                Effectuez votre paiement, puis uploadez la quittance ici pour valider votre
+                demande
+              </div>
+
+              
+              <div className="paiement-card__amount-label">Montant :</div>
+              <div className="paiement-card__amount">{montant.toLocaleString("fr-FR")} FCFA</div>
             </div>
           </div>
 
           <div className="step-nav">
-            <button className="btn-back" onClick={() => setStep(0)}>← Retour</button>
-            <button className="btn-next" onClick={() => setStep(2)}>Continuer →</button>
+            <button className="btn-back" onClick={() => setStep(0)} type="button">
+              ← Retour
+            </button>
+
+            <button
+              className="btn-next"
+              disabled={!step2Ok}
+              onClick={() => setStep(2)}
+              type="button"
+            >
+              Continuer →
+            </button>
           </div>
         </>
       )}
@@ -293,45 +666,65 @@ export default function NouvelleDemande() {
           <div className="recap-section">
             <div className="recap-section__title">Document demandé</div>
             <div className="recap-doc-card">
-              <div className="recap-doc-icon"><DocIcon color="white" /></div>
+              <div className="recap-doc-icon">
+                <DocIcon color="white" />
+              </div>
               <div>
                 <div className="recap-doc-title">{selectedDoc?.title || "Attestation d'inscription"}</div>
                 <div className="recap-doc-sub">Délai estimé: {selectedDoc?.delai || "24-48h"}</div>
+
+                {isReleve && (
+                  <div className="recap-doc-sub" style={{ marginTop: 6 }}>
+                    Semestre :{" "}
+                    <b>
+                      {semestreChoix === "S1"
+                        ? "Semestre 1"
+                        : semestreChoix === "S2"
+                        ? "Semestre 2"
+                        : "Semestre 1 + 2"}
+                    </b>
+                  </div>
+                )}
+
+                <div className="recap-doc-sub" style={{ marginTop: 6 }}>
+                  Frais : <b>{montant.toLocaleString("fr-FR")} FCFA</b>
+                </div>
               </div>
             </div>
           </div>
 
           <div className="recap-section">
             <div className="recap-section__title">Pièces justificatives</div>
-            <div className="recap-piece"><CheckCircle /> <DocIcon color="#16a34a" /> Carte d'Identification Personnelle (CIP)</div>
-            <div className="recap-piece"><CheckCircle /> <DocIcon color="#16a34a" /> Quittance de paiement</div>
-          </div>
 
-          <div className="recap-section">
-            <div className="recap-section__title">Informations personnelles</div>
-            <div className="recap-grid">
-              <div className="recap-field">
-                <div className="recap-field__label">Nom complet:</div>
-                <div className="recap-field__value">Koffi AGUEH</div>
-              </div>
-              <div className="recap-field">
-                <div className="recap-field__label">Numéro étudiant:</div>
-                <div className="recap-field__value">20220001</div>
-              </div>
-              <div className="recap-field">
-                <div className="recap-field__label">Institution:</div>
-                <div className="recap-field__value">IFRI</div>
-              </div>
-              <div className="recap-field">
-                <div className="recap-field__label">Filière:</div>
-                <div className="recap-field__value">Génie Logiciel</div>
-              </div>
+            {needFourPieces && (
+              <>
+                <div className="recap-piece">
+                  <CheckCircle /> <DocIcon color="#16a34a" /> Fiche de préinscription /
+                  Attestation d'inscription
+                </div>
+                <div className="recap-piece">
+                  <CheckCircle /> <DocIcon color="#16a34a" /> Acte de naissance
+                </div>
+              </>
+            )}
+
+            <div className="recap-piece">
+              <CheckCircle /> <DocIcon color="#16a34a" /> Carte d'Identification Personnelle (CIP)
+            </div>
+            <div className="recap-piece">
+              <CheckCircle /> <DocIcon color="#16a34a" /> Quittance de paiement
             </div>
           </div>
 
           <div className="step-nav">
-            <button className="btn-back" onClick={() => setStep(1)}>← Modifier</button>
-            <button className="btn-submit-green" onClick={() => alert("Demande soumise !")}>
+            <button className="btn-back" onClick={() => setStep(1)} type="button">
+              ← Modifier
+            </button>
+            <button
+              className="btn-submit-green"
+              onClick={() => alert("Demande soumise !")}
+              type="button"
+            >
               <CheckCircle /> Soumettre ma demande
             </button>
           </div>
