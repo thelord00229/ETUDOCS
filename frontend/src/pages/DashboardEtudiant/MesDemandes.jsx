@@ -97,7 +97,7 @@ export default function MesDemandes() {
           <h2 className="md-title">Mes demandes</h2>
           <p className="md-sub">Suivez l'état de toutes vos demandes de documents</p>
         </div>
-        <a href="/dashboard/nouvelle" className="btn-new-orange">Nouvelle demande</a>
+        <a href="/dashboardEtu/nouvelle" className="btn-new-orange">Nouvelle demande</a>
       </div>
 
       <div className="filter-bar">

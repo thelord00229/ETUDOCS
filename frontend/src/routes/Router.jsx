@@ -8,6 +8,13 @@ import NouvelleDemande from "../pages/DashboardEtudiant/NouvelleDemande.jsx";
 import MesDemandes from "../pages/DashboardEtudiant/MesDemandes.jsx";
 import MesDocuments from "../pages/DashboardEtudiant/MesDocuments.jsx";
 import MonProfil from "../pages/DashboardEtudiant/MonProfil.jsx";
+import DashboardSA from "../pages/DashboardSA/DashboardSA.jsx";
+import DashboardCS from "../pages/DashboardCS/DashboardCS.jsx";
+import DashboardDA from "../pages/DashboardDA/DashboardDA.jsx";
+import DashboardDI from "../pages/DashboardDI/DashboardDI.jsx";
+import DashboardSG from "../pages/DashboardSG/DashboardSG.jsx";
+import DashboardCE from "../pages/DashboardCE/DashboardCE.jsx";
+import ChefDivisionExamens from "../pages/DashboardCE/DashboardCE.jsx";
 
 
 const Router = () => {
@@ -21,6 +28,12 @@ const Router = () => {
                 <Route path="/dashboardEtu/demandes"  element={<MesDemandes />} />
                 <Route path="/dashboardEtu/documents" element={<MesDocuments />} />
                 <Route path="/dashboardEtu/profil"    element={<MonProfil />} />
+                <Route path="/dashboardsa" element={<DashboardSA />} />
+                <Route path="/dashboardsc" element={<DashboardCS />} />
+                <Route path="/dashboardda" element={<DashboardDA />} />
+                <Route path="/dashboarddi" element={<DashboardDI />} />
+                <Route path="/dashboardsg" element={<DashboardSG />} />
+                <Route path="/dashboardce" element={<ChefDivisionExamens/>} />
             </Routes>
         );
 };
