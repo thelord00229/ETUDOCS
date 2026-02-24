@@ -25,7 +25,7 @@ const apiRequest = async (endpoint, options = {}) => {
   });
 
   if (res.status === 401) {
-    clearSession();
+    console.warn("401 reçu - session potentiellement expirée");
     throw new Error("UNAUTHORIZED");
   }
 
@@ -57,19 +57,31 @@ export const getDemandes = async () => apiRequest("/api/demandes");
 export const getDemandeById = async (id) => apiRequest(`/api/demandes/${id}`);
 
 // ✅ Soumettre une demande (multipart: CIP + QUITTANCE)
-export const submitDemande = async ({ typeDocument, semestre, CIP, QUITTANCE }) => {
+export const submitDemande = async ({
+  typeDocument,
+  semestre,
+  CIP,
+  QUITTANCE,
+  ACTE_NAISSANCE,
+  JUSTIFICATIF_INSCRIPTION,
+}) => {
   const token = getToken();
   if (!token) throw new Error("NO_TOKEN");
 
   const form = new FormData();
   form.append("typeDocument", typeDocument);
   if (semestre) form.append("semestre", String(semestre));
+
   if (CIP) form.append("CIP", CIP);
   if (QUITTANCE) form.append("QUITTANCE", QUITTANCE);
 
+  // ✅ nouveaux champs
+  if (ACTE_NAISSANCE) form.append("ACTE_NAISSANCE", ACTE_NAISSANCE);
+  if (JUSTIFICATIF_INSCRIPTION) form.append("JUSTIFICATIF_INSCRIPTION", JUSTIFICATIF_INSCRIPTION);
+
   const res = await fetch(`${API_URL}/api/demandes`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` }, // ❌ surtout pas Content-Type ici
+    headers: { Authorization: `Bearer ${token}` }, // surtout pas Content-Type ici
     body: form,
   });
 
@@ -87,8 +99,8 @@ export const submitDemande = async ({ typeDocument, semestre, CIP, QUITTANCE }) 
    DOCUMENTS
 ================================ */
 
-// ✅ Télécharger un PDF (si tu veux gérer ça côté front plus tard)
-export const downloadDocument = async (reference) => {
+// ✅ Option A : récupérer juste le Blob (si tu veux l’ouvrir dans une preview)
+export const downloadDocumentBlob = async (reference) => {
   const token = getToken();
   if (!token) throw new Error("NO_TOKEN");
 
@@ -102,9 +114,31 @@ export const downloadDocument = async (reference) => {
   }
 
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
+    const contentType = res.headers.get("content-type") || "";
+    const isJson = contentType.includes("application/json");
+    const data = isJson ? await res.json().catch(() => ({})) : {};
     throw new Error(data?.message || "Erreur téléchargement");
   }
 
-  return res.blob(); // le PDF en blob
+  return await res.blob(); // PDF en blob
 };
+
+// ✅ Option B : télécharger DIRECTEMENT (ce que tu veux pour le dashboard)
+export const downloadDocument = async (reference, filename) => {
+  const blob = await downloadDocumentBlob(reference);
+
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+
+  // nom du fichier
+  a.download = filename || `${reference}.pdf`;
+
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  // cleanup
+  window.URL.revokeObjectURL(url);
+};
+

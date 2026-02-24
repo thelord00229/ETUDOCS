@@ -5,36 +5,91 @@ const emailService = require('../../services/email.service');
 const getServiceCible = (typeDocument) =>
   typeDocument === 'RELEVE_NOTES' ? 'EXAMENS' : 'SCOLARITE';
 
+// 🔥 règles pièces requises selon le document
+// NB: Tu m’as dit que RN et Attestation d’inscription ont EXACTEMENT les mêmes pièces.
+// Si plus tard tu veux différencier, on change juste ici.
+const REQUIRED_PIECES_BY_DOC = {
+  RELEVE_NOTES: [
+    'JUSTIFICATIF_INSCRIPTION',
+    'ACTE_NAISSANCE',
+    'CIP',
+    'QUITTANCE',
+  ],
+  ATTESTATION_INSCRIPTION: [
+    'JUSTIFICATIF_INSCRIPTION',
+    'ACTE_NAISSANCE',
+    'CIP',
+    'QUITTANCE',
+  ],
+};
+
+// fallback : pour les autres types (si un jour tu les actives)
+// pour l’instant on garde minimal
+const DEFAULT_REQUIRED = ['CIP', 'QUITTANCE'];
+
+const normalizeField = (v) => String(v || '').trim().toUpperCase();
+
 exports.soumettre = async (utilisateurId, institutionId, body, files) => {
-  const { typeDocument, semestre } = body;
+  const { typeDocument, semestres } = body;
 
-  const allFiles = files ? Object.values(files).flat() : [];
+  if (!typeDocument) {
+    const err = new Error('typeDocument est requis');
+    err.statusCode = 400;
+    throw err;
+  }
 
+  const docKey = normalizeField(typeDocument);
+
+  // req.files de multer.fields est un objet: { CIP: [file], QUITTANCE:[file], ... }
+  const filesObj = files || {};
+  const present = new Set(Object.keys(filesObj).map(normalizeField));
+
+  // pièces requises selon le doc
+  const required = REQUIRED_PIECES_BY_DOC[docKey] || DEFAULT_REQUIRED;
+  const missing = required.filter((p) => !present.has(p));
+
+  if (missing.length) {
+    const err = new Error(
+      `Pièces manquantes pour ${docKey}: ${missing.join(', ')}`
+    );
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Aplatir toutes les pièces reçues
+  const allFiles = Object.values(filesObj).flat();
+
+  // Important : typePiece = fieldname (CIP / QUITTANCE / ACTE_NAISSANCE / JUSTIFICATIF_INSCRIPTION)
+  // 👉 Assure-toi juste que ton enum Prisma (si tu en as un) contient bien ces valeurs.
   return prisma.demande.create({
     data: {
-      typeDocument,
-      semestre: semestre ? parseInt(semestre) : null,
-      serviceCible: getServiceCible(typeDocument),
+      typeDocument: docKey,
+      semestres: Array.isArray(semestres)
+        ? semestres.map((s) => parseInt(s, 10))
+        : semestres
+          ? [parseInt(semestres, 10)]
+          : [],
+      serviceCible: getServiceCible(docKey),
       statut: 'SOUMISE',
       utilisateurId,
       institutionId,
       pieces: {
-        create: allFiles.map(f => ({
-          typePiece: f.fieldname.toUpperCase(),
+        create: allFiles.map((f) => ({
+          typePiece: normalizeField(f.fieldname),
           nom: f.originalname,
           url: f.path,
-          statut: 'SOUMISE'
-        }))
+          statut: 'SOUMISE',
+        })),
       },
       historique: {
         create: {
           statut: 'SOUMISE',
           commentaire: "Demande soumise par l'étudiant",
-          actorId: utilisateurId
-        }
-      }
+          actorId: utilisateurId,
+        },
+      },
     },
-    include: { pieces: true }
+    include: { pieces: true },
   });
 };
 
@@ -47,16 +102,18 @@ exports.getDemandes = async (user) => {
     CHEF_DIVISION:      { institutionId, statut: 'TRANSMISE_CHEF_DIVISION', serviceCible: service },
     DIRECTEUR_ADJOINT:  { institutionId, statut: 'ATTENTE_SIGNATURE_DIRECTEUR_ADJOINT' },
     DIRECTEUR:          { institutionId, statut: 'ATTENTE_SIGNATURE_DIRECTEUR' },
-    SUPER_ADMIN:        { institutionId }
+    SUPER_ADMIN:        { institutionId },
   };
+
   return prisma.demande.findMany({
     where: filtres[role] || {},
     include: {
       utilisateur: { select: { nom: true, prenom: true, numeroEtudiant: true } },
       pieces: true,
-      document: { select: { reference: true, downloadCount: true } }
+      documents: { select: { reference: true, downloadCount: true } },
     },
-    orderBy: { createdAt: 'asc' }
+    // petit + UX: les plus récentes d’abord
+    orderBy: { createdAt: 'desc' },
   });
 };
 
@@ -66,36 +123,51 @@ exports.getById = async (demandeId, user) => {
     include: {
       utilisateur: { select: { nom: true, prenom: true, email: true, numeroEtudiant: true } },
       pieces: true,
-      document: true,
+      documents: true,
       historique: {
         include: { actor: { select: { nom: true, prenom: true, role: true } } },
-        orderBy: { createdAt: 'asc' }
-      }
-    }
+        orderBy: { createdAt: 'asc' },
+      },
+    },
   });
+
   if (!demande) {
-    const err = new Error('Demande introuvable'); err.statusCode = 404; throw err;
+    const err = new Error('Demande introuvable');
+    err.statusCode = 404;
+    throw err;
   }
+
   if (user.role === 'ETUDIANT' && demande.utilisateurId !== user.id) {
-    const err = new Error('Accès refusé'); err.statusCode = 403; throw err;
+    const err = new Error('Accès refusé');
+    err.statusCode = 403;
+    throw err;
   }
+
   return demande;
 };
 
 exports.avancer = async (demandeId, action, actorId, role, institutionId, commentaire) => {
   const demande = await prisma.demande.findUnique({
     where: { id: demandeId },
-    include: { utilisateur: true }
+    include: { utilisateur: true },
   });
 
   if (!demande) {
-    const err = new Error('Demande introuvable'); err.statusCode = 404; throw err;
+    const err = new Error('Demande introuvable');
+    err.statusCode = 404;
+    throw err;
   }
+
   if (demande.institutionId !== institutionId) {
-    const err = new Error('Accès refusé'); err.statusCode = 403; throw err;
+    const err = new Error('Accès refusé');
+    err.statusCode = 403;
+    throw err;
   }
+
   if (!peutAgir(role, demande.statut)) {
-    const err = new Error('Action non permise pour votre rôle'); err.statusCode = 403; throw err;
+    const err = new Error('Action non permise pour votre rôle');
+    err.statusCode = 403;
+    throw err;
   }
 
   // Cas spécial : génération du document
@@ -104,49 +176,76 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
     const pdfService = require('../../services/pdf.service');
     const qrcodeService = require('../../services/qrcode.service');
 
-    // Vérifier qu'un document n'existe pas déjà
-    const docExistant = await prisma.document.findUnique({
-      where: { demandeId: demande.id }
-    });
-    if (docExistant) {
-      const err = new Error('Un document existe déjà pour cette demande');
-      err.statusCode = 400; throw err;
-    }
-
     const institution = await prisma.institution.findUnique({
-      where: { id: institutionId }
+      where: { id: institutionId },
     });
+
     const etudiant = await prisma.utilisateur.findUnique({
-      where: { id: demande.utilisateurId }
+      where: { id: demande.utilisateurId },
     });
 
     const annee = new Date().getFullYear();
-    const sigle = institution.sigle || 'UAC';
-    const shortId = uuidv4().substring(0, 4).toUpperCase();
-    const reference = `ETD-${annee}-${sigle}-S${demande.semestre || 0}-${String(demande.id).substring(0,5).toUpperCase()}-${uuidv4().substring(0,4).toUpperCase()}`;
+    const sigle = institution?.sigle || 'UAC';
     const baseUrl = process.env.APP_URL || 'http://localhost:5000';
-    const qrData = `${baseUrl}/verify/${reference}`;
 
-    // En MVP : notes générées aléatoirement dans pdf.service.js
-    // En production : appel API système notes université
-    let notes = null;
+    // 🔥 Si ce n’est pas un relevé → génération simple
+    if (demande.typeDocument !== 'RELEVE_NOTES') {
+      const reference = `ETD-${annee}-${sigle}-${String(demande.id).substring(0,5).toUpperCase()}-${uuidv4().substring(0,4).toUpperCase()}`;
+      const qrData = `${baseUrl}/verify/${reference}`;
 
-    const pdfPath = await pdfService.generateDocument(
-      demande, etudiant, notes, reference, institution, qrData
-    );
-    await qrcodeService.generate(qrData, reference);
-
-    await prisma.document.create({
-      data: {
+      const pdfPath = await pdfService.generateDocument(
+        demande,
+        etudiant,
+        null,
         reference,
-        qrPayload: qrData,
-        urlPdf: pdfPath,
-        demandeId: demande.id
+        institution,
+        qrData
+      );
+
+      await qrcodeService.generate(qrData, reference);
+
+      await prisma.document.create({
+        data: {
+          reference,
+          qrPayload: qrData,
+          urlPdf: pdfPath,
+          demandeId: demande.id,
+        },
+      });
+
+    } else {
+      // 🔥 Cas RELEVE_NOTES → génération par semestre
+      const semestres = demande.semestres?.length ? demande.semestres : [1];
+
+      for (const semestre of semestres) {
+        const reference = `ETD-${annee}-${sigle}-S${semestre}-${String(demande.id).substring(0,5).toUpperCase()}-${uuidv4().substring(0,4).toUpperCase()}`;
+        const qrData = `${baseUrl}/verify/${reference}`;
+
+        const pdfPath = await pdfService.generateDocument(
+          { ...demande, semestre }, // on injecte le semestre dans le PDF
+          etudiant,
+          null,
+          reference,
+          institution,
+          qrData
+        );
+
+        await qrcodeService.generate(qrData, reference);
+
+        await prisma.document.create({
+          data: {
+            reference,
+            qrPayload: qrData,
+            urlPdf: pdfPath,
+            demandeId: demande.id,
+          },
+        });
       }
-    });
+    }
   }
 
   const prochainStatut = getNextStatut(demande.statut, action);
+
   const updated = await prisma.demande.update({
     where: { id: demandeId },
     data: {
@@ -155,10 +254,10 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
         create: {
           statut: prochainStatut,
           commentaire: commentaire || action,
-          actorId
-        }
-      }
-    }
+          actorId,
+        },
+      },
+    },
   });
 
   try {
@@ -177,6 +276,6 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
 exports.validerPiece = async (pieceId, statut, commentaire, actorId) => {
   return prisma.pieceJustificative.update({
     where: { id: pieceId },
-    data: { statut, commentaire, valideeParId: actorId, valideeAt: new Date() }
+    data: { statut, commentaire, valideeParId: actorId, valideeAt: new Date() },
   });
 };

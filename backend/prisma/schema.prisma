@@ -42,7 +42,7 @@ enum TypePiece {
   CIP
   QUITTANCE
   ACTE_NAISSANCE
-  ATTESTATION_INSCRIPTION
+  JUSTIFICATIF_INSCRIPTION
 }
 
 enum StatutPiece {
@@ -105,7 +105,7 @@ model Utilisateur {
 model Demande {
   id           String       @id @default(uuid())
   typeDocument TypeDocument
-  semestre     Int?
+  semestres     Int[]
   serviceCible Service
 
   statut    StatutDemande @default(SOUMISE)
@@ -122,7 +122,7 @@ model Demande {
   historique WorkflowHistory[]
 
   // 1 document final par demande (MVP)
-  document Document?
+  documents Document[]
 }
 
 model WorkflowHistory {
@@ -155,7 +155,7 @@ model Document {
   maxDownloads  Int       @default(3)
   blockedAt     DateTime?
 
-  demandeId String  @unique
+  demandeId String
   demande   Demande @relation(fields: [demandeId], references: [id])
 }
 

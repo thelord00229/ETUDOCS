@@ -1,9 +1,37 @@
 const service = require('./demande.service');
 const asyncHandler = require('../../utils/asyncHandler');
 
+const hasFile = (files, key) => {
+  return !!(files && files[key] && Array.isArray(files[key]) && files[key].length > 0);
+};
+
 exports.soumettre = asyncHandler(async (req, res) => {
+  const files = req.files || {};
+  const typeDocument = req.body?.typeDocument;
+
+  // ✅ règle actuelle (selon ce que tu as décrit)
+  // Relevé de notes + Attestation d'inscription => 4 pièces obligatoires
+  const needFourPieces = ['RELEVE_NOTES', 'ATTESTATION_INSCRIPTION'].includes(typeDocument);
+
+  const required = needFourPieces
+    ? ['CIP', 'QUITTANCE', 'ACTE_NAISSANCE', 'JUSTIFICATIF_INSCRIPTION']
+    : ['CIP', 'QUITTANCE'];
+
+  const missing = required.filter((k) => !hasFile(files, k));
+
+  if (!typeDocument) {
+    return res.status(400).json({ message: "typeDocument est requis." });
+  }
+
+  if (missing.length > 0) {
+    return res.status(400).json({
+      message: "Pièces manquantes pour soumettre la demande.",
+      missingPieces: missing
+    });
+  }
+
   res.status(201).json(
-    await service.soumettre(req.user.id, req.user.institutionId, req.body, req.files || [])
+    await service.soumettre(req.user.id, req.user.institutionId, req.body, files)
   );
 });
 

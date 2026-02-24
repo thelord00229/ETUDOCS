@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
-import { getDemandes } from "../../services/api";
+import { getDemandes, downloadDocument } from "../../services/api";
 
 /* ─────────────────────────────────────────────────────────────
    STYLES
@@ -88,14 +88,12 @@ const css = `
     font-family:'DM Mono',monospace; font-size:.82rem; color:#64748b; letter-spacing:.3px;
   }
 
-  /* Badges statut */
   .dbadge { display:inline-flex; align-items:center; padding:5px 14px; border-radius:20px; font-size:.8rem; font-weight:700; white-space:nowrap; flex-shrink:0; }
   .dbadge--traitement { background:#1a2744; color:#fff; }
   .dbadge--disponible { background:#dcfce7; color:#166534; }
   .dbadge--rejete     { background:#fee2e2; color:#991b1b; }
   .dbadge--attente    { background:#fffbeb; color:#92400e; border:1px solid #fde68a; }
 
-  /* Stepper */
   .stepper-card {
     background:#fff; border:1px solid #e2e8f0; border-radius:16px;
     padding:28px 32px; margin-bottom:20px;
@@ -122,10 +120,8 @@ const css = `
   .step-lbl--active { color:#1a2744; font-weight:700; }
   .step-sub { font-size:.7rem; color:#22c55e; font-weight:600; margin-top:2px; }
 
-  /* Corps */
   .detail-body { display:grid; grid-template-columns:1fr 300px; gap:20px; align-items:start; }
 
-  /* Pièces */
   .pieces-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:24px 26px; }
   .pieces-head { font-family:'Sora',sans-serif; font-weight:700; font-size:.95rem; color:#1a2744; margin-bottom:16px; }
   .piece-row {
@@ -143,7 +139,6 @@ const css = `
   .piece-meta { font-size:.75rem; color:#94a3b8; margin-top:2px; }
   .piece-ok   { display:inline-flex; align-items:center; gap:5px; font-size:.8rem; font-weight:600; color:#16a34a; white-space:nowrap; }
 
-  /* Panneau droit */
   .detail-right { display:flex; flex-direction:column; gap:16px; }
   .meta-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:22px; }
   .meta-label { font-size:.72rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.8px; margin-bottom:14px; }
@@ -164,6 +159,7 @@ const css = `
     transition:background .2s, transform .15s;
   }
   .btn-dl:hover { background:#15803d; transform:translateY(-1px); }
+  .btn-dl:disabled { opacity:.75; cursor:not-allowed; transform:none; }
   .btn-dl-count { font-size:.75rem; opacity:.8; font-weight:500; }
 
   .reject-card { background:#fef2f2; border:1px solid #fecaca; border-radius:14px; padding:18px 20px; margin-bottom:4px; }
@@ -182,37 +178,34 @@ const css = `
 const FILTERS = ["Toutes", "En attente", "En traitement", "Disponible", "Rejetée"];
 
 const labelType = (t) => {
-  if (t === "RELEVE_NOTES")            return "Relevé de notes";
+  if (t === "RELEVE_NOTES") return "Relevé de notes";
   if (t === "ATTESTATION_INSCRIPTION") return "Attestation d'inscription";
   return t || "Document";
 };
 
 const labelStatut = (s) => {
-  if (s === "DISPONIBLE")              return "Disponible";
+  if (s === "DISPONIBLE") return "Disponible";
   if (s === "REJETEE" || s === "REJETE") return "Rejetée";
+  // tout le reste = en cours
   return "En traitement";
 };
 
 const badgeClass = (l) => {
   if (l === "Disponible") return "badge--disponible";
-  if (l === "Rejetée")    return "badge--rejete";
+  if (l === "Rejetée") return "badge--rejete";
   if (l === "En attente") return "badge--attente";
   return "badge--traitement";
 };
 
 const dbadgeClass = (l) => {
   if (l === "Disponible") return "dbadge--disponible";
-  if (l === "Rejetée")    return "dbadge--rejete";
+  if (l === "Rejetée") return "dbadge--rejete";
   if (l === "En attente") return "dbadge--attente";
   return "dbadge--traitement";
 };
 
-/* Référence au bon format selon le type */
-const uiRef = (typeDocument, rawRef) => {
-  if (typeDocument === "RELEVE_NOTES")            return rawRef || "ETD-2026-IFRI-S1-00847-XK29";
-  if (typeDocument === "ATTESTATION_INSCRIPTION") return rawRef || "ETD-2026-IFRI-INS-00234-LM47";
-  return rawRef || "ETD-2026-IFRI-INS-00234-LM47";
-};
+// ✅ IMPORTANT: pas de "fausse" référence. On affiche la référence du document si elle existe, sinon l'id demande.
+const uiRef = (_typeDocument, rawRef) => rawRef || "—";
 
 const uiIntervenant = (type) => {
   if (type === "RELEVE_NOTES") return "Serge DOSSOU";
@@ -223,17 +216,24 @@ const uiIntervenant = (type) => {
    STEPPER
 ───────────────────────────────────────────────────────────── */
 const STEPS = [
-  { key: "soumise",    label: "Soumise" },
-  { key: "sec_adj",    label: "Reçue (Sec. Adj)" },
-  { key: "sec_gen",    label: "Transmise (Sec. Gén)" },
+  { key: "soumise", label: "Soumise" },
+  { key: "sec_adj", label: "Reçue (Sec. Adj)" },
+  { key: "sec_gen", label: "Transmise (Sec. Gén)" },
   { key: "traitement", label: "En traitement" },
-  { key: "sign_da",    label: "Signature DA" },
-  { key: "sign_dir",   label: "Signature DIR" },
+  { key: "sign_da", label: "Signature DA" },
+  { key: "sign_dir", label: "Signature DIR" },
   { key: "disponible", label: "Disponible" },
 ];
 
 const getSteps = (status) => {
-  const activeIdx = { "En traitement": 3, "Disponible": 6, "Rejetée": 3, "En attente": 1 }[status] ?? 3;
+  const activeIdx =
+    {
+      "En traitement": 3,
+      Disponible: 6,
+      Rejetée: 3,
+      "En attente": 1,
+    }[status] ?? 3;
+
   return STEPS.map((s, i) => ({
     ...s,
     state: i < activeIdx ? "done" : i === activeIdx ? "active" : "todo",
@@ -244,174 +244,235 @@ const getSteps = (status) => {
    ICÔNES
 ───────────────────────────────────────────────────────────── */
 const IcoArrow = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-    </svg>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12" />
+    <polyline points="12 19 5 12 12 5" />
+  </svg>
 );
 const IcoCheck = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12"/>
-    </svg>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
 );
 const IcoCheckGreen = () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-    </svg>
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
+  </svg>
 );
 const IcoFile = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-    </svg>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+  </svg>
 );
 const IcoDl = () => (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-      <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-    </svg>
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
 );
 const IcoEye = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-      <circle cx="12" cy="12" r="3"/>
-    </svg>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
 );
 const IcoAlert = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#991b1b" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-    </svg>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#991b1b" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
 );
 
 /* ─────────────────────────────────────────────────────────────
    PAGE DÉTAIL
 ───────────────────────────────────────────────────────────── */
 function DetailDemande({ demande, onBack }) {
-  const title   = labelType(demande.typeDocument || demande.type);
-  const status  = demande.statut ? labelStatut(demande.statut) : demande.status;
-  const ref     = uiRef(demande.typeDocument, demande.document?.reference || demande.ref);
-  const steps   = getSteps(status);
-  const isReleve = demande.typeDocument === "RELEVE_NOTES" || title.includes("Relevé");
+  const title = labelType(demande.typeDocument);
+  const status = labelStatut(demande.statut);
+
+  const reference = demande.document?.reference || null;
+  const ref = reference || demande.id;
+
+  const steps = getSteps(status);
+  const isReleve = demande.typeDocument === "RELEVE_NOTES";
 
   const dateStr = demande.createdAt
-      ? new Date(demande.createdAt).toLocaleDateString("fr-FR", { day:"2-digit", month:"long", year:"numeric" })
-      : demande.date || "—";
+    ? new Date(demande.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })
+    : "—";
 
-  const pieces = [
-    { name: "Carte d'Identification Personnelle (CIP)", meta: "PDF • 1.2 Mo" },
-    { name: "Quittance de paiement", meta: "PDF • 1.2 Mo" },
-    ...(isReleve ? [{ name: "Relevé de notes officiel", meta: "Généré automatiquement" }] : []),
-  ];
+  const updatedStr = demande.updatedAt
+    ? new Date(demande.updatedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })
+    : "—";
+
+  const pieces = Array.isArray(demande.pieces) ? demande.pieces : [];
+
+  // Télécharger
+  const [dlLoading, setDlLoading] = useState(false);
+  const [dlError, setDlError] = useState("");
+
+  const handleDownload = async () => {
+    if (!reference) {
+      setDlError("Aucune référence de document disponible.");
+      return;
+    }
+    setDlError("");
+    setDlLoading(true);
+    try {
+      await downloadDocument(reference);
+    } catch (e) {
+      setDlError(e?.message || "Erreur téléchargement");
+    } finally {
+      setDlLoading(false);
+    }
+  };
 
   return (
-      <>
-        {/* Retour */}
-        <button className="detail-back" onClick={onBack}>
-          <IcoArrow /> Retour à mes demandes
-        </button>
+    <>
+      <button className="detail-back" onClick={onBack}>
+        <IcoArrow /> Retour à mes demandes
+      </button>
 
-        {/* En-tête */}
-        <div className="detail-toprow">
-          <div style={{ flex: 1 }}>
-            <div className="detail-title">{title}</div>
-            <div className="detail-ref">Réf : {ref}</div>
-          </div>
-          <span className={`dbadge ${dbadgeClass(status)}`}>{status}</span>
+      <div className="detail-toprow">
+        <div style={{ flex: 1 }}>
+          <div className="detail-title">{title}</div>
+          <div className="detail-ref">Réf : {ref}</div>
         </div>
+        <span className={`dbadge ${dbadgeClass(status)}`}>{status}</span>
+      </div>
 
-        {/* Stepper */}
-        <div className="stepper-card">
-          <div className="stepper-head">Suivi de la demande</div>
-          <div className="stepper">
-            {steps.map((s) => (
-                <div key={s.key} className="step">
-                  <div className={`step-dot step-dot--${s.state}`}>
-                    {s.state === "done"   && <IcoCheck />}
-                    {s.state === "active" && <div style={{ width:10, height:10, borderRadius:"50%", background:"#1a2744" }} />}
-                  </div>
-                  <div className={`step-lbl step-lbl--${s.state}`}>
-                    {s.label}
-                    {s.state === "active" && <div className="step-sub">En cours</div>}
-                  </div>
-                </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Motif rejet */}
-        {status === "Rejetée" && (
-            <div className="reject-card">
-              <div className="reject-head"><IcoAlert /> Motif de rejet</div>
-              <div className="reject-text">
-                {demande.motifRejet || "Pièce justificative non conforme. Veuillez soumettre une nouvelle demande avec une quittance de paiement lisible et en cours de validité."}
+      <div className="stepper-card">
+        <div className="stepper-head">Suivi de la demande</div>
+        <div className="stepper">
+          {steps.map((s) => (
+            <div key={s.key} className="step">
+              <div className={`step-dot step-dot--${s.state}`}>
+                {s.state === "done" && <IcoCheck />}
+                {s.state === "active" && <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#1a2744" }} />}
+              </div>
+              <div className={`step-lbl step-lbl--${s.state}`}>
+                {s.label}
+                {s.state === "active" && <div className="step-sub">En cours</div>}
               </div>
             </div>
-        )}
+          ))}
+        </div>
+      </div>
 
-        {/* Corps */}
-        <div className="detail-body">
+      {status === "Rejetée" && (
+        <div className="reject-card">
+          <div className="reject-head">
+            <IcoAlert /> Motif de rejet
+          </div>
+          <div className="reject-text">
+            {demande.motifRejet ||
+              "Pièce justificative non conforme. Veuillez soumettre une nouvelle demande avec une quittance de paiement lisible et en cours de validité."}
+          </div>
+        </div>
+      )}
 
-          {/* Pièces jointes */}
-          <div className="pieces-card">
-            <div className="pieces-head">Pièces jointes</div>
-            {pieces.map((p, i) => (
-                <div key={i} className="piece-row">
+      <div className="detail-body">
+        <div className="pieces-card">
+          <div className="pieces-head">Pièces jointes</div>
+
+          {pieces.length === 0 ? (
+            <div style={{ color: "#475569" }}>Aucune pièce trouvée.</div>
+          ) : (
+            pieces.map((p) => {
+              const pieceLabel =
+                p.typePiece === "CIP" ? "Carte d'Identification Personnelle (CIP)" :
+                p.typePiece === "QUITTANCE" ? "Quittance de paiement" :
+                p.typePiece || "Pièce";
+
+              const meta = p.nom ? p.nom : (p.url ? String(p.url).split("\\").pop() : "—");
+              const statutPiece = p.statut || "SOUMISE";
+
+              return (
+                <div key={p.id} className="piece-row">
                   <div className="piece-left">
                     <div className="piece-ico"><IcoFile /></div>
-                    <div>
-                      <div className="piece-name">{p.name}</div>
-                      <div className="piece-meta">{p.meta}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="piece-name">{pieceLabel}</div>
+                      <div className="piece-meta" style={{ wordBreak: "break-word" }}>
+                        {meta}
+                      </div>
                     </div>
                   </div>
-                  <span className="piece-ok"><IcoCheckGreen /> Validée</span>
+
+                  <span className="piece-ok">
+                    <IcoCheckGreen /> {statutPiece}
+                  </span>
                 </div>
-            ))}
+              );
+            })
+          )}
+
+          {isReleve && (
+            <div className="piece-row" style={{ marginTop: 10 }}>
+              <div className="piece-left">
+                <div className="piece-ico"><IcoFile /></div>
+                <div>
+                  <div className="piece-name">Relevé de notes officiel</div>
+                  <div className="piece-meta">Généré automatiquement</div>
+                </div>
+              </div>
+              <span className="piece-ok"><IcoCheckGreen /> Système</span>
+            </div>
+          )}
+        </div>
+
+        <div className="detail-right">
+          {status === "Disponible" && (
+            <>
+              <button className="btn-dl" onClick={handleDownload} disabled={dlLoading || !reference}>
+                <IcoDl />
+                {dlLoading ? "Téléchargement..." : "Télécharger mon document"}
+                {typeof demande.document?.downloadCount === "number" && (
+                  <span className="btn-dl-count">({demande.document.downloadCount})</span>
+                )}
+              </button>
+              {dlError && <div className="state-box state-error">{dlError}</div>}
+            </>
+          )}
+
+          <div className="meta-card">
+            <div className="meta-label">Détails</div>
+            <div className="meta-row">
+              <span className="meta-key">Date soumission</span>
+              <span className="meta-val">{dateStr}</span>
+            </div>
+            <div className="meta-row">
+              <span className="meta-key">Dernière maj</span>
+              <span className="meta-val">{updatedStr}</span>
+            </div>
+            <div className="meta-row">
+              <span className="meta-key">Intervenant</span>
+              <span className="meta-val">{uiIntervenant(demande.typeDocument)}</span>
+            </div>
+            {isReleve && (
+              <div className="meta-row">
+                <span className="meta-key">Semestre</span>
+                <span className="meta-val">Semestre {demande.semestre ?? "—"}</span>
+              </div>
+            )}
           </div>
 
-          {/* Panneau droit */}
-          <div className="detail-right">
-
-            {status === "Disponible" && (
-                <button className="btn-dl">
-                  <IcoDl />
-                  Télécharger mon document
-                  <span className="btn-dl-count">(1/3)</span>
-                </button>
-            )}
-
-            <div className="meta-card">
-              <div className="meta-label">Détails</div>
-              <div className="meta-row">
-                <span className="meta-key">Date soumission</span>
-                <span className="meta-val">{dateStr}</span>
-              </div>
-              <div className="meta-row">
-                <span className="meta-key">Dernière maj</span>
-                <span className="meta-val">Il y a 2h</span>
-              </div>
-              <div className="meta-row">
-                <span className="meta-key">Intervenant</span>
-                <span className="meta-val">{uiIntervenant(demande.typeDocument)}</span>
-              </div>
-              {isReleve && (
-                  <div className="meta-row">
-                    <span className="meta-key">Semestre</span>
-                    <span className="meta-val">Semestre 1</span>
-                  </div>
-              )}
+          <div className="help-card">
+            <div className="help-title">Besoin d'aide ?</div>
+            <div className="help-text">
+              Si vous rencontrez un problème avec cette demande, contactez{" "}
+              <a href="mailto:support@etudocs.bj" style={{ color: "#1a2744", fontWeight: 600 }}>
+                support@etudocs.bj
+              </a>
+              .
             </div>
-
-            <div className="help-card">
-              <div className="help-title">Besoin d'aide ?</div>
-              <div className="help-text">
-                Si vous rencontrez un problème avec cette demande, contactez{" "}
-                <a href="mailto:support@etudocs.bj" style={{ color:"#1a2744", fontWeight:600 }}>support@etudocs.bj</a>.
-              </div>
-            </div>
-
           </div>
         </div>
-      </>
+      </div>
+    </>
   );
 }
 
@@ -419,18 +480,19 @@ function DetailDemande({ demande, onBack }) {
    COMPOSANT PRINCIPAL
 ───────────────────────────────────────────────────────────── */
 export default function MesDemandes() {
-  const [filter,        setFilter]        = useState("Toutes");
-  const [search,        setSearch]        = useState("");
-  const [loading,       setLoading]       = useState(true);
-  const [error,         setError]         = useState("");
-  const [demandes,      setDemandes]      = useState([]);
+  const [filter, setFilter] = useState("Toutes");
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [demandes, setDemandes] = useState([]);
 
-  /* null = liste, objet = détail */
+  // null = liste, objet = détail
   const [detailItem, setDetailItem] = useState(null);
 
   useEffect(() => {
     const load = async () => {
-      setLoading(true); setError("");
+      setLoading(true);
+      setError("");
       try {
         const list = await getDemandes();
         setDemandes(Array.isArray(list) ? list : []);
@@ -443,133 +505,132 @@ export default function MesDemandes() {
     load();
   }, []);
 
-  /* Compteurs onglets */
   const counts = useMemo(() => {
-    const base = { Toutes:0, "En attente":0, "En traitement":0, Disponible:0, Rejetée:0 };
+    const base = { Toutes: 0, "En attente": 0, "En traitement": 0, Disponible: 0, Rejetée: 0 };
     base.Toutes = demandes.length;
     for (const d of demandes) {
-      const s = labelStatut(d.statut);
+      const s = labelStatut(d?.statut);
       if (base[s] !== undefined) base[s] += 1;
     }
     return base;
   }, [demandes]);
 
-  /* Lignes filtrées */
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return demandes
-        .map((d) => ({
-          raw:    d,
-          ref:    uiRef(d.typeDocument, d.document?.reference || d.id),
-          type:   labelType(d.typeDocument),
-          date:   d.createdAt ? new Date(d.createdAt).toLocaleDateString("fr-FR", { day:"2-digit", month:"short", year:"numeric" }) : "—",
-          status: labelStatut(d.statut),
-        }))
-        .filter((d) => {
-          const matchFilter = filter === "Toutes" || d.status === filter;
-          const matchSearch = !q || d.ref.toLowerCase().includes(q) || d.type.toLowerCase().includes(q);
-          return matchFilter && matchSearch;
-        });
+      .map((d) => ({
+        raw: d,
+        ref: uiRef(d.typeDocument, d.documents?.[0]?.reference || d.id),
+        type: labelType(d.typeDocument),
+        date: d.createdAt
+          ? new Date(d.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })
+          : "—",
+        status: labelStatut(d.statut),
+      }))
+      .filter((d) => {
+        const matchFilter = filter === "Toutes" || d.status === filter;
+        const matchSearch = !q || d.ref.toLowerCase().includes(q) || d.type.toLowerCase().includes(q);
+        return matchFilter && matchSearch;
+      });
   }, [demandes, filter, search]);
 
-  /* ── VUE DÉTAIL ── */
+  // Vue détail
   if (detailItem) {
     return (
-        <DashboardLayout>
-          <style>{css}</style>
-          <DetailDemande demande={detailItem} onBack={() => setDetailItem(null)} />
-        </DashboardLayout>
+      <DashboardLayout>
+        <style>{css}</style>
+        <DetailDemande demande={detailItem} onBack={() => setDetailItem(null)} />
+      </DashboardLayout>
     );
   }
 
-  /* ── VUE LISTE ── */
+  // Vue liste
   return (
-      <DashboardLayout>
-        <style>{css}</style>
+    <DashboardLayout>
+      <style>{css}</style>
 
-        <div className="md-header">
-          <div>
-            <h2 className="md-title">Mes demandes</h2>
-            <p className="md-sub">Suivez l'état de toutes vos demandes de documents</p>
-          </div>
-          <a href="/dashboardEtu/nouvelle" className="btn-new-orange">
-            Nouvelle demande
-          </a>
+      <div className="md-header">
+        <div>
+          <h2 className="md-title">Mes demandes</h2>
+          <p className="md-sub">Suivez l'état de toutes vos demandes de documents</p>
         </div>
+        <a href="/dashboardEtu/nouvelle" className="btn-new-orange">
+          Nouvelle demande
+        </a>
+      </div>
 
-        {/* Filtres + recherche */}
-        <div className="filter-bar">
-          {FILTERS.map((f) => (
-              <button
-                  key={f} type="button"
-                  className={`filter-tab${filter === f ? " active" : ""}`}
-                  onClick={() => setFilter(f)}
-              >
-                {f} ({counts[f] ?? 0})
-              </button>
-          ))}
-          <div className="search-wrap">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-                className="search-input"
-                placeholder="Rechercher par référence ou type..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+      <div className="filter-bar">
+        {FILTERS.map((f) => (
+          <button
+            key={f}
+            type="button"
+            className={`filter-tab${filter === f ? " active" : ""}`}
+            onClick={() => setFilter(f)}
+          >
+            {f} ({counts[f] ?? 0})
+          </button>
+        ))}
+
+        <div className="search-wrap">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            className="search-input"
+            placeholder="Rechercher par référence ou type..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
+      </div>
 
-        {loading && <div className="state-box">Chargement des demandes…</div>}
-        {!loading && error && <div className="state-box state-error">{error}</div>}
+      {loading && <div className="state-box">Chargement des demandes…</div>}
+      {!loading && error && <div className="state-box state-error">{error}</div>}
 
-        {!loading && !error && (
-            <div className="table-card">
-              <table className="table">
-                <thead>
+      {!loading && !error && (
+        <div className="table-card">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Type de document</th>
+                <th>Date de soumission</th>
+                <th>Statut</th>
+                <th style={{ textAlign: "right" }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
                 <tr>
-                  <th>Référence</th>
-                  <th>Type de document</th>
-                  <th>Date de soumission</th>
-                  <th>Statut</th>
-                  <th style={{ textAlign:"right" }}>Actions</th>
+                  <td colSpan={5} style={{ padding: "18px 20px", color: "#475569" }}>
+                    Aucune demande trouvée.
+                  </td>
                 </tr>
-                </thead>
-                <tbody>
-                {filtered.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} style={{ padding:"18px 20px", color:"#475569" }}>
-                        Aucune demande trouvée.
-                      </td>
-                    </tr>
-                ) : (
-                    filtered.map((d) => (
-                        <tr key={d.raw.id}>
-                          <td className="td-ref">{d.ref}</td>
-                          <td className="td-type">{d.type}</td>
-                          <td className="td-date">{d.date}</td>
-                          <td>
-                            <span className={`badge ${badgeClass(d.status)}`}>{d.status}</span>
-                          </td>
-                          <td>
-                            <div className="td-actions">
-                              <button
-                                  className="btn-view"
-                                  type="button"
-                                  onClick={() => setDetailItem(d.raw)}
-                              >
-                                <IcoEye /> Voir détails
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                    ))
-                )}
-                </tbody>
-              </table>
-            </div>
-        )}
-      </DashboardLayout>
+              ) : (
+                filtered.map((d) => (
+                  <tr key={d.raw.id}>
+                    <td className="td-ref">{d.ref}</td>
+                    <td className="td-type">{d.type}</td>
+                    <td className="td-date">{d.date}</td>
+                    <td>
+                      <span className={`badge ${badgeClass(d.status)}`}>{d.status}</span>
+                    </td>
+                    <td>
+                      <div className="td-actions">
+                        <button className="btn-view" type="button" onClick={() => setDetailItem(d.raw)}>
+                          <IcoEye /> Voir détails
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </DashboardLayout>
   );
 }
+
