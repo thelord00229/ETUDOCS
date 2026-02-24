@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer');
 const { PDFDocument } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
-const QRCode = require('qrcode'); // QR en base64
+const QRCode = require('qrcode');
 
 // ═══════════════════════════════════════
 // OUTILS FICHIERS → DATA URL (base64)
@@ -13,7 +13,6 @@ const fileToDataUrl = (absPath) => {
     ext === '.png' ? 'image/png' :
     ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
     null;
-
   if (!mime) return null;
   const buffer = fs.readFileSync(absPath);
   return `data:${mime};base64,${buffer.toString('base64')}`;
@@ -21,7 +20,6 @@ const fileToDataUrl = (absPath) => {
 
 const getLogoDataUrl = (institution) => {
   const sigle = institution?.sigle || 'IFRI';
-  // ✅ tu mets tes logos ici : src/assets/logos/IFRI.png, EPAC.png, FSS.png
   const logoPath = path.join(__dirname, '..', 'assets', 'logos', `${sigle}.png`);
   if (!fs.existsSync(logoPath)) return null;
   return fileToDataUrl(logoPath);
@@ -68,31 +66,31 @@ const genererUEs = (notes, sigle) => {
 
   const uesParInstitution = {
     IFRI: [
-      { codeUE: 'MTH1121', intituleUE: 'LOGIQUE, ARITHMETIQUE ET SES APPLICATIONS', credits: 5, ecus: ['Logique, arithmétique et ses applications'] },
-      { codeUE: 'MTH1122', intituleUE: 'MATHEMATIQUES FONDAMENTALES', credits: 5, ecus: ['Algèbre linéaire et applications', 'Analyse et applications'] },
-      { codeUE: 'INF1124', intituleUE: 'ARCHITECTURE ET TOPOLOGIE DES RESEAUX', credits: 4, ecus: ['Architecture et topologie des réseaux informatiques'] },
-      { codeUE: 'INF1125', intituleUE: "SYSTEME D'EXPLOITATION ET OUTILS DE BASE", credits: 4, ecus: ["Utilisation et administration sous Windows/Linux", 'Outils de base en informatique'] },
-      { codeUE: 'INF1126', intituleUE: 'BASE DE LA PROGRAMMATION', credits: 4, ecus: ['Algorithmique', 'Langages C'] },
-      { codeUE: 'DRP1127', intituleUE: 'DEONTOLOGIE ET DROIT LIES AUX TIC', credits: 2, ecus: ['Déontologie et droit liés aux TIC'] },
-      { codeUE: 'TCC1128', intituleUE: "TECHNIQUES D'EXPRESSION ECRITE ET ORALE", credits: 1, ecus: ["Techniques d'expression écrite et orale"] },
+      { codeUE: 'MTH1121', intituleUE: 'LOGIQUE, ARITHMETIQUE ET SES APPLICATIONS',      credits: 5, ecus: ['Logique, arithmétique et ses applications'] },
+      { codeUE: 'MTH1122', intituleUE: 'MATHEMATIQUES FONDAMENTALES',                     credits: 5, ecus: ['Algèbre linéaire et applications', 'Analyse et applications'] },
+      { codeUE: 'INF1124', intituleUE: 'ARCHITECTURE ET TOPOLOGIE DES RESEAUX',           credits: 4, ecus: ['Architecture et topologie des réseaux informatiques'] },
+      { codeUE: 'INF1125', intituleUE: "SYSTEME D'EXPLOITATION ET OUTILS DE BASE",        credits: 4, ecus: ["Utilisation et administration sous Windows/Linux", 'Outils de base en informatique'] },
+      { codeUE: 'INF1126', intituleUE: 'BASE DE LA PROGRAMMATION',                        credits: 4, ecus: ['Algorithmique', 'Langages C'] },
+      { codeUE: 'DRP1127', intituleUE: 'DEONTOLOGIE ET DROIT LIES AUX TIC',               credits: 2, ecus: ['Déontologie et droit liés aux TIC'] },
+      { codeUE: 'TCC1128', intituleUE: "TECHNIQUES D'EXPRESSION ECRITE ET ORALE",         credits: 1, ecus: ["Techniques d'expression écrite et orale"] },
     ],
     EPAC: [
-      { codeUE: 'GCI1101', intituleUE: 'MECANIQUE DES STRUCTURES', credits: 5, ecus: ['Résistance des matériaux', 'Statique des structures'] },
-      { codeUE: 'GCI1102', intituleUE: 'MATHEMATIQUES APPLIQUEES AU GENIE CIVIL', credits: 5, ecus: ['Analyse numérique', 'Equations différentielles'] },
-      { codeUE: 'GCI1103', intituleUE: 'MATERIAUX DE CONSTRUCTION', credits: 4, ecus: ['Béton et acier', 'Matériaux locaux'] },
-      { codeUE: 'GCI1104', intituleUE: 'TOPOGRAPHIE ET CARTOGRAPHIE', credits: 4, ecus: ['Topographie générale', 'Cartographie numérique'] },
-      { codeUE: 'GCI1105', intituleUE: 'HYDRAULIQUE GENERALE', credits: 4, ecus: ['Hydraulique en charge', 'Hydraulique à surface libre'] },
-      { codeUE: 'GCI1106', intituleUE: 'DESSIN TECHNIQUE ET DAO', credits: 3, ecus: ['Dessin technique', 'DAO assisté par ordinateur'] },
-      { codeUE: 'GCI1107', intituleUE: 'COMMUNICATION TECHNIQUE', credits: 2, ecus: ['Rédaction technique', 'Expression orale professionnelle'] },
+      { codeUE: 'GCI1101', intituleUE: 'MECANIQUE DES STRUCTURES',                        credits: 5, ecus: ['Résistance des matériaux', 'Statique des structures'] },
+      { codeUE: 'GCI1102', intituleUE: 'MATHEMATIQUES APPLIQUEES AU GENIE CIVIL',         credits: 5, ecus: ['Analyse numérique', 'Equations différentielles'] },
+      { codeUE: 'GCI1103', intituleUE: 'MATERIAUX DE CONSTRUCTION',                       credits: 4, ecus: ['Béton et acier', 'Matériaux locaux'] },
+      { codeUE: 'GCI1104', intituleUE: 'TOPOGRAPHIE ET CARTOGRAPHIE',                     credits: 4, ecus: ['Topographie générale', 'Cartographie numérique'] },
+      { codeUE: 'GCI1105', intituleUE: 'HYDRAULIQUE GENERALE',                            credits: 4, ecus: ['Hydraulique en charge', 'Hydraulique à surface libre'] },
+      { codeUE: 'GCI1106', intituleUE: 'DESSIN TECHNIQUE ET DAO',                         credits: 3, ecus: ['Dessin technique', 'DAO assisté par ordinateur'] },
+      { codeUE: 'GCI1107', intituleUE: 'COMMUNICATION TECHNIQUE',                         credits: 2, ecus: ['Rédaction technique', 'Expression orale professionnelle'] },
     ],
     FSS: [
-      { codeUE: 'BIO1101', intituleUE: 'BIOLOGIE CELLULAIRE ET MOLECULAIRE', credits: 5, ecus: ['Biologie cellulaire', 'Biologie moléculaire'] },
-      { codeUE: 'BIO1102', intituleUE: 'ANATOMIE HUMAINE FONDAMENTALE', credits: 5, ecus: ['Anatomie descriptive', 'Anatomie topographique'] },
-      { codeUE: 'BIO1103', intituleUE: 'BIOCHIMIE GENERALE', credits: 4, ecus: ['Biochimie structurale', 'Biochimie métabolique'] },
-      { codeUE: 'BIO1104', intituleUE: 'PHYSIOLOGIE HUMAINE', credits: 4, ecus: ['Physiologie cardio-vasculaire', 'Physiologie respiratoire'] },
-      { codeUE: 'BIO1105', intituleUE: 'MICROBIOLOGIE ET PARASITOLOGIE', credits: 4, ecus: ['Microbiologie générale', 'Parasitologie médicale'] },
-      { codeUE: 'BIO1106', intituleUE: 'SANTE PUBLIQUE ET EPIDEMIOLOGIE', credits: 3, ecus: ['Epidémiologie descriptive', 'Santé communautaire'] },
-      { codeUE: 'BIO1107', intituleUE: 'ETHIQUE ET DEONTOLOGIE MEDICALE', credits: 2, ecus: ['Ethique médicale', 'Droits des patients'] },
+      { codeUE: 'BIO1101', intituleUE: 'BIOLOGIE CELLULAIRE ET MOLECULAIRE',              credits: 5, ecus: ['Biologie cellulaire', 'Biologie moléculaire'] },
+      { codeUE: 'BIO1102', intituleUE: 'ANATOMIE HUMAINE FONDAMENTALE',                   credits: 5, ecus: ['Anatomie descriptive', 'Anatomie topographique'] },
+      { codeUE: 'BIO1103', intituleUE: 'BIOCHIMIE GENERALE',                              credits: 4, ecus: ['Biochimie structurale', 'Biochimie métabolique'] },
+      { codeUE: 'BIO1104', intituleUE: 'PHYSIOLOGIE HUMAINE',                             credits: 4, ecus: ['Physiologie cardio-vasculaire', 'Physiologie respiratoire'] },
+      { codeUE: 'BIO1105', intituleUE: 'MICROBIOLOGIE ET PARASITOLOGIE',                  credits: 4, ecus: ['Microbiologie générale', 'Parasitologie médicale'] },
+      { codeUE: 'BIO1106', intituleUE: 'SANTE PUBLIQUE ET EPIDEMIOLOGIE',                 credits: 3, ecus: ['Epidémiologie descriptive', 'Santé communautaire'] },
+      { codeUE: 'BIO1107', intituleUE: 'ETHIQUE ET DEONTOLOGIE MEDICALE',                 credits: 2, ecus: ['Ethique médicale', 'Droits des patients'] },
     ]
   };
 
@@ -116,6 +114,7 @@ const getConfigInstitution = (institution) => {
       mention: 'Informatique',
       domaine: 'Sciences et Technologies',
       grade: 'Licence',
+      specialiteDefaut: 'Systèmes Embarqués et Internet des Objets',
       couleurPrimaire: '#1a5276',
       couleurTableauHeader: '#2c3e50',
       refFormat: (annee) => `N° ____ -${annee}/UAC/IFRI/SG/SSE/DS`,
@@ -129,6 +128,7 @@ const getConfigInstitution = (institution) => {
       mention: 'Génie Civil',
       domaine: "Sciences de l'Ingénieur",
       grade: 'Licence Professionnelle',
+      specialiteDefaut: 'Génie Civil et Construction',
       couleurPrimaire: '#922b21',
       couleurTableauHeader: '#7b241c',
       refFormat: (annee) => `N° ____ -${annee}/UAC/EPAC/SG/SCO`,
@@ -142,6 +142,7 @@ const getConfigInstitution = (institution) => {
       mention: 'Sciences de la Santé',
       domaine: 'Sciences Biomédicales',
       grade: 'Licence en Sciences de la Santé',
+      specialiteDefaut: 'Santé Publique',
       couleurPrimaire: '#1e8449',
       couleurTableauHeader: '#196f3d',
       refFormat: (annee) => `N° ____ -${annee}/UAC/FSS/DIR/SCO`,
@@ -157,12 +158,10 @@ const getConfigInstitution = (institution) => {
 const buildHTML = (config, etudiant, demande, ues, institution, reference, qrDataUrl, logoDataUrl) => {
   const annee = new Date().getFullYear();
   const anneeAcademique = `${annee - 1}-${annee}`;
+  const sexe = Math.random() > 0.5 ? 'Masculin' : 'Féminin'; // ✅ aléatoire
 
-  // ✅ Date = jour de génération du PDF
   const dateDoc = new Date().toLocaleDateString('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
+    day: '2-digit', month: '2-digit', year: 'numeric'
   });
 
   const uacLogoPath = path.join(__dirname, '..', 'assets', 'logos', 'UAC.png');
@@ -173,7 +172,7 @@ const buildHTML = (config, etudiant, demande, ues, institution, reference, qrDat
     : `<div style="width:90px;height:90px;border:1px solid #333;"></div>`;
 
   const ifriLogoHtml = logoDataUrl
-    ? `<img src="${logoDataUrl}" alt="IFRI" style="width:120px;height:70px;object-fit:contain;" />`
+    ? `<img src="${logoDataUrl}" alt="${config.sigle}" style="width:120px;height:70px;object-fit:contain;" />`
     : `<div style="width:120px;height:70px;"></div>`;
 
   const uacLogoHtml = uacLogo
@@ -204,7 +203,7 @@ const buildHTML = (config, etudiant, demande, ues, institution, reference, qrDat
 
     ue.ecus.forEach((ecu, idx) => {
       const noteEcu = noteAleatoire();
-      const codeEcu = `${idx + 1}${ue.codeUE}`; // ex: 1MTH1121
+      const codeEcu = `${idx + 1}${ue.codeUE}`;
       html += `
         <tr class="ecu-row">
           <td class="code">${codeEcu}</td>
@@ -222,17 +221,11 @@ const buildHTML = (config, etudiant, demande, ues, institution, reference, qrDat
 
   const daStampPath = path.join(__dirname, '..', 'assets', 'stamps', 'DA.png');
   const daStamp = fs.existsSync(daStampPath) ? fileToDataUrl(daStampPath) : null;
-
-  const daStampHtml = daStamp
-    ? `<img src="${daStamp}" class="stamp-img da-stamp" />`
-    : '';
+  const daStampHtml = daStamp ? `<img src="${daStamp}" class="stamp-img da-stamp" />` : '';
 
   const dirStampPath = path.join(__dirname, '..', 'assets', 'stamps', 'DIR.png');
   const dirStamp = fs.existsSync(dirStampPath) ? fileToDataUrl(dirStampPath) : null;
-
-  const dirStampHtml = dirStamp
-    ? `<img src="${dirStamp}" class="stamp-img dir-stamp" />`
-    : '';
+  const dirStampHtml = dirStamp ? `<img src="${dirStamp}" class="stamp-img dir-stamp" />` : '';
 
   return `
 <!DOCTYPE html>
@@ -272,13 +265,11 @@ const buildHTML = (config, etudiant, demande, ues, institution, reference, qrDat
     font-size: 13px;
     margin-top: 14px;
   }
-
   table.notes th, table.notes td {
     border: 2px solid #333;
     padding: 6px 8px;
     vertical-align: top;
   }
-
   table.notes th {
     text-align: center;
     font-weight: bold;
@@ -295,128 +286,68 @@ const buildHTML = (config, etudiant, demande, ues, institution, reference, qrDat
   tr.ue-row td.intitule { font-weight: bold; text-transform: uppercase; }
   tr.ecu-row td { border-top: 0; }
   tr.ecu-row td.intitule { font-style: italic; }
-  tr.ecu-row td.code { color: #222; }
 
-  .resultat small {
-    display: block;
-    margin-top: 4px;
-    font-weight: normal;
-  }
+  .resultat small { display: block; margin-top: 4px; font-weight: normal; }
 
   .footer-table { margin-top:0; border-top:0; }
   .footer-table td { font-weight:bold; }
 
-  /* ====== BAS DE PAGE (comme le modèle) ====== */
-  .bas {
-    margin-top: 10px;
-    font-family: "Courier New", monospace;
-  }
+  .bas { margin-top: 10px; font-family: "Courier New", monospace; }
+  .legende { font-size: 10px; line-height: 1.45; }
+  .date-lieu { margin-top: 12px; text-align: right; font-size: 12px; font-style: italic; }
 
-  .legende {
-    font-size: 10px;
-    line-height: 1.45;
-  }
+  .signatures { margin-top: 18px; display: flex; justify-content: space-between; gap: 30px; }
+  .sig-col { width: 48%; }
+  .sig-titre { font-family: Arial, sans-serif; font-weight: bold; font-size: 18px; }
+  .sig-sous { margin-top: 6px; font-size: 12px; font-style: italic; }
+  .sig-zone { margin-top: 10px; height: 130px; position: relative; }
 
-  .date-lieu {
-    margin-top: 12px;
-    text-align: right;
-    font-size: 12px;
-    font-style: italic;
-  }
-
-  .signatures {
-    margin-top: 18px;
-    display: flex;
-    justify-content: space-between;
-    gap: 30px;
-  }
-
-  .sig-col {
-    width: 48%;
-  }
-
-  .sig-titre {
-    font-family: Arial, sans-serif;
-    font-weight: bold;
-    font-size: 18px;
-  }
-
-  .sig-sous {
-    margin-top: 6px;
-    font-size: 12px;
-    font-style: italic;
-  }
-
- .sig-zone {
-    margin-top: 10px;
-    height: 130px;
-    position: relative;
- }
-
-    .stamp-img {
-        position: absolute;
-        width: 180px;
-        opacity: 0.35;
-    }
-
-    .da-stamp {
-        left: 80px;
-        top: -10px;
-        transform: rotate(-15deg);
-    }
-
-    .dir-stamp {
-        right: 80px;
-        top: -10px;
-        transform: rotate(15deg);
-    }
+  .stamp-img { position: absolute; width: 180px; opacity: 0.35; }
+  .da-stamp  { left: 80px;  top: -10px; transform: rotate(-15deg); } /* ✅ DA tourne à gauche */
+  .dir-stamp { right: 80px; top: -10px; transform: rotate(12deg);  } /* ✅ DIR tourne à droite */
 
   .name-line {
-    margin-top: 12px;
-    font-family: Arial, sans-serif;
-    font-weight: bold;
-    font-size: 18px;
-    display: inline-block;
-    border-bottom: 2px solid #000;
-    padding-bottom: 2px;
+    margin-top: 12px; font-family: Arial, sans-serif; font-weight: bold;
+    font-size: 18px; display: inline-block;
+    border-bottom: 2px solid #000; padding-bottom: 2px;
   }
-    body { page-break-after: avoid; }
-    .signatures { page-break-inside: avoid; }
-    table { page-break-inside: auto; }
-    tr { page-break-inside: avoid; page-break-after: auto; }
+
+  body { page-break-after: avoid; }
+  .signatures { page-break-inside: avoid; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; page-break-after: auto; }
 </style>
 </head>
-
 <body>
 
+<!-- HEADER — ✅ dynamique selon institution -->
 <div class="header">
   ${uacLogoHtml}
   <div class="header-center">
-    <h1>UNIVERSITE D'ABOMEY-CALAVI</h1>
-    <h2>INSTITUT DE FORMATION ET DE RECHERCHE EN INFORMATIQUE</h2>
-    <p>BP: 526 COTONOU - TEL: (+229) 55-028-070</p>
-    <p><i>Site web: https://www.ifri-uac.bj - Courriel: contact@ifri.uac.bj</i></p>
+    <h1>${config.nomComplet}</h1>
+    <h2>${config.sousNom}</h2>
+    <p>${config.adresse}</p>
+    <p><i>${config.site}</i></p>
   </div>
   ${ifriLogoHtml}
 </div>
 
 <div class="numero">${reference}</div>
 
+<!-- INFOS ÉTUDIANT — ✅ dynamique selon institution -->
 <div class="infos">
   <div>${qrHtml}</div>
-
   <div class="infos-text">
     <div>Année académique : ${anneeAcademique}</div>
-    <div>Domaine : Sciences et Technologies</div>
-    <div>Grade : Licence</div>
-    <div>Mention : Informatique</div>
-    <div>Spécialité : ${etudiant.filiere || 'Systèmes Embarqués et Internet des Objets'}</div>
-    <div>Nom et Prénoms : <b>${etudiant.nom} ${etudiant.prenom}</b></div>
-    <div>Sexe : Masculin</div>
-    <div>Date et lieu de naissance : 01/01/2000 à Porto-Novo (Bénin)</div>
+    <div>Domaine          : ${config.domaine}</div>
+    <div>Grade            : ${config.grade}</div>
+    <div>Mention          : ${config.mention}</div>
+    <div>Spécialité       : ${etudiant.filiere || config.specialiteDefaut}</div>
+    <div>Nom et Prénoms   : <b>${etudiant.nom} ${etudiant.prenom}</b></div>
+    <div>Sexe             : ${sexe}</div>
+    <div>Date et lieu de naissance : 01/01/2000 à Cotonou (Bénin)</div>
     <div>Numéro matricule : ${etudiant.numeroEtudiant}</div>
   </div>
-
   <div class="photo"></div>
 </div>
 
@@ -424,6 +355,7 @@ const buildHTML = (config, etudiant, demande, ues, institution, reference, qrDat
   Relevé de notes du ${demande.semestre === 1 ? 'Premier' : 'Deuxième'} semestre
 </div>
 
+<!-- TABLEAU NOTES -->
 <table class="notes">
   <thead>
     <tr>
@@ -435,11 +367,10 @@ const buildHTML = (config, etudiant, demande, ues, institution, reference, qrDat
       <th>Résultat</th>
     </tr>
   </thead>
-  <tbody>
-    ${lignesTableau}
-  </tbody>
+  <tbody>${lignesTableau}</tbody>
 </table>
 
+<!-- FOOTER NOTES -->
 <table class="notes footer-table">
   <tr>
     <td style="text-align:left;">
@@ -449,16 +380,17 @@ const buildHTML = (config, etudiant, demande, ues, institution, reference, qrDat
       Moyenne semestrielle pondérée : ${moyennePonderee}/20
     </td>
     <td style="text-align:right;">
-      Decision du jury : ${decision}
+      Décision du jury : ${decision}
     </td>
   </tr>
 </table>
 
+<!-- BAS DE PAGE -->
 <div class="bas">
   <div class="legende">
-    [UE = Unité d'Enseignement] et [ECU = Élément Constitutif d'Unité d'Enseignement] [Moyenne semestrielle pondérée = Somme(moyenne UE * crédit UE)/Somme crédits UE]<br>
-    [Crédits capitalisés - Semestre ${demande.semestre || 1}]<br>
-    ]16,20]=>A+ / ]16=>A / [15,16[=>A- / ]14,15[=>B+ / ]14=>B / [13,14[=>B- / ]12,13[=>C+ / ]12=>C / [11,12[=>C- / [10,11[=>D+ / [05,10[=>D / ]00,05[=>E / 00=>N/A<br>
+    [UE = Unité d'Enseignement] et [ECU = Élément Constitutif d'Unité d'Enseignement] (Moyenne semestrielle pondérée = Somme(moyenne UE * crédit UE)/Somme crédits UE)<br>
+    (Crédits capitalisés - Semestre ${demande.semestre || 1})<br>
+    ]16,20]=>A+ / 16=>A / [15,16[=>A- / ]14=>B+ / [13,14[=>B- / ]12,13[=>C+ / 12=>C / [11,12[=>C- / [10,11[=>D+ / [05,10[=>D / ]00,05[=>E / 00=>N/A<br>
     Si nombre de Zéro &gt; 5 =&gt; N (Abandon)
   </div>
 
@@ -468,18 +400,13 @@ const buildHTML = (config, etudiant, demande, ues, institution, reference, qrDat
     <div class="sig-col">
       <div class="sig-titre">Le Directeur-Adjoint,</div>
       <div class="sig-sous">Chargé des affaires académiques</div>
-        <div class="sig-zone">
-            ${daStampHtml}
-        </div>
+      <div class="sig-zone">${daStampHtml}</div>
       <div class="name-line">${institution.directeurAdjointNom || 'Professeur Gaston EDAH'}</div>
     </div>
-
     <div class="sig-col" style="text-align:right;">
       <div class="sig-titre" style="text-align:center;">Le Directeur,</div>
       <div class="sig-sous" style="text-align:center;">&nbsp;</div>
-      <div class="sig-zone">
-            ${dirStampHtml}
-      </div>
+      <div class="sig-zone">${dirStampHtml}</div>
       <div class="name-line" style="float:right;">
         ${institution.directeurNom || 'Professeur Eugène C. EZIN'}
       </div>
@@ -488,8 +415,7 @@ const buildHTML = (config, etudiant, demande, ues, institution, reference, qrDat
 </div>
 
 </body>
-</html>
-`;
+</html>`;
 };
 
 // ═══════════════════════════════════════
@@ -500,20 +426,20 @@ exports.generateDocument = async (demande, etudiant, notes, reference, instituti
   const config = getConfigInstitution(institution);
   const ues = genererUEs(notes, config.sigle);
 
+  // ✅ QR en base64 depuis qrPayload
   const qrDataUrl = qrPayload
     ? await QRCode.toDataURL(qrPayload, { width: 200, margin: 1 })
     : null;
 
   const logoDataUrl = getLogoDataUrl(institution);
-
   const html = buildHTML(config, etudiant, demande, ues, institution, reference, qrDataUrl, logoDataUrl);
 
   const browser = await puppeteer.launch({
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
   const page = await browser.newPage();
-  await page.setContent(html, { waitUntil: 'networkidle0' });
-  await page.pdf({ path: outputPath, format: 'A4', printBackground: true });
+  await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.pdf({ path: outputPath, format: 'A4', printBackground: true, timeout: 60000 });
   await browser.close();
 
   return outputPath;

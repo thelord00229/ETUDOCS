@@ -24,7 +24,8 @@ exports.telecharger = asyncHandler(async (req, res) => {
     data: { downloadCount: { increment: 1 } }
   });
 
-  res.download(path.resolve(doc.urlPdf));
+  const safePath = doc.urlPdf.replace(/\\/g, '/');
+  res.download(path.resolve(safePath));
 });
 
 exports.verifier = asyncHandler(async (req, res) => {
