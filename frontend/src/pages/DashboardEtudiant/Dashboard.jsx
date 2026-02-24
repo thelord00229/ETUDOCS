@@ -143,7 +143,7 @@ export default function Dashboard() {
                         <div>
                             <h1>Bonjour Koffi, que pouvons-nous faire pour vous aujourd'hui ?</h1>
                             <p>Bienvenue sur votre espace personnel EtuDocs</p>
-                            <a href="/dashboard/nouvelle" className="btn-new-demand">
+                            <a href="/dashboardEtu/nouvelle" className="btn-new-demand">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                                      stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -186,7 +186,7 @@ export default function Dashboard() {
                     <div className="card-section">
                         <div className="card-section__header">
                             <span className="card-section__title">Demandes récentes</span>
-                            <a href="/dashboard/demandes" className="card-section__link">Voir tout</a>
+                            <a href="/dashboardEtu/demandes" className="card-section__link">Voir tout</a>
                         </div>
                         {DEMANDES.map((d, i) => (
                             <DemandRow key={i} {...d} onDetails={() => alert(`Détails : ${d.title}`)} />
@@ -205,7 +205,7 @@ export default function Dashboard() {
                             </div>
                             <div className="promo-card__title" style={{ color: "#1a2744" }}>Besoin d'un document ?</div>
                             <div className="promo-card__sub">Soumettez une nouvelle demande en quelques clics</div>
-                            <a href="/dashboard/nouvelle" className="btn-outline-sm">Faire une demande</a>
+                            <a href="/dashboardEtu/nouvelle" className="btn-outline-sm">Faire une demande</a>
                         </div>
 
                         <div className="promo-card">
@@ -218,7 +218,7 @@ export default function Dashboard() {
                             </div>
                             <div className="promo-card__title" style={{ color: "#16a34a" }}>Documents prêts</div>
                             <div className="promo-card__sub">5 documents sont disponibles au téléchargement</div>
-                            <a href="/dashboard/documents" className="btn-outline-sm">Télécharger</a>
+                            <a href="/dashboardEtu/documents" className="btn-outline-sm">Télécharger</a>
                         </div>
                     </div>
 
