@@ -135,6 +135,12 @@ const css = `
     transform: translateY(-1px);
     box-shadow: 0 6px 20px rgba(26,39,68,0.25);
   }
+  .btn-submit:disabled {
+    opacity: .75;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
 
   /* FOOTER CARD */
   .card__footer {
@@ -157,110 +163,179 @@ const css = `
 `;
 
 const TABS = ["Étudiant", "Agent", "Admin"];
-
 const INSTITUTIONS = ["IFRI", "EPAC", "FSS"];
 
 export default function Login() {
-    const [active, setActive] = useState(0);
-    const [institution, setInstitution] = useState("IFRI");
-    const [showPass, setShowPass] = useState(false);
+  const [active, setActive] = useState(0);
+  const [institution, setInstitution] = useState("IFRI");
+  const [showPass, setShowPass] = useState(false);
 
-    const isEtudiant = active === 0;
-    const isAgent    = active === 1;
-    const isAdmin    = active === 2;
+  // ✅ champs contrôlés (login backend = email + password)
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-    return (
-        <div className="page">
-            <style>{css}</style>
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-            {/* Logo */}
-            <a href="/" className="brand">
-                <div className="brand__icon">
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
-                         stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                    </svg>
-                </div>
-                EtuDocs
-            </a>
+  const isEtudiant = active === 0;
+  const isAgent = active === 1;
+  const isAdmin = active === 2;
 
+  const API_URL = "http://localhost:5000";
 
-            <div className="card">
-                <h1 className="card__title">Connexion</h1>
-                <p className="card__sub">Accédez à votre espace personnel</p>
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
 
-                {/* Tabs */}
-                <div className="tabs">
-                    {TABS.map((t, i) => (
-                        <button
-                            key={t}
-                            className={`tab${active === i ? " active" : ""}`}
-                            onClick={() => setActive(i)}
-                        >
-                            {t}
-                        </button>
-                    ))}
-                </div>
+    if (!email || !password) {
+      setError("Veuillez renseigner l'email et le mot de passe.");
+      return;
+    }
 
-                {/* Form — change selon l'onglet */}
-                <div className="form" key={active}>
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-                    {/* Institution — visible pour Étudiant et Agent */}
-                    {(isEtudiant || isAgent) && (
-                        <div className="field">
-                            <label>Institution</label>
-                            <div className="select-wrap">
-                                <select value={institution} onChange={e => setInstitution(e.target.value)}>
-                                    {INSTITUTIONS.map(i => <option key={i}>{i}</option>)}
-                                </select>
-                            </div>
-                        </div>
-                    )}
+      const data = await res.json().catch(() => ({}));
 
+      if (!res.ok) {
+        setError(data?.message || "Connexion impossible");
+        return;
+      }
 
-                    {isEtudiant && (
-                        <div className="field">
-                            <label>Numéro étudiant</label>
-                            <input type="text" placeholder="Ex: 20220001" />
-                        </div>
-                    )}
+      // ✅ stockage
+      localStorage.setItem("etudocs_token", data.token);
+      localStorage.setItem("etudocs_user", JSON.stringify(data.user));
 
-                    {/* Email — Agent et Admin */}
-                    {(isAgent || isAdmin) && (
-                        <div className="field">
-                            <label>Email</label>
-                            <input type="email" placeholder="votre.email@example.com" />
-                        </div>
-                    )}
+      // ✅ redirection simple par rôle (à adapter à vos routes)
+      const role = data.user?.role;
+      if (role === "ETUDIANT") window.location.href = "/dashboardEtu";
+      else if (role === "SUPER_ADMIN") window.location.href = "/dashboard/admin";
+      else window.location.href = "/dashboard/agent";
+    } catch (err) {
+      setError("Erreur réseau (backend éteint ?)");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                    {/* Mot de passe — tous */}
-                    <div className="field">
-                        <div className="field__row">
-                            <label>Mot de passe</label>
-                            <a href="#" className="forgot">Mot de passe oublié ?</a>
-                        </div>
-                        <input
-                            type={showPass ? "text" : "password"}
-                            defaultValue="12345678"
-                            placeholder="••••••••"
-                        />
-                    </div>
+  return (
+    <div className="page">
+      <style>{css}</style>
 
-                    <button className="btn-submit">Se connecter</button>
-                </div>
-
-                {/* Footer card — uniquement Étudiant */}
-                {isEtudiant && (
-                    <div className="card__footer">
-                        Vous n'avez pas encore de compte ? <a href="/register">Créer un compte</a>
-                    </div>
-                )}
-            </div>
-
-            <a href="/" className="back">← Retour à l'accueil</a>
+      {/* Logo */}
+      <a href="/" className="brand">
+        <div className="brand__icon">
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+          </svg>
         </div>
-    );
+        EtuDocs
+      </a>
+
+      <div className="card">
+        <h1 className="card__title">Connexion</h1>
+        <p className="card__sub">Accédez à votre espace personnel</p>
+
+        {/* Tabs */}
+        <div className="tabs">
+          {TABS.map((t, i) => (
+            <button
+              key={t}
+              type="button"
+              className={`tab${active === i ? " active" : ""}`}
+              onClick={() => setActive(i)}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {/* ✅ Form submit */}
+        <form className="form" key={active} onSubmit={handleLogin}>
+          {/* Institution — visible pour Étudiant et Agent (garde l'UI) */}
+          {(isEtudiant || isAgent) && (
+            <div className="field">
+              <label>Institution</label>
+              <div className="select-wrap">
+                <select
+                  value={institution}
+                  onChange={(e) => setInstitution(e.target.value)}
+                >
+                  {INSTITUTIONS.map((i) => (
+                    <option key={i}>{i}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* ✅ Email pour tous (car backend login = email) */}
+          <div className="field">
+            <label>Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={
+                isEtudiant ? "etudiant@test.com" : "votre.email@example.com"
+              }
+            />
+          </div>
+
+          {/* Mot de passe — tous */}
+          <div className="field">
+            <div className="field__row">
+              <label>Mot de passe</label>
+              <a href="#" className="forgot">
+                Mot de passe oublié ?
+              </a>
+            </div>
+            <input
+              type={showPass ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+          </div>
+
+          {error && (
+            <p style={{ color: "crimson", fontSize: "0.9rem" }}>{error}</p>
+          )}
+
+          <button className="btn-submit" disabled={loading}>
+            {loading ? "Connexion..." : "Se connecter"}
+          </button>
+        </form>
+
+        {/* Footer card — uniquement Étudiant */}
+        {isEtudiant && (
+          <div className="card__footer">
+            Vous n'avez pas encore de compte ?{" "}
+            <a href="/register">Créer un compte</a>
+          </div>
+        )}
+      </div>
+
+      <a href="/" className="back">
+        ← Retour à l'accueil
+      </a>
+    </div>
+  );
 }
