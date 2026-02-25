@@ -1,6 +1,9 @@
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
 import Stepper from "../../components/DashboardEtudiant/Stepper.jsx";
+import { submitDemande } from "../../services/api";
+
 
 const css = `
   /* PAGE HEADER */
@@ -181,10 +184,14 @@ export default function NouvelleDemande() {
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState(null);
 
+  const [loading, setLoading] = useState(false);
+
   const [cipFile, setCipFile] = useState(null);
   const [qttFile, setQttFile] = useState(null);
   const [acteFile, setActeFile] = useState(null);
   const [justifFile, setJustifFile] = useState(null);
+  const navigate = useNavigate();
+  const [submitting, setSubmitting] = useState(false);
 
   const cipInputRef = useRef(null);
   const qttInputRef = useRef(null);
@@ -223,6 +230,45 @@ export default function NouvelleDemande() {
     !!cipFile &&
     !!qttFile &&
     (!needFourPieces || (!!acteFile && !!justifFile));
+  const handleSubmit = async () => {
+  try {
+    setSubmitting(true);
+
+    const typeDocument =
+      selectedDoc?.id === 1
+        ? "ATTESTATION_INSCRIPTION"
+        : selectedDoc?.id === 2
+        ? "RELEVE_NOTES"
+        : null;
+
+    if (!typeDocument) {
+      alert("Type de document invalide");
+      return;
+    }
+
+    const payload = {
+      typeDocument,
+      semestre: isReleve ? semestreChoix : undefined,
+      CIP: cipFile,
+      QUITTANCE: qttFile,
+      ACTE_NAISSANCE: acteFile,
+      JUSTIFICATIF_INSCRIPTION: justifFile,
+    };
+
+    const data = await submitDemande(payload);
+
+        console.log("DEMANDE CREATE =>", data);
+
+        alert("Demande soumise avec succès !");
+        navigate("/dashboardEtu/mes-demandes");
+
+      } catch (err) {
+        console.error(err);
+        alert(err.message || "Erreur lors de la soumission");
+      } finally {
+        setSubmitting(false);
+      }
+    };
 
   return (
     <DashboardLayout>
@@ -722,10 +768,36 @@ export default function NouvelleDemande() {
             </button>
             <button
               className="btn-submit-green"
-              onClick={() => alert("Demande soumise !")}
+              disabled={loading}
+              onClick={async () => {
+                try {
+                  setLoading(true);
+
+                  const payload = {
+                    typeDocument: selectedDoc?.id === 1 ? "ATTESTATION_INSCRIPTION" : "RELEVE_NOTES",
+                    semestre:
+                      selectedDoc?.id === 2
+                        ? (semestreChoix === "S1" ? 1 : semestreChoix === "S2" ? 2 : null)
+                        : null,
+                    CIP: cipFile,
+                    QUITTANCE: qttFile,
+                    ACTE_NAISSANCE: acteFile,
+                    JUSTIFICATIF_INSCRIPTION: justifFile,
+                  };
+
+                  await submitDemande(payload);
+
+                  // ✅ REDIRECTION ICI
+                  navigate("/dashboardEtu/demandes");
+                } catch (e) {
+                  alert(e?.message || "Erreur lors de la soumission");
+                } finally {
+                  setLoading(false);
+                }
+              }}
               type="button"
             >
-              <CheckCircle /> Soumettre ma demande
+              <CheckCircle /> {loading ? "Soumission..." : "Soumettre ma demande"}
             </button>
           </div>
         </>

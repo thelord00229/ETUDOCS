@@ -170,7 +170,7 @@ export default function Login() {
   const [institution, setInstitution] = useState("IFRI");
   const [showPass, setShowPass] = useState(false);
 
-  // ✅ champs contrôlés (login backend = email + password)
+  // champs contrôlés
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -181,7 +181,45 @@ export default function Login() {
   const isAgent = active === 1;
   const isAdmin = active === 2;
 
-  const API_URL = "http://localhost:5000";
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+  const routeForUser = (user) => {
+    const role = user?.role;
+
+    if (role === "ETUDIANT") return "/dashboardEtu";
+    if (role === "SUPER_ADMIN") return "/superadmin";
+    if (role === "SECRETAIRE_ADJOINT") return "/dashboardsa";
+    if (role === "SECRETAIRE_GENERAL") return "/dashboardsg";
+
+    if (role === "CHEF_DIVISION") {
+      const service = user?.service; // "EXAMENS" ou "SCOLARITE"
+      if (service === "SCOLARITE") return "/dashboardsc";
+      return "/dashboardce"; // EXAMENS par défaut
+    }
+
+    if (role === "DIRECTEUR_ADJOINT") return "/dashboardda";
+    if (role === "DIRECTEUR") return "/dashboarddi";
+
+    // fallback
+    return "/dashboardsa";
+  };
+
+  const isRoleAllowedForTab = (role) => {
+    if (isEtudiant) return role === "ETUDIANT";
+    if (isAdmin) return role === "SUPER_ADMIN";
+
+    // onglet "Agent" = tous les rôles non-étudiants non-superadmin
+    if (isAgent)
+      return [
+        "SECRETAIRE_ADJOINT",
+        "SECRETAIRE_GENERAL",
+        "CHEF_DIVISION",
+        "DIRECTEUR_ADJOINT",
+        "DIRECTEUR",
+      ].includes(role);
+
+    return true;
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -207,15 +245,28 @@ export default function Login() {
         return;
       }
 
-      // ✅ stockage
+      // ✅ IMPORTANT: toujours nettoyer avant d’écrire
+      localStorage.removeItem("etudocs_token");
+      localStorage.removeItem("etudocs_user");
+
       localStorage.setItem("etudocs_token", data.token);
       localStorage.setItem("etudocs_user", JSON.stringify(data.user));
 
-      // ✅ redirection simple par rôle (à adapter à vos routes)
+      // debug utile
+      console.log("[LOGIN OK]", { role: data.user?.role, user: data.user });
+
       const role = data.user?.role;
-      if (role === "ETUDIANT") window.location.href = "/dashboardEtu";
-      else if (role === "SUPER_ADMIN") window.location.href = "/superadmin";
-      else window.location.href = "/dashboard/agent";
+
+      // ✅ bloque si onglet choisi != rôle réel
+      if (!isRoleAllowedForTab(role)) {
+        setError(
+          `Vous êtes connecté en tant que ${role}, mais vous êtes sur le mauvais onglet.`
+        );
+        return;
+      }
+
+      const target = routeForUser(data.user);
+      window.location.href = target;
     } catch (err) {
       setError("Erreur réseau (backend éteint ?)");
     } finally {
@@ -260,16 +311,18 @@ export default function Login() {
               key={t}
               type="button"
               className={`tab${active === i ? " active" : ""}`}
-              onClick={() => setActive(i)}
+              onClick={() => {
+                setActive(i);
+                setError("");
+              }}
             >
               {t}
             </button>
           ))}
         </div>
 
-        {/* ✅ Form submit */}
         <form className="form" key={active} onSubmit={handleLogin}>
-          {/* Institution — visible pour Étudiant et Agent (garde l'UI) */}
+          {/* Institution — visible Étudiant + Agent (UI only) */}
           {(isEtudiant || isAgent) && (
             <div className="field">
               <label>Institution</label>
@@ -277,6 +330,7 @@ export default function Login() {
                 <select
                   value={institution}
                   onChange={(e) => setInstitution(e.target.value)}
+                  disabled={loading}
                 >
                   {INSTITUTIONS.map((i) => (
                     <option key={i}>{i}</option>
@@ -286,7 +340,6 @@ export default function Login() {
             </div>
           )}
 
-          {/* ✅ Email pour tous (car backend login = email) */}
           <div className="field">
             <label>Email</label>
             <input
@@ -296,10 +349,10 @@ export default function Login() {
               placeholder={
                 isEtudiant ? "etudiant@test.com" : "votre.email@example.com"
               }
+              disabled={loading}
             />
           </div>
 
-          {/* Mot de passe — tous */}
           <div className="field">
             <div className="field__row">
               <label>Mot de passe</label>
@@ -312,6 +365,7 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              disabled={loading}
             />
           </div>
 
@@ -324,7 +378,6 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Footer card — uniquement Étudiant */}
         {isEtudiant && (
           <div className="card__footer">
             Vous n'avez pas encore de compte ?{" "}

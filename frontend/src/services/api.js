@@ -31,7 +31,6 @@ const apiRequest = async (endpoint, options = {}) => {
 
   const contentType = res.headers.get("content-type") || "";
   const isJson = contentType.includes("application/json");
-
   const data = isJson ? await res.json().catch(() => ({})) : null;
 
   if (!res.ok) {
@@ -53,10 +52,24 @@ export const getMe = async () => apiRequest("/api/auth/me");
 // ✅ Liste des demandes
 export const getDemandes = async () => apiRequest("/api/demandes");
 
-// ✅ Détail d’une demande
+// ✅ Détail d'une demande
 export const getDemandeById = async (id) => apiRequest(`/api/demandes/${id}`);
 
-// ✅ Soumettre une demande (multipart: CIP + QUITTANCE)
+// ✅ Avancer dans le workflow (agents)
+// action : "TRANSMETTRE" | "DEMANDER_CORRECTION" | ...
+// commentaire : requis si DEMANDER_CORRECTION
+export const avancerDemande = async (id, action, commentaire = "") => {
+  const body = { action };
+  if (commentaire) body.commentaire = commentaire;
+
+  return apiRequest(`/api/demandes/${id}/avancer`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+};
+
+// ✅ Soumettre une demande (multipart)
 export const submitDemande = async ({
   typeDocument,
   semestre,
@@ -74,14 +87,12 @@ export const submitDemande = async ({
 
   if (CIP) form.append("CIP", CIP);
   if (QUITTANCE) form.append("QUITTANCE", QUITTANCE);
-
-  // ✅ nouveaux champs
   if (ACTE_NAISSANCE) form.append("ACTE_NAISSANCE", ACTE_NAISSANCE);
   if (JUSTIFICATIF_INSCRIPTION) form.append("JUSTIFICATIF_INSCRIPTION", JUSTIFICATIF_INSCRIPTION);
 
   const res = await fetch(`${API_URL}/api/demandes`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` }, // surtout pas Content-Type ici
+    headers: { Authorization: `Bearer ${token}` }, // pas de Content-Type ici
     body: form,
   });
 
@@ -99,7 +110,7 @@ export const submitDemande = async ({
    DOCUMENTS
 ================================ */
 
-// ✅ Option A : récupérer juste le Blob (si tu veux l’ouvrir dans une preview)
+// ✅ Option A : récupérer juste le Blob
 export const downloadDocumentBlob = async (reference) => {
   const token = getToken();
   if (!token) throw new Error("NO_TOKEN");
@@ -120,25 +131,55 @@ export const downloadDocumentBlob = async (reference) => {
     throw new Error(data?.message || "Erreur téléchargement");
   }
 
-  return await res.blob(); // PDF en blob
+  return await res.blob();
 };
 
-// ✅ Option B : télécharger DIRECTEMENT (ce que tu veux pour le dashboard)
+// ✅ Option B : télécharger DIRECTEMENT
 export const downloadDocument = async (reference, filename) => {
   const blob = await downloadDocumentBlob(reference);
 
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-
-  // nom du fichier
   a.download = filename || `${reference}.pdf`;
-
   document.body.appendChild(a);
   a.click();
   a.remove();
-
-  // cleanup
   window.URL.revokeObjectURL(url);
 };
 
+export const validerPiece = async (pieceId, statut, commentaire = "") => {
+  return apiRequest(`/api/demandes/pieces/${pieceId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ statut, commentaire }),
+  });
+};
+
+export const getChefDivisionStats = async () =>
+  apiRequest("/api/demandes/stats/chef-division");
+
+// ✅ Télécharger une pièce jointe (CIP/Quittance...) en blob
+export const downloadPieceBlob = async (pieceId) => {
+  const token = getToken();
+  if (!token) throw new Error("NO_TOKEN");
+
+  // ⚠️ Endpoint à adapter si ton backend a un autre chemin
+  const res = await fetch(`${API_URL}/api/demandes/pieces/${pieceId}/download`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (res.status === 401) {
+    clearSession();
+    throw new Error("UNAUTHORIZED");
+  }
+
+  if (!res.ok) {
+    const contentType = res.headers.get("content-type") || "";
+    const isJson = contentType.includes("application/json");
+    const data = isJson ? await res.json().catch(() => ({})) : {};
+    throw new Error(data?.message || "Erreur téléchargement pièce");
+  }
+
+  return await res.blob();
+};
