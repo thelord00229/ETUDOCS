@@ -68,9 +68,6 @@ const css = `
   .state-box { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:18px 20px; color:#475569; }
   .state-error { color:#dc2626; }
 
-  /* ═══════════════════════════════════════════════════
-     PAGE DÉTAIL
-  ═══════════════════════════════════════════════════ */
   .detail-back {
     display:inline-flex; align-items:center; gap:7px;
     background:none; border:none; cursor:pointer;
@@ -94,34 +91,7 @@ const css = `
   .dbadge--rejete     { background:#fee2e2; color:#991b1b; }
   .dbadge--attente    { background:#fffbeb; color:#92400e; border:1px solid #fde68a; }
 
-  .stepper-card {
-    background:#fff; border:1px solid #e2e8f0; border-radius:16px;
-    padding:28px 32px; margin-bottom:20px;
-  }
-  .stepper-head {
-    font-family:'Sora',sans-serif; font-weight:700; font-size:.95rem; color:#1a2744; margin-bottom:24px;
-  }
-  .stepper { display:flex; align-items:flex-start; justify-content:space-between; position:relative; }
-  .stepper::before {
-    content:''; position:absolute; top:17px; left:34px; right:34px;
-    height:2px; background:#e2e8f0; z-index:0;
-  }
-  .step { display:flex; flex-direction:column; align-items:center; gap:8px; flex:1; position:relative; z-index:1; }
-  .step-dot {
-    width:36px; height:36px; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    border:2px solid transparent; flex-shrink:0; background:#fff;
-  }
-  .step-dot--done   { background:#1a2744; border-color:#1a2744; }
-  .step-dot--active { background:#fff; border-color:#1a2744; box-shadow:0 0 0 4px rgba(26,39,68,.1); }
-  .step-dot--todo   { background:#fff; border-color:#cbd5e1; }
-  .step-lbl { font-size:.75rem; font-weight:500; color:#94a3b8; text-align:center; max-width:80px; line-height:1.35; }
-  .step-lbl--done   { color:#1a2744; font-weight:600; }
-  .step-lbl--active { color:#1a2744; font-weight:700; }
-  .step-sub { font-size:.7rem; color:#22c55e; font-weight:600; margin-top:2px; }
-
   .detail-body { display:grid; grid-template-columns:1fr 300px; gap:20px; align-items:start; }
-
   .pieces-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:24px 26px; }
   .pieces-head { font-family:'Sora',sans-serif; font-weight:700; font-size:.95rem; color:#1a2744; margin-bottom:16px; }
   .piece-row {
@@ -162,19 +132,11 @@ const css = `
   .btn-dl:disabled { opacity:.75; cursor:not-allowed; transform:none; }
   .btn-dl-count { font-size:.75rem; opacity:.8; font-weight:500; }
 
-  .reject-card { background:#fef2f2; border:1px solid #fecaca; border-radius:14px; padding:18px 20px; margin-bottom:4px; }
-  .reject-head { font-size:.82rem; font-weight:700; color:#991b1b; text-transform:uppercase; letter-spacing:.6px; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
-  .reject-text { font-size:.88rem; color:#7f1d1d; line-height:1.55; }
-
   @media (max-width:900px) {
     .detail-body { grid-template-columns:1fr; }
-    .stepper::before { display:none; }
   }
 `;
 
-/* ─────────────────────────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────────────────────────── */
 const FILTERS = ["Toutes", "En attente", "En traitement", "Disponible", "Rejetée"];
 
 const labelType = (t) => {
@@ -186,7 +148,7 @@ const labelType = (t) => {
 const labelStatut = (s) => {
   if (s === "DISPONIBLE") return "Disponible";
   if (s === "REJETEE" || s === "REJETE") return "Rejetée";
-  // tout le reste = en cours
+  if (s === "SOUMISE") return "En attente";
   return "En traitement";
 };
 
@@ -204,66 +166,17 @@ const dbadgeClass = (l) => {
   return "dbadge--traitement";
 };
 
-// ✅ IMPORTANT: pas de "fausse" référence. On affiche la référence du document si elle existe, sinon l'id demande.
-const uiRef = (_typeDocument, rawRef) => rawRef || "—";
+const uiRef = (rawRef) => rawRef || "—";
 
 const uiIntervenant = (type) => {
   if (type === "RELEVE_NOTES") return "Serge DOSSOU";
   return "Adéola BOSSOU";
 };
 
-/* ─────────────────────────────────────────────────────────────
-   STEPPER
-───────────────────────────────────────────────────────────── */
-const STEPS = [
-  { key: "soumise", label: "Soumise" },
-  { key: "sec_adj", label: "Reçue (Sec. Adj)" },
-  { key: "sec_gen", label: "Transmise (Sec. Gén)" },
-  { key: "traitement", label: "En traitement" },
-  { key: "sign_da", label: "Signature DA" },
-  { key: "sign_dir", label: "Signature DIR" },
-  { key: "disponible", label: "Disponible" },
-];
-
-const getSteps = (status) => {
-  const activeIdx =
-    {
-      "En traitement": 3,
-      Disponible: 6,
-      Rejetée: 3,
-      "En attente": 1,
-    }[status] ?? 3;
-
-  return STEPS.map((s, i) => ({
-    ...s,
-    state: i < activeIdx ? "done" : i === activeIdx ? "active" : "todo",
-  }));
-};
-
-/* ─────────────────────────────────────────────────────────────
-   ICÔNES
-───────────────────────────────────────────────────────────── */
 const IcoArrow = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="19" y1="12" x2="5" y2="12" />
     <polyline points="12 19 5 12 12 5" />
-  </svg>
-);
-const IcoCheck = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
-const IcoCheckGreen = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-    <polyline points="22 4 12 14.01 9 11.01" />
-  </svg>
-);
-const IcoFile = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <polyline points="14 2 14 8 20 8" />
   </svg>
 );
 const IcoDl = () => (
@@ -279,11 +192,16 @@ const IcoEye = () => (
     <circle cx="12" cy="12" r="3" />
   </svg>
 );
-const IcoAlert = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#991b1b" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" />
-    <line x1="12" y1="8" x2="12" y2="12" />
-    <line x1="12" y1="16" x2="12.01" y2="16" />
+const IcoFile = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+  </svg>
+);
+const IcoCheckGreen = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
   </svg>
 );
 
@@ -294,11 +212,12 @@ function DetailDemande({ demande, onBack }) {
   const title = labelType(demande.typeDocument);
   const status = labelStatut(demande.statut);
 
-  const reference = demande.document?.reference || null;
-  const ref = reference || demande.id;
+  // ✅ backend renvoie documents[] (tableau)
+  const doc0 = Array.isArray(demande.documents) ? demande.documents[0] : null;
+  const reference = doc0?.reference || null;
+  const downloadCount = typeof doc0?.downloadCount === "number" ? doc0.downloadCount : null;
 
-  const steps = getSteps(status);
-  const isReleve = demande.typeDocument === "RELEVE_NOTES";
+  const ref = reference || demande.id;
 
   const dateStr = demande.createdAt
     ? new Date(demande.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })
@@ -310,7 +229,6 @@ function DetailDemande({ demande, onBack }) {
 
   const pieces = Array.isArray(demande.pieces) ? demande.pieces : [];
 
-  // Télécharger
   const [dlLoading, setDlLoading] = useState(false);
   const [dlError, setDlError] = useState("");
 
@@ -344,36 +262,6 @@ function DetailDemande({ demande, onBack }) {
         <span className={`dbadge ${dbadgeClass(status)}`}>{status}</span>
       </div>
 
-      <div className="stepper-card">
-        <div className="stepper-head">Suivi de la demande</div>
-        <div className="stepper">
-          {steps.map((s) => (
-            <div key={s.key} className="step">
-              <div className={`step-dot step-dot--${s.state}`}>
-                {s.state === "done" && <IcoCheck />}
-                {s.state === "active" && <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#1a2744" }} />}
-              </div>
-              <div className={`step-lbl step-lbl--${s.state}`}>
-                {s.label}
-                {s.state === "active" && <div className="step-sub">En cours</div>}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {status === "Rejetée" && (
-        <div className="reject-card">
-          <div className="reject-head">
-            <IcoAlert /> Motif de rejet
-          </div>
-          <div className="reject-text">
-            {demande.motifRejet ||
-              "Pièce justificative non conforme. Veuillez soumettre une nouvelle demande avec une quittance de paiement lisible et en cours de validité."}
-          </div>
-        </div>
-      )}
-
       <div className="detail-body">
         <div className="pieces-card">
           <div className="pieces-head">Pièces jointes</div>
@@ -385,6 +273,8 @@ function DetailDemande({ demande, onBack }) {
               const pieceLabel =
                 p.typePiece === "CIP" ? "Carte d'Identification Personnelle (CIP)" :
                 p.typePiece === "QUITTANCE" ? "Quittance de paiement" :
+                p.typePiece === "ACTE_NAISSANCE" ? "Acte de naissance" :
+                p.typePiece === "JUSTIFICATIF_INSCRIPTION" ? "Justificatif d'inscription" :
                 p.typePiece || "Pièce";
 
               const meta = p.nom ? p.nom : (p.url ? String(p.url).split("\\").pop() : "—");
@@ -409,19 +299,6 @@ function DetailDemande({ demande, onBack }) {
               );
             })
           )}
-
-          {isReleve && (
-            <div className="piece-row" style={{ marginTop: 10 }}>
-              <div className="piece-left">
-                <div className="piece-ico"><IcoFile /></div>
-                <div>
-                  <div className="piece-name">Relevé de notes officiel</div>
-                  <div className="piece-meta">Généré automatiquement</div>
-                </div>
-              </div>
-              <span className="piece-ok"><IcoCheckGreen /> Système</span>
-            </div>
-          )}
         </div>
 
         <div className="detail-right">
@@ -430,9 +307,7 @@ function DetailDemande({ demande, onBack }) {
               <button className="btn-dl" onClick={handleDownload} disabled={dlLoading || !reference}>
                 <IcoDl />
                 {dlLoading ? "Téléchargement..." : "Télécharger mon document"}
-                {typeof demande.document?.downloadCount === "number" && (
-                  <span className="btn-dl-count">({demande.document.downloadCount})</span>
-                )}
+                {downloadCount !== null && <span className="btn-dl-count">({downloadCount})</span>}
               </button>
               {dlError && <div className="state-box state-error">{dlError}</div>}
             </>
@@ -452,12 +327,6 @@ function DetailDemande({ demande, onBack }) {
               <span className="meta-key">Intervenant</span>
               <span className="meta-val">{uiIntervenant(demande.typeDocument)}</span>
             </div>
-            {isReleve && (
-              <div className="meta-row">
-                <span className="meta-key">Semestre</span>
-                <span className="meta-val">Semestre {demande.semestre ?? "—"}</span>
-              </div>
-            )}
           </div>
 
           <div className="help-card">
@@ -485,8 +354,6 @@ export default function MesDemandes() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [demandes, setDemandes] = useState([]);
-
-  // null = liste, objet = détail
   const [detailItem, setDetailItem] = useState(null);
 
   useEffect(() => {
@@ -496,8 +363,8 @@ export default function MesDemandes() {
       try {
         const list = await getDemandes();
         setDemandes(Array.isArray(list) ? list : []);
-      } catch {
-        setError("Échec du chargement des demandes.");
+      } catch (e) {
+        setError(e?.message || "Échec du chargement des demandes.");
       } finally {
         setLoading(false);
       }
@@ -518,15 +385,18 @@ export default function MesDemandes() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return demandes
-      .map((d) => ({
-        raw: d,
-        ref: uiRef(d.typeDocument, d.documents?.[0]?.reference || d.id),
-        type: labelType(d.typeDocument),
-        date: d.createdAt
-          ? new Date(d.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })
-          : "—",
-        status: labelStatut(d.statut),
-      }))
+      .map((d) => {
+        const doc0 = Array.isArray(d.documents) ? d.documents[0] : null;
+        return {
+          raw: d,
+          ref: uiRef(doc0?.reference || d.id),
+          type: labelType(d.typeDocument),
+          date: d.createdAt
+            ? new Date(d.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })
+            : "—",
+          status: labelStatut(d.statut),
+        };
+      })
       .filter((d) => {
         const matchFilter = filter === "Toutes" || d.status === filter;
         const matchSearch = !q || d.ref.toLowerCase().includes(q) || d.type.toLowerCase().includes(q);
@@ -534,7 +404,6 @@ export default function MesDemandes() {
       });
   }, [demandes, filter, search]);
 
-  // Vue détail
   if (detailItem) {
     return (
       <DashboardLayout>
@@ -544,7 +413,6 @@ export default function MesDemandes() {
     );
   }
 
-  // Vue liste
   return (
     <DashboardLayout>
       <style>{css}</style>
@@ -554,7 +422,7 @@ export default function MesDemandes() {
           <h2 className="md-title">Mes demandes</h2>
           <p className="md-sub">Suivez l'état de toutes vos demandes de documents</p>
         </div>
-        <a href="/dashboardEtu/nouvelle" className="btn-new-orange">
+        <a href="/dashboardEtu/demandes" className="btn-new-orange">
           Nouvelle demande
         </a>
       </div>
@@ -633,4 +501,3 @@ export default function MesDemandes() {
     </DashboardLayout>
   );
 }
-

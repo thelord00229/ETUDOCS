@@ -2,12 +2,24 @@ const prisma = require('../../config/prisma');
 const { peutAgir, getNextStatut } = require('../../utils/workflow');
 const emailService = require('../../services/email.service');
 
-const getServiceCible = (typeDocument) =>
-  typeDocument === 'RELEVE_NOTES' ? 'EXAMENS' : 'SCOLARITE';
+const normalizeField = (v) => String(v || '').trim().toUpperCase();
 
-// 🔥 règles pièces requises selon le document
-// NB: Tu m’as dit que RN et Attestation d’inscription ont EXACTEMENT les mêmes pièces.
-// Si plus tard tu veux différencier, on change juste ici.
+/**
+ * Normalise les valeurs possibles de "service" côté user et côté demande.
+ * Ex: "EXAMEN" => "EXAMENS"
+ */
+const normalizeService = (s) => {
+  const v = normalizeField(s);
+  if (!v) return '';
+  if (v === 'EXAMEN') return 'EXAMENS';
+  if (v === 'EXAMENS') return 'EXAMENS';
+  if (v === 'SCOLARITE') return 'SCOLARITE';
+  return v;
+};
+
+const getServiceCible = (typeDocument) =>
+  normalizeField(typeDocument) === 'RELEVE_NOTES' ? 'EXAMENS' : 'SCOLARITE';
+
 const REQUIRED_PIECES_BY_DOC = {
   RELEVE_NOTES: [
     'JUSTIFICATIF_INSCRIPTION',
@@ -23,11 +35,7 @@ const REQUIRED_PIECES_BY_DOC = {
   ],
 };
 
-// fallback : pour les autres types (si un jour tu les actives)
-// pour l’instant on garde minimal
 const DEFAULT_REQUIRED = ['CIP', 'QUITTANCE'];
-
-const normalizeField = (v) => String(v || '').trim().toUpperCase();
 
 exports.soumettre = async (utilisateurId, institutionId, body, files) => {
   const { typeDocument, semestres } = body;
@@ -39,12 +47,9 @@ exports.soumettre = async (utilisateurId, institutionId, body, files) => {
   }
 
   const docKey = normalizeField(typeDocument);
-
-  // req.files de multer.fields est un objet: { CIP: [file], QUITTANCE:[file], ... }
   const filesObj = files || {};
   const present = new Set(Object.keys(filesObj).map(normalizeField));
 
-  // pièces requises selon le doc
   const required = REQUIRED_PIECES_BY_DOC[docKey] || DEFAULT_REQUIRED;
   const missing = required.filter((p) => !present.has(p));
 
@@ -56,11 +61,8 @@ exports.soumettre = async (utilisateurId, institutionId, body, files) => {
     throw err;
   }
 
-  // Aplatir toutes les pièces reçues
   const allFiles = Object.values(filesObj).flat();
 
-  // Important : typePiece = fieldname (CIP / QUITTANCE / ACTE_NAISSANCE / JUSTIFICATIF_INSCRIPTION)
-  // 👉 Assure-toi juste que ton enum Prisma (si tu en as un) contient bien ces valeurs.
   return prisma.demande.create({
     data: {
       typeDocument: docKey,
@@ -69,7 +71,7 @@ exports.soumettre = async (utilisateurId, institutionId, body, files) => {
         : semestres
           ? [parseInt(semestres, 10)]
           : [],
-      serviceCible: getServiceCible(docKey),
+      serviceCible: normalizeService(getServiceCible(docKey)),
       statut: 'SOUMISE',
       utilisateurId,
       institutionId,
@@ -95,25 +97,54 @@ exports.soumettre = async (utilisateurId, institutionId, body, files) => {
 
 exports.getDemandes = async (user) => {
   const { id, role, institutionId, service } = user;
-  const filtres = {
-    ETUDIANT:           { utilisateurId: id },
-    SECRETAIRE_ADJOINT: { institutionId, statut: 'SOUMISE' },
-    SECRETAIRE_GENERAL: { institutionId, statut: 'TRANSMISE_SECRETAIRE_GENERAL' },
-    CHEF_DIVISION:      { institutionId, statut: 'TRANSMISE_CHEF_DIVISION', serviceCible: service },
-    DIRECTEUR_ADJOINT:  { institutionId, statut: 'ATTENTE_SIGNATURE_DIRECTEUR_ADJOINT' },
-    DIRECTEUR:          { institutionId, statut: 'ATTENTE_SIGNATURE_DIRECTEUR' },
-    SUPER_ADMIN:        { institutionId },
-  };
+
+  let where = {};
+
+  if (role === "ETUDIANT") {
+    where = { utilisateurId: id };
+  } 
+  else if (role === "SECRETAIRE_ADJOINT") {
+    where = { institutionId, statut: "SOUMISE" };
+  }
+  else if (role === "SECRETAIRE_GENERAL") {
+    where = { 
+      institutionId, 
+      statut: "TRANSMISE_SECRETAIRE_GENERAL"  // ← ici
+    };
+  }
+  else if (role === "CHEF_DIVISION") {
+    where = {
+      institutionId,
+      statut: "TRANSMISE_CHEF_DIVISION",      // ← ici
+      ...(service ? { serviceCible: service } : {}),
+    };
+  }
+  else if (role === "DIRECTEUR_ADJOINT") {
+    where = { 
+      institutionId, 
+      statut: "ATTENTE_SIGNATURE_DIRECTEUR_ADJOINT" 
+    };
+  }
+  else if (role === "DIRECTEUR") {
+    where = { 
+      institutionId, 
+      statut: "ATTENTE_SIGNATURE_DIRECTEUR" 
+    };
+  }
+  else if (role === "SUPER_ADMIN") {
+    where = { institutionId };
+  }
+
+  console.log(`[getDemandes] Role: ${role}, Where:`, where);
 
   return prisma.demande.findMany({
-    where: filtres[role] || {},
+    where,
     include: {
       utilisateur: { select: { nom: true, prenom: true, numeroEtudiant: true } },
       pieces: true,
-      documents: { select: { reference: true, downloadCount: true } },
+      documents: { select: { reference: true, urlPdf: true, downloadCount: true } },
     },
-    // petit + UX: les plus récentes d’abord
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
   });
 };
 
@@ -149,7 +180,7 @@ exports.getById = async (demandeId, user) => {
 exports.avancer = async (demandeId, action, actorId, role, institutionId, commentaire) => {
   const demande = await prisma.demande.findUnique({
     where: { id: demandeId },
-    include: { utilisateur: true },
+    include: { utilisateur: true, pieces: true },
   });
 
   if (!demande) {
@@ -164,13 +195,48 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
     throw err;
   }
 
+  console.log("[AVANCER]", {
+    actorRole: role,
+    action,
+    statutActuel: demande.statut,
+    demandeId
+  });
+
   if (!peutAgir(role, demande.statut)) {
     const err = new Error('Action non permise pour votre rôle');
     err.statusCode = 403;
     throw err;
   }
 
-  // Cas spécial : génération du document
+  /* ======================================================
+     🔒 SÉCURISATION SPÉCIFIQUE PAR RÔLE
+  ====================================================== */
+
+  if (role === 'SECRETAIRE_GENERAL' && action !== 'TRANSMETTRE') {
+    const err = new Error('Le Secrétaire Général peut uniquement transmettre.');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  if (action === 'GENERER_DOCUMENT' && role !== 'CHEF_DIVISION') {
+    const err = new Error('Seul le Chef de Division peut générer le document.');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  if (action === 'GENERER_DOCUMENT') {
+    const invalid = demande.pieces.some(p => p.statut !== 'VALIDEE');
+    if (invalid) {
+      const err = new Error('Toutes les pièces doivent être validées avant génération.');
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+
+  /* ======================================================
+     📄 GÉNÉRATION DOCUMENT
+  ====================================================== */
+
   if (action === 'GENERER_DOCUMENT') {
     const { v4: uuidv4 } = require('uuid');
     const pdfService = require('../../services/pdf.service');
@@ -188,7 +254,6 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
     const sigle = institution?.sigle || 'UAC';
     const baseUrl = process.env.APP_URL || 'http://localhost:5000';
 
-    // 🔥 Si ce n’est pas un relevé → génération simple
     if (demande.typeDocument !== 'RELEVE_NOTES') {
       const reference = `ETD-${annee}-${sigle}-${String(demande.id).substring(0,5).toUpperCase()}-${uuidv4().substring(0,4).toUpperCase()}`;
       const qrData = `${baseUrl}/verify/${reference}`;
@@ -214,7 +279,6 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
       });
 
     } else {
-      // 🔥 Cas RELEVE_NOTES → génération par semestre
       const semestres = demande.semestres?.length ? demande.semestres : [1];
 
       for (const semestre of semestres) {
@@ -222,7 +286,7 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
         const qrData = `${baseUrl}/verify/${reference}`;
 
         const pdfPath = await pdfService.generateDocument(
-          { ...demande, semestre }, // on injecte le semestre dans le PDF
+          { ...demande, semestre },
           etudiant,
           null,
           reference,
@@ -273,9 +337,87 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
   return updated;
 };
 
-exports.validerPiece = async (pieceId, statut, commentaire, actorId) => {
+exports.validerPiece = async (
+  pieceId,
+  statut,
+  commentaire,
+  actorId,
+  role,
+  institutionId,
+  service
+) => {
+  if (role !== 'CHEF_DIVISION') {
+    const err = new Error('Seul le Chef de Division peut valider une pièce.');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const piece = await prisma.pieceJustificative.findUnique({
+    where: { id: pieceId },
+    include: { demande: true }
+  });
+
+  if (!piece) {
+    const err = new Error('Pièce introuvable.');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (piece.demande.institutionId !== institutionId) {
+    const err = new Error('Accès refusé.');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  // On tolère toujours "TRANSMISE_CHEF_DIVISION" (stade attendu)
+  if (piece.demande.statut !== 'TRANSMISE_CHEF_DIVISION') {
+    const err = new Error('La demande n’est pas au stade Chef de Division.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // ✅ FIX IMPORTANT : normalisation (EXAMEN vs EXAMENS, casse, espaces)
+  const cible = normalizeService(piece.demande.serviceCible);
+  const acteur = normalizeService(service);
+
+  // Si on a bien un service côté acteur et côté demande, on compare.
+  // (Si acteur est vide, on ne bloque pas ici — sinon tu tombes sur le bug actuel.)
+  if (acteur && cible && cible !== acteur) {
+    const err = new Error('Vous ne pouvez pas traiter cette demande.');
+    err.statusCode = 403;
+    throw err;
+  }
+
   return prisma.pieceJustificative.update({
     where: { id: pieceId },
-    data: { statut, commentaire, valideeParId: actorId, valideeAt: new Date() },
+    data: {
+      statut,
+      commentaire,
+      valideeParId: actorId,
+      valideeAt: new Date()
+    }
   });
+};
+
+exports.getStatsChefDivision = async (user) => {
+  const { institutionId, service } = user;
+
+  const baseFilter = {
+    institutionId,
+    ...(service ? { serviceCible: service } : {}), // ✅ évite Prisma crash
+  };
+
+  const [aTraiter, rejetees, enAttenteSignature, disponibles] = await Promise.all([
+    prisma.demande.count({ where: { ...baseFilter, statut: "TRANSMISE_CHEF_DIVISION" } }),
+    prisma.demande.count({ where: { ...baseFilter, statut: "REJETEE" } }),
+    prisma.demande.count({ where: { ...baseFilter, statut: "ATTENTE_SIGNATURE_DIRECTEUR_ADJOINT" } }),
+    prisma.demande.count({ where: { ...baseFilter, statut: "DISPONIBLE" } }),
+  ]);
+
+  return {
+    aTraiter,
+    enTraitement: enAttenteSignature,
+    generes: disponibles,
+    rejetees,
+  };
 };

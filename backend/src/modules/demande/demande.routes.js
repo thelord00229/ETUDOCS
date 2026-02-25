@@ -14,8 +14,12 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB max
+  limits: { fileSize: 20 * 1024 * 1024 } // 20MB max
 });
+
+// ✅ Tous les rôles possibles pour Chef Division (Examens / autre)
+// (on garde CHEF_DIVISION pour compatibilité)
+const CHEF_DIVISION_ROLES = ['CHEF_DIVISION', 'CHEF_DIVISION_EXAMENS', 'CHEF_DIVISION_PEDAGOGIE'];
 
 // Étudiant soumet une demande
 router.post(
@@ -34,6 +38,14 @@ router.post(
 // Liste des demandes selon rôle
 router.get('/', auth, ctrl.getDemandes);
 
+// Stats chef division
+router.get(
+  "/stats/chef-division",
+  auth,
+  role(...CHEF_DIVISION_ROLES),
+  ctrl.getStatsChefDivision
+);
+
 // Détail d’une demande
 router.get('/:id', auth, ctrl.getById);
 
@@ -44,7 +56,7 @@ router.post('/:id/avancer', auth, ctrl.avancer);
 router.patch(
   '/pieces/:pieceId',
   auth,
-  role('CHEF_DIVISION'),
+  role(...CHEF_DIVISION_ROLES),
   ctrl.validerPiece
 );
 
