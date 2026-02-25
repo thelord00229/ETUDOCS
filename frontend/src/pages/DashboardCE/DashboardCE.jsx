@@ -1,4 +1,15 @@
-import { useState } from "react";
+import { 
+  getDemandes, 
+  getDemandeById, 
+  avancerDemande,
+  getChefDivisionStats,
+  downloadPieceBlob,
+  validerPiece
+} from "../../services/api";
+
+import { useEffect, useState } from "react";
+
+
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
@@ -395,53 +406,8 @@ const ArrowLeftIcon = () => (
     </svg>
 );
 
-// ── FAKE DATA ──────────────────────────────────────────────
-const demandes = [
-    {
-        ref: "ETD-2026-IFRI-S1-00847-XK29",
-        etudiant: "AGBETI Olamidé Ikhlas",
-        num: "22P0045",
-        filiere: "GL L2",
-        type: "Relevé de notes — Semestre 1",
-        date: "10/01/2026",
-        delai: "36h",
-        urgent: false,
-        statut: "process",
-    },
-    {
-        ref: "ETD-2026-IFRI-S1-00821-KT44",
-        etudiant: "HOUNHOUI Darina",
-        num: "23A0112",
-        filiere: "IA L1",
-        type: "Relevé de notes — Semestre 1",
-        date: "08/01/2026",
-        delai: "58h",
-        urgent: true,
-        statut: "process",
-    },
-    {
-        ref: "ETD-2026-IFRI-S2-00799-MN12",
-        etudiant: "KOULIHO Fergal",
-        num: "21P0078",
-        filiere: "SE-IoT L2",
-        type: "Relevé de notes — Semestre 2",
-        date: "07/01/2026",
-        delai: "72h",
-        urgent: true,
-        statut: "process",
-    },
-    {
-        ref: "ETD-2026-IFRI-S1-00780-PL07",
-        etudiant: "SOSSOU Mevis Alain",
-        num: "22A0093",
-        filiere: "BDAI L2",
-        type: "Relevé de notes — Semestre 1",
-        date: "05/01/2026",
-        delai: "24h",
-        urgent: false,
-        statut: "process",
-    },
-];
+
+
 
 const statutBadge = (s) => {
     if (s === "process") return <span className="badge purple">En traitement</span>;
@@ -458,450 +424,608 @@ const defaultPieces = [
 
 // ── COMPOSANT PRINCIPAL ────────────────────────────────────
 export default function ChefDivisionExamens() {
-    const [view, setView]           = useState("dashboard"); // dashboard | traitement | success
-    const [selected, setSelected]   = useState(null);
-    const [search, setSearch]       = useState("");
-    const [pieces, setPieces]       = useState(defaultPieces);
-    const [globalComment, setGlobalComment] = useState("");
-    const [modal, setModal]         = useState(null); // null | "generate" | "reject"
-    const [motif, setMotif]         = useState("");
-    const [motifError, setMotifError] = useState("");
-    const [generatedRef, setGeneratedRef] = useState("");
+  const [view, setView] = useState("dashboard"); // dashboard | traitement | success
+  const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState("");
+  const [pieces, setPieces] = useState(defaultPieces);
+  const [globalComment, setGlobalComment] = useState("");
+  const [modal, setModal] = useState(null); // null | "generate" | "reject"
+  const [motif, setMotif] = useState("");
+  const [motifError, setMotifError] = useState("");
+  const [generatedRef, setGeneratedRef] = useState("");
+  const [pieceBusy, setPieceBusy] = useState(null); // id pièce en cours
+  const [preview, setPreview] = useState(null); // { url, name }
 
-    const openTraitement = (d) => {
-        setSelected(d);
-        setPieces(defaultPieces.map(p => ({ ...p, status: null, comment: "" })));
-        setGlobalComment("");
-        setView("traitement");
-    };
+  const [demandes, setDemandes] = useState([]);
 
-    const setPieceStatus = (id, status) => {
-        setPieces(prev => prev.map(p => p.id === id ? { ...p, status } : p));
-    };
+  useEffect(() => {
+    chargerDemandes();
+    chargerStats();
+  }, []);
 
-    const setPieceComment = (id, comment) => {
-        setPieces(prev => prev.map(p => p.id === id ? { ...p, comment } : p));
-    };
+  const chargerDemandes = async () => {
+    try {
+      const data = await getDemandes();
+      const list = Array.isArray(data) ? data : (data?.demandes ?? []);
+      setDemandes(list);
+    } catch (e) {
+      console.error(e);
+      setDemandes([]);
+    }
+  };
 
-    const allValidated   = pieces.every(p => p.status === "valid");
-    const anyRejected    = pieces.some(p => p.status === "reject");
-    const allDecided     = pieces.every(p => p.status !== null);
+  // 🔥 STATE STATS
+  const [stats, setStats] = useState({
+    aTraiter: 0,
+    enTraitement: 0,
+    generes: 0,
+    rejetees: 0
+  });
 
-    const handleGenerate = () => {
-        const ref = selected?.type.includes("S2")
-            ? "ETD-2026-IFRI-S2-00799-MN12"
-            : "ETD-2026-IFRI-S1-00847-XK29";
-        setGeneratedRef(ref);
-        setModal(null);
-        setView("success");
-    };
+  // 🔥 Charger les stats depuis le backend
+  const chargerStats = async () => {
+    try {
+      const data = await getChefDivisionStats();
+      setStats(data ?? { aTraiter: 0, enTraitement: 0, generes: 0, rejetees: 0 });
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
-    const handleReject = () => {
-        if (motif.trim().length < 20) {
-            setMotifError("Le motif doit contenir au moins 20 caractères.");
-            return;
+  const openTraitement = async (d) => {
+        try {
+            const full = await getDemandeById(d.id);
+            setSelected(full);
+
+            setPieces(
+            (full.pieces || []).map((p) => ({
+                id: p.id,
+                name: p.typePiece,         // ex: CIP
+                fileName: p.nom,           // nom original
+                url: p.url,                // ex: uploads\xxxx.pdf ou uploads/xxxx.pdf
+                status:
+                p.statut === "VALIDEE" ? "valid" :
+                p.statut === "REJETEE" ? "reject" :
+                null,
+                comment: p.commentaire || ""
+            }))
+            );
+
+            setView("traitement");
+        } catch (e) {
+            console.error(e);
         }
-        setModal(null);
-        setView("dashboard");
     };
 
-    // ── DASHBOARD ─────────────────────────────────────────────
-    if (view === "dashboard") return (
-        <>
-            <style>{styles}</style>
-            <div className="layout">
-                <Sidebar />
-                <main className="main">
-                    <Topbar title="Chef de Division des Examens — IFRI" name="Serge DOSSOU" initials="SD" />
-                    <div className="content">
-                        <div className="page-header">
-                            <div>
-                                <h1 className="page-title">Tableau de bord — Division des Examens</h1>
-                                <p className="page-subtitle">Vérifiez et validez les dossiers de relevés de notes.</p>
-                            </div>
-                            <button className="actualiser-btn">Actualiser</button>
-                        </div>
+  // ✅ Preview (Consulter)
+    const API_BASE = "http://localhost:5000";
 
-                        {/* Stats */}
-                        <div className="stats-grid">
-                            {[
-                                { icon: <ClockIcon />,        cls: "pending", val: 4,   label: "À traiter" },
-                                { icon: <ClipboardCheckIcon />,cls: "process", val: 12,  label: "En traitement" },
-                                { icon: <CheckCircleIcon />,  cls: "done",    val: 87,  label: "Générés (mois)" },
-                                { icon: <AlertCircleIcon />,  cls: "refused", val: 3,   label: "Rejetées" },
-                            ].map(s => (
-                                <div className="stat-card" key={s.label}>
-                                    <div className={`stat-icon ${s.cls}`}>{s.icon}</div>
-                                    <div>
-                                        <div className="stat-value">{s.val}</div>
-                                        <div className="stat-label">{s.label}</div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+    const openPreview = (piece) => {
+    const raw = piece?.url || "";
+        if (!raw) {
+            alert("Fichier introuvable (url vide).");
+            return;
+    }
 
-                        {/* Table */}
-                        <div className="table-card">
-                            <div className="table-header">
-                                <div className="table-title">
-                                    Demandes en attente de traitement
-                                    <span className="badge-count">{demandes.length}</span>
-                                </div>
-                                <div className="search-box">
-                                    <span className="search-icon-wrap"><SearchIcon /></span>
-                                    <input className="search-input" placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} />
-                                </div>
-                            </div>
-                            <div className="table-divider" />
-                            <div className="table-wrapper">
-                                <table>
-                                    <thead>
-                                    <tr>
-                                        <th>Référence</th>
-                                        <th>Étudiant</th>
-                                        <th>Document</th>
-                                        <th>Date soumission</th>
-                                        <th>Délai écoulé</th>
-                                        <th>Statut</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {demandes.filter(d => !search || d.etudiant.toLowerCase().includes(search.toLowerCase()) || d.ref.includes(search)).map(d => (
-                                        <tr key={d.ref}>
-                                            <td><span className="td-ref">{d.ref}</span></td>
-                                            <td>
-                                                <div className="td-student">{d.etudiant}</div>
-                                                <div className="td-sub">N° {d.num} — {d.filiere}</div>
-                                            </td>
-                                            <td style={{ fontSize: 13 }}>{d.type}</td>
-                                            <td style={{ fontSize: 13, color: "var(--text-muted)" }}>{d.date}</td>
-                                            <td><span className={`td-delay ${d.urgent ? "urgent" : "ok"}`}>{d.delai} {d.urgent && "⚠"}</span></td>
-                                            <td>{statutBadge(d.statut)}</td>
-                                            <td>
-                                                <button className="btn-action primary" onClick={() => openTraitement(d)}>
-                                                    <EyeIcon /> Traiter le dossier
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </main>
-            </div>
-        </>
-    );
+    const safe = raw.replaceAll("\\", "/"); // windows -> URL
+    const fullUrl = `${API_BASE}/${safe.startsWith("/") ? safe.slice(1) : safe}`;
 
-    // ── SUCCESS STATE ──────────────────────────────────────────
-    if (view === "success") return (
-        <>
-            <style>{styles}</style>
-            <div className="layout">
-                <Sidebar />
-                <main className="main">
-                    <Topbar title="Chef de Division des Examens — IFRI" name="Serge DOSSOU" initials="SD" />
-                    <div className="content" style={{ maxWidth: 640, margin: "60px auto" }}>
-                        <div className="success-card">
-                            <div className="success-icon">
-                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="20 6 9 17 4 12"/>
-                                </svg>
-                            </div>
-                            <div className="success-title">Document généré avec succès !</div>
-                            <div className="success-sub">Le relevé de notes a été généré automatiquement depuis les données académiques de l'étudiant.</div>
-                            <div className="success-ref-box">
-                                <div className="success-ref-label">Référence générée</div>
-                                <div className="success-ref">{generatedRef}</div>
-                            </div>
-                            <div className="success-note">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-                                </svg>
-                                Le Directeur Adjoint a été notifié pour approbation.
-                            </div>
-                            <div className="success-actions">
-                                <button className="btn-action outline" style={{ padding: "10px 24px", fontSize: 14 }} onClick={() => setView("dashboard")}>
-                                    <ArrowLeftIcon /> Retour au tableau de bord
-                                </button>
-                                <button className="btn-action primary" style={{ padding: "10px 24px", fontSize: 14 }}>
-                                    <EyeIcon /> Aperçu du document
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </main>
-            </div>
-        </>
-    );
+    setPreview({
+        url: fullUrl,
+        name: piece.fileName || piece.name || "Document"
+    });
+    };
 
-    // ── TRAITEMENT ─────────────────────────────────────────────
-    return (
-        <>
-            <style>{styles}</style>
-            <div className="layout">
-                <Sidebar />
-                <main className="main">
-                    <Topbar title="Chef de Division des Examens — IFRI" name="Serge DOSSOU" initials="SD" />
-                    <div className="content">
+    const closePreview = () => setPreview(null);
 
-                        {/* Back + header */}
-                        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
-                            <button className="btn-action outline" onClick={() => setView("dashboard")} style={{ padding: "8px 14px" }}>
-                                <ArrowLeftIcon /> Retour
-                            </button>
-                            <div>
-                                <h1 className="page-title" style={{ fontSize: 22 }}>Traitement du dossier</h1>
-                                <span className="td-ref" style={{ fontSize: 13 }}>{selected?.ref}</span>
-                            </div>
-                        </div>
+  const setPieceStatus = async (id, status) => {
+    // 🔥 Si rejet => commentaire obligatoire (sinon ça fait comme "rien ne marche")
+    if (status === "reject") {
+      const c = pieces.find(p => p.id === id)?.comment || "";
+      if (c.trim().length < 5) {
+        alert("Motif obligatoire (au moins 5 caractères) pour rejeter une pièce.");
+        return;
+      }
+    }
 
-                        <div className="traitement-layout">
+    // ✅ Update UI immédiat (le bouton reste actif direct)
+    setPieces(prev => prev.map(p => (p.id === id ? { ...p, status } : p)));
+    setPieceBusy(id);
 
-                            {/* ── PANNEAU GAUCHE — Infos étudiant ── */}
-                            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                                <div className="panel">
-                                    <div className="panel-header"><div className="panel-title">Informations étudiant</div></div>
-                                    <div className="panel-body">
-                                        <div className="info-row"><div className="info-label">Nom complet</div><div className="info-value">{selected?.etudiant}</div></div>
-                                        <div className="info-row"><div className="info-label">N° Étudiant</div><div className="info-value">{selected?.num}</div></div>
-                                        <div className="info-row"><div className="info-label">Filière / Niveau</div><div className="info-value">{selected?.filiere}</div></div>
-                                        <div className="info-row"><div className="info-label">Institution</div><div className="info-value">IFRI — UAC</div></div>
-                                        <div className="divider-h" />
-                                        <div className="info-row"><div className="info-label">Type de document</div>
-                                            <div className="doc-type-pill">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                                                Relevé de notes
-                                            </div>
-                                        </div>
-                                        <div className="info-row">
-                                            <div className="info-label">Semestre</div>
-                                            <div className="sem-pills">
-                                                <span className={`sem-pill ${selected?.type.includes("S2") ? "inactive" : "active"}`}>Semestre 1</span>
-                                                <span className={`sem-pill ${selected?.type.includes("S2") ? "active" : "inactive"}`}>Semestre 2</span>
-                                            </div>
-                                        </div>
-                                        <div className="divider-h" />
-                                        <div className="info-row"><div className="info-label">Date de soumission</div><div className="info-value">{selected?.date}</div></div>
-                                        <div className="info-row"><div className="info-label">Référence</div><div className="info-value mono">{selected?.ref}</div></div>
-                                    </div>
-                                </div>
+    try {
+      await validerPiece(
+        id,
+        status === "valid" ? "VALIDEE" : "REJETEE",
+        pieces.find(p => p.id === id)?.comment || ""
+      );
+    } catch (e) {
+      console.error(e);
+      // ❌ Revert si erreur API
+      setPieces(prev => prev.map(p => (p.id === id ? { ...p, status: null } : p)));
+      alert("Échec validation. Vérifie l’API / endpoint.");
+    } finally {
+      setPieceBusy(null);
+    }
+  };
 
-                                {/* Timeline */}
-                                <div className="panel">
-                                    <div className="panel-header"><div className="panel-title">Parcours de la demande</div></div>
-                                    <div className="panel-body">
-                                        <div className="timeline">
-                                            {[
-                                                { label: "Soumise par l'étudiant",    time: "10/01 à 08h14", st: "done" },
-                                                { label: "Reçue — Secrétaire Adjoint", time: "10/01 à 09h02", st: "done" },
-                                                { label: "Transmise — Secrétaire Général", time: "10/01 à 10h30", st: "done" },
-                                                { label: "En traitement — Chef de Division", time: "En cours", st: "active" },
-                                                { label: "En attente de signature — Dir. Adj.", time: "—", st: "todo" },
-                                                { label: "Signature finale — Directeur", time: "—", st: "todo" },
-                                            ].map((t, i, arr) => (
-                                                <div className="tl-item" key={t.label}>
-                                                    <div className="tl-left">
-                                                        <div className={`tl-dot ${t.st}`} />
-                                                        {i < arr.length - 1 && <div className="tl-line" />}
-                                                    </div>
-                                                    <div className="tl-text">
-                                                        <div className={`tl-step ${t.st === "todo" ? "muted" : ""}`}>{t.label}</div>
-                                                        <div className="tl-time">{t.time}</div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+  const setPieceComment = (id, comment) => {
+    setPieces(prev => prev.map(p => p.id === id ? { ...p, comment } : p));
+  };
 
-                            {/* ── CENTRE — Visionneuse pièces ── */}
-                            <div>
-                                <div style={{ marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                    <div style={{ fontWeight: 700, fontSize: 15, color: "var(--navy)" }}>Vérification des pièces justificatives</div>
-                                    <span className="badge blue">{pieces.filter(p => p.status === "valid").length}/{pieces.length} pièces validées</span>
-                                </div>
+  const allValidated = pieces.every(p => p.status === "valid");
+  const anyRejected = pieces.some(p => p.status === "reject");
+  const allDecided = pieces.every(p => p.status !== null);
 
-                                {pieces.map((piece) => (
-                                    <div className="piece-card" key={piece.id}>
-                                        <div className="piece-header">
-                                            <div className="piece-name">
-                                                <FileIcon />
-                                                {piece.name}
-                                                <span className="piece-num">{piece.num}</span>
-                                            </div>
-                                            {piece.status === "valid"  && <span className="badge green"><CheckIcon /> Validée</span>}
-                                            {piece.status === "reject" && <span className="badge red"><XIcon /> Rejetée</span>}
-                                            {piece.status === null      && <span className="badge gray">En attente de décision</span>}
-                                        </div>
+  const handleGenerate = async () => {
+    try {
+      await avancerDemande(selected.id, "GENERER_DOCUMENT");
+      await chargerDemandes();
+      setModal(null);
+      setView("dashboard");
+    } catch (e) {
+      alert(e.message);
+    }
+  };
 
-                                        <div className="piece-preview">
-                                            <div className="piece-preview-inner">
-                                                <FileIcon />
-                                                <span>Aperçu du document</span>
-                                                <span style={{ fontSize: 11 }}>JPG / PDF</span>
-                                            </div>
-                                        </div>
+  const handleReject = async () => {
+    if (motif.trim().length < 20) {
+      setMotifError("Le motif doit contenir au moins 20 caractères.");
+      return;
+    }
 
-                                        <div className="piece-footer">
-                                            <div className="piece-actions">
-                                                <button
-                                                    className={`btn-valider valid ${piece.status === "valid" ? "selected" : ""}`}
-                                                    onClick={() => setPieceStatus(piece.id, "valid")}
-                                                >
-                                                    <CheckIcon /> Valider ✓
-                                                </button>
-                                                <button
-                                                    className={`btn-valider reject ${piece.status === "reject" ? "selected" : ""}`}
-                                                    onClick={() => setPieceStatus(piece.id, "reject")}
-                                                >
-                                                    <XIcon /> Rejeter ✗
-                                                </button>
-                                            </div>
-                                            <textarea
-                                                className="piece-comment-area"
-                                                rows={2}
-                                                placeholder={piece.status === "reject" ? "Motif du rejet de cette pièce (obligatoire)..." : "Commentaire optionnel sur cette pièce..."}
-                                                value={piece.comment}
-                                                onChange={e => setPieceComment(piece.id, e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
+    try {
+      await avancerDemande(selected.id, "REJETER", motif);
+      await chargerDemandes();
+      setModal(null);
+      setView("dashboard");
+    } catch (e) {
+      alert(e.message);
+    }
+  };
 
-                                {/* Info sur la génération automatique */}
-                                {allValidated && (
-                                    <div className="info-box green" style={{ marginTop: 8 }}>
-                                        <strong>✓ Toutes les pièces sont validées.</strong> Vous pouvez déclencher la génération automatique du document. Le système récupèrera les données académiques de l'étudiant (notes, UE, crédits) pour construire le relevé officiel.
-                                    </div>
-                                )}
-                                {anyRejected && !allValidated && (
-                                    <div className="info-box" style={{ background: "#fef2f2", color: "#991b1b", border: "1px solid #fca5a5", marginTop: 8 }}>
-                                        <strong>⚠ Une ou plusieurs pièces ont été rejetées.</strong> Vous devrez rejeter la demande avec un motif explicatif.
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* ── PANNEAU DROIT — Checklist + Actions ── */}
-                            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                                <div className="panel">
-                                    <div className="panel-header"><div className="panel-title">Récapitulatif de validation</div></div>
-                                    <div className="panel-body">
-                                        <div className="checklist">
-                                            {pieces.map(p => (
-                                                <div key={p.id} className={`check-item ${p.status === "valid" ? "valid-state" : p.status === "reject" ? "reject-state" : "pending-state"}`}>
-                                                    <div className="check-name">{p.id === "cip" ? "CIP" : "Quittance"}</div>
-                                                    <div className={`check-status ${p.status === "valid" ? "v" : p.status === "reject" ? "r" : "p"}`}>
-                                                        {p.status === "valid"  ? <><CheckIcon /> Validée</> :
-                                                            p.status === "reject" ? <><XIcon /> Rejetée</> :
-                                                                "— En attente"}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        <div className="divider-h" />
-                                        <div className="comment-global-label">Commentaire général</div>
-                                        <textarea
-                                            className="piece-comment-area"
-                                            rows={3}
-                                            placeholder="Commentaire général sur ce dossier (optionnel)..."
-                                            value={globalComment}
-                                            onChange={e => setGlobalComment(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Boutons action */}
-                                <div className="panel">
-                                    <div className="panel-header"><div className="panel-title">Actions disponibles</div></div>
-                                    <div className="panel-body">
-                                        <button
-                                            className="btn-main generate"
-                                            disabled={!allValidated}
-                                            onClick={() => setModal("generate")}
-                                        >
-                                            <SparkleIcon /> Valider et générer le document
-                                        </button>
-
-                                        <button
-                                            className="btn-main reject-all"
-                                            style={{ opacity: (!allDecided || !anyRejected) ? 0.4 : 1, cursor: (!allDecided || !anyRejected) ? "not-allowed" : "pointer" }}
-                                            onClick={() => { if (allDecided && anyRejected) setModal("reject"); }}
-                                        >
-                                            <XIcon /> Rejeter la demande
-                                        </button>
-
-                                        {!allDecided && (
-                                            <div className="info-box blue" style={{ marginTop: 4 }}>
-                                                Validez ou rejetez chaque pièce avant de pouvoir prendre une décision finale.
-                                            </div>
-                                        )}
-                                        {allValidated && (
-                                            <div className="info-box green" style={{ marginTop: 4 }}>
-                                                La génération injectera automatiquement les notes et UE depuis la base de données académique.
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </main>
+  // ── DASHBOARD ─────────────────────────────────────────────
+  if (view === "dashboard") return (
+    <>
+      <style>{styles}</style>
+      <div className="layout">
+        <Sidebar />
+        <main className="main">
+          <Topbar title="Chef de Division des Examens — IFRI" name="Serge DOSSOU" initials="SD" />
+          <div className="content">
+            <div className="page-header">
+              <div>
+                <h1 className="page-title">Tableau de bord — Division des Examens</h1>
+                <p className="page-subtitle">Vérifiez et validez les dossiers de relevés de notes.</p>
+              </div>
+              <button className="actualiser-btn" onClick={() => { chargerDemandes(); chargerStats(); }}>Actualiser</button>
             </div>
 
-            {/* ── MODAL GÉNÉRATION ── */}
-            {modal === "generate" && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                        <div className="modal-title">
-                            <SparkleIcon /> Confirmer la génération
-                        </div>
-                        <div className="modal-body">
-                            Vous allez déclencher la génération automatique du relevé de notes pour <strong>{selected?.etudiant}</strong> (<span className="modal-ref">{selected?.ref}</span>).<br/><br/>
-                            Le système va automatiquement récupérer les données académiques (notes, UE, crédits, résultats) et les injecter dans le template officiel de l'IFRI. <strong>Cette action est irréversible.</strong>
-                        </div>
-                        <div className="modal-actions">
-                            <button className="modal-btn cancel" onClick={() => setModal(null)}>Annuler</button>
-                            <button className="modal-btn confirm-gen" onClick={handleGenerate}>✓ Confirmer la génération</button>
-                        </div>
-                    </div>
+            {/* Stats */}
+            <div className="stats-grid">
+              {[
+                { icon: <ClockIcon />, cls: "pending", val: stats.aTraiter, label: "À traiter" },
+                { icon: <ClipboardCheckIcon />, cls: "process", val: stats.enTraitement, label: "En traitement" },
+                { icon: <CheckCircleIcon />, cls: "done", val: stats.generes, label: "Générés (mois)" },
+                { icon: <AlertCircleIcon />, cls: "refused", val: stats.rejetees, label: "Rejetées" },
+              ].map(s => (
+                <div className="stat-card" key={s.label}>
+                  <div className={`stat-icon ${s.cls}`}>{s.icon}</div>
+                  <div>
+                    <div className="stat-value">{s.val}</div>
+                    <div className="stat-label">{s.label}</div>
+                  </div>
                 </div>
-            )}
+              ))}
+            </div>
 
-            {/* ── MODAL REJET ── */}
-            {modal === "reject" && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                        <div className="modal-title">
-                            <XIcon /> Rejeter la demande
-                        </div>
-                        <div className="modal-body">
-                            Vous allez rejeter la demande <span className="modal-ref">{selected?.ref}</span> de <strong>{selected?.etudiant}</strong>.<br/>
-                            L'étudiant sera notifié par email avec le motif de rejet.
-                        </div>
-                        <div className="comment-global-label">Motif de rejet <span style={{ color: "var(--danger)" }}>*</span></div>
-                        <textarea
-                            className="motif-input"
-                            rows={4}
-                            placeholder="Expliquez précisément la raison du rejet (minimum 20 caractères)..."
-                            value={motif}
-                            onChange={e => { setMotif(e.target.value); setMotifError(""); }}
-                        />
-                        <div className="motif-count">{motif.length} / 20 caractères minimum</div>
-                        {motifError && <div className="motif-error">{motifError}</div>}
-                        <div className="modal-actions" style={{ marginTop: 20 }}>
-                            <button className="modal-btn cancel" onClick={() => { setModal(null); setMotif(""); setMotifError(""); }}>Annuler</button>
-                            <button className="modal-btn confirm-rej" onClick={handleReject}>✗ Confirmer le rejet</button>
-                        </div>
-                    </div>
+            {/* Table */}
+            <div className="table-card">
+              <div className="table-header">
+                <div className="table-title">
+                  Demandes en attente de traitement
+                  <span className="badge-count">{demandes.length}</span>
                 </div>
-            )}
-        </>
-    );
+                <div className="search-box">
+                  <span className="search-icon-wrap"><SearchIcon /></span>
+                  <input className="search-input" placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} />
+                </div>
+              </div>
+              <div className="table-divider" />
+              <div className="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Référence</th>
+                      <th>Étudiant</th>
+                      <th>Document</th>
+                      <th>Date soumission</th>
+                      <th>Délai écoulé</th>
+                      <th>Statut</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {demandes.filter(d => {
+                      const etu = ((d?.etudiant ?? "") + "").toLowerCase();
+                      const ref = (d?.ref ?? "") + "";
+                      const q = (search ?? "").toLowerCase();
+                      return !search || etu.includes(q) || ref.includes(search);
+                    }).map(d => (
+                      <tr key={d.id ?? d.ref}>
+                        <td><span className="td-ref">{d.ref}</span></td>
+                        <td>
+                          <div className="td-student">{d.etudiant}</div>
+                          <div className="td-sub">N° {d.num} — {d.filiere}</div>
+                        </td>
+                        <td style={{ fontSize: 13 }}>{d.type}</td>
+                        <td style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                          {d.date || (d.createdAt ? new Date(d.createdAt).toLocaleDateString() : "-")}
+                        </td>
+                        <td><span className={`td-delay ${d.urgent ? "urgent" : "ok"}`}>{d.delai} {d.urgent && "⚠"}</span></td>
+                        <td>{statutBadge(d.statut)}</td>
+                        <td>
+                          <button className="btn-action primary" onClick={() => openTraitement(d)}>
+                            <EyeIcon /> Traiter le dossier
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </main>
+      </div>
+    </>
+  );
+
+  // ── SUCCESS STATE ──────────────────────────────────────────
+  if (view === "success") return (
+    <>
+      <style>{styles}</style>
+      <div className="layout">
+        <Sidebar />
+        <main className="main">
+          <Topbar title="Chef de Division des Examens — IFRI" name="Serge DOSSOU" initials="SD" />
+          <div className="content" style={{ maxWidth: 640, margin: "60px auto" }}>
+            <div className="success-card">
+              <div className="success-icon">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <div className="success-title">Document généré avec succès !</div>
+              <div className="success-sub">Le relevé de notes a été généré automatiquement depuis les données académiques de l'étudiant.</div>
+              <div className="success-ref-box">
+                <div className="success-ref-label">Référence générée</div>
+                <div className="success-ref">{generatedRef}</div>
+              </div>
+              <div className="success-note">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+                Le Directeur Adjoint a été notifié pour approbation.
+              </div>
+              <div className="success-actions">
+                <button className="btn-action outline" style={{ padding: "10px 24px", fontSize: 14 }} onClick={() => setView("dashboard")}>
+                  <ArrowLeftIcon /> Retour au tableau de bord
+                </button>
+                <button className="btn-action primary" style={{ padding: "10px 24px", fontSize: 14 }}>
+                  <EyeIcon /> Aperçu du document
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </>
+  );
+
+  // ── TRAITEMENT ─────────────────────────────────────────────
+  return (
+    <>
+      <style>{styles}</style>
+      <div className="layout">
+        <Sidebar />
+        <main className="main">
+          <Topbar title="Chef de Division des Examens — IFRI" name="Serge DOSSOU" initials="SD" />
+          <div className="content">
+
+            {/* Back + header */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
+              <button className="btn-action outline" onClick={() => setView("dashboard")} style={{ padding: "8px 14px" }}>
+                <ArrowLeftIcon /> Retour
+              </button>
+              <div>
+                <h1 className="page-title" style={{ fontSize: 22 }}>Traitement du dossier</h1>
+                <span className="td-ref" style={{ fontSize: 13 }}>{selected?.ref}</span>
+              </div>
+            </div>
+
+            <div className="traitement-layout">
+
+              {/* ── PANNEAU GAUCHE — Infos étudiant ── */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div className="panel">
+                  <div className="panel-header"><div className="panel-title">Informations étudiant</div></div>
+                  <div className="panel-body">
+                    <div className="info-row"><div className="info-label">Nom complet</div><div className="info-value">{selected?.etudiant}</div></div>
+                    <div className="info-row"><div className="info-label">N° Étudiant</div><div className="info-value">{selected?.num}</div></div>
+                    <div className="info-row"><div className="info-label">Filière / Niveau</div><div className="info-value">{selected?.filiere}</div></div>
+                    <div className="info-row"><div className="info-label">Institution</div><div className="info-value">IFRI — UAC</div></div>
+                    <div className="divider-h" />
+                    <div className="info-row"><div className="info-label">Type de document</div>
+                      <div className="doc-type-pill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                        Relevé de notes
+                      </div>
+                    </div>
+                    <div className="info-row">
+                      <div className="info-label">Semestre</div>
+                      <div className="sem-pills">
+                        <span className={`sem-pill ${((selected?.type ?? "") + "").includes("S2") ? "inactive" : "active"}`}>Semestre 1</span>
+                        <span className={`sem-pill ${((selected?.type ?? "") + "").includes("S2") ? "active" : "inactive"}`}>Semestre 2</span>
+                      </div>
+                    </div>
+                    <div className="divider-h" />
+                    <div className="info-row"><div className="info-label">Date de soumission</div><div className="info-value">{selected?.date}</div></div>
+                    <div className="info-row"><div className="info-label">Référence</div><div className="info-value mono">{selected?.ref}</div></div>
+                  </div>
+                </div>
+
+                {/* Timeline */}
+                <div className="panel">
+                  <div className="panel-header"><div className="panel-title">Parcours de la demande</div></div>
+                  <div className="panel-body">
+                    <div className="timeline">
+                      {[
+                        { label: "Soumise par l'étudiant", time: "10/01 à 08h14", st: "done" },
+                        { label: "Reçue — Secrétaire Adjoint", time: "10/01 à 09h02", st: "done" },
+                        { label: "Transmise — Secrétaire Général", time: "10/01 à 10h30", st: "done" },
+                        { label: "En traitement — Chef de Division", time: "En cours", st: "active" },
+                        { label: "En attente de signature — Dir. Adj.", time: "—", st: "todo" },
+                        { label: "Signature finale — Directeur", time: "—", st: "todo" },
+                      ].map((t, i, arr) => (
+                        <div className="tl-item" key={t.label}>
+                          <div className="tl-left">
+                            <div className={`tl-dot ${t.st}`} />
+                            {i < arr.length - 1 && <div className="tl-line" />}
+                          </div>
+                          <div className="tl-text">
+                            <div className={`tl-step ${t.st === "todo" ? "muted" : ""}`}>{t.label}</div>
+                            <div className="tl-time">{t.time}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── CENTRE — Visionneuse pièces ── */}
+              <div>
+                <div style={{ marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: "var(--navy)" }}>Vérification des pièces justificatives</div>
+                  <span className="badge blue">{pieces.filter(p => p.status === "valid").length}/{pieces.length} pièces validées</span>
+                </div>
+
+                {pieces.map((piece) => (
+                  <div className="piece-card" key={piece.id}>
+                    <div className="piece-header">
+                      <div className="piece-name">
+                        <FileIcon />
+                        {piece.name}
+                        <span className="piece-num">{piece.num || ""}</span>
+                      </div>
+                      {piece.status === "valid" && <span className="badge green"><CheckIcon /> Validée</span>}
+                      {piece.status === "reject" && <span className="badge red"><XIcon /> Rejetée</span>}
+                      {piece.status === null && <span className="badge gray">En attente de décision</span>}
+                    </div>
+
+                    <div className="piece-preview">
+                      <div className="piece-preview-inner">
+                        <FileIcon />
+                        <span>Aperçu du document</span>
+                        <span style={{ fontSize: 11 }}>JPG / PDF</span>
+                      </div>
+                    </div>
+
+                    <div className="piece-footer">
+                      <button
+                        className="btn-action outline"
+                        onClick={() => openPreview(piece)}
+                        style={{ width: "100%", marginBottom: 10, justifyContent: "center" }}
+                      >
+                        <EyeIcon /> Consulter
+                      </button>
+
+                      <div className="piece-actions">
+                        <button
+                          disabled={pieceBusy === piece.id}
+                          className={`btn-valider valid ${piece.status === "valid" ? "selected" : ""}`}
+                          onClick={() => setPieceStatus(piece.id, "valid")}
+                        >
+                          <CheckIcon /> Valider ✓
+                        </button>
+
+                        <button
+                          disabled={pieceBusy === piece.id}
+                          className={`btn-valider reject ${piece.status === "reject" ? "selected" : ""}`}
+                          onClick={() => setPieceStatus(piece.id, "reject")}
+                        >
+                          <XIcon /> Rejeter ✗
+                        </button>
+                      </div>
+
+                      <textarea
+                        className="piece-comment-area"
+                        rows={2}
+                        placeholder={piece.status === "reject"
+                          ? "Motif du rejet de cette pièce (obligatoire)..."
+                          : "Commentaire optionnel sur cette pièce..."}
+                        value={piece.comment}
+                        onChange={e => setPieceComment(piece.id, e.target.value)}
+                      />
+                    </div>
+                  </div>
+                ))}
+
+                {allValidated && (
+                  <div className="info-box green" style={{ marginTop: 8 }}>
+                    <strong>✓ Toutes les pièces sont validées.</strong> Vous pouvez déclencher la génération automatique du document.
+                  </div>
+                )}
+
+                {anyRejected && !allValidated && (
+                  <div className="info-box" style={{ background: "#fef2f2", color: "#991b1b", border: "1px solid #fca5a5", marginTop: 8 }}>
+                    <strong>⚠ Une ou plusieurs pièces ont été rejetées.</strong> Vous devrez rejeter la demande avec un motif explicatif.
+                  </div>
+                )}
+              </div>
+
+              {/* ── PANNEAU DROIT — Checklist + Actions ── */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div className="panel">
+                  <div className="panel-header"><div className="panel-title">Récapitulatif de validation</div></div>
+                  <div className="panel-body">
+                    <div className="checklist">
+                      {pieces.map(p => (
+                        <div
+                          key={p.id}
+                          className={`check-item ${p.status === "valid" ? "valid-state" : p.status === "reject" ? "reject-state" : "pending-state"}`}
+                        >
+                          <div className="check-name">{p.id === "cip" ? "CIP" : "Quittance"}</div>
+                          <div className={`check-status ${p.status === "valid" ? "v" : p.status === "reject" ? "r" : "p"}`}>
+                            {p.status === "valid"
+                              ? <><CheckIcon /> Validée</>
+                              : p.status === "reject"
+                                ? <><XIcon /> Rejetée</>
+                                : "— En attente"}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="divider-h" />
+                    <div className="comment-global-label">Commentaire général</div>
+                    <textarea
+                      className="piece-comment-area"
+                      rows={3}
+                      placeholder="Commentaire général sur ce dossier (optionnel)..."
+                      value={globalComment}
+                      onChange={e => setGlobalComment(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="panel">
+                  <div className="panel-header"><div className="panel-title">Actions disponibles</div></div>
+                  <div className="panel-body">
+                    <button className="btn-main generate" disabled={!allValidated} onClick={() => setModal("generate")}>
+                      <SparkleIcon /> Valider et générer le document
+                    </button>
+
+                    <button
+                      className="btn-main reject-all"
+                      style={{ opacity: (!allDecided || !anyRejected) ? 0.4 : 1, cursor: (!allDecided || !anyRejected) ? "not-allowed" : "pointer" }}
+                      onClick={() => { if (allDecided && anyRejected) setModal("reject"); }}
+                    >
+                      <XIcon /> Rejeter la demande
+                    </button>
+
+                    {!allDecided && (
+                      <div className="info-box blue" style={{ marginTop: 4 }}>
+                        Validez ou rejetez chaque pièce avant de pouvoir prendre une décision finale.
+                      </div>
+                    )}
+                    {allValidated && (
+                      <div className="info-box green" style={{ marginTop: 4 }}>
+                        La génération injectera automatiquement les notes et UE depuis la base de données académique.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </main>
+      </div>
+
+      {/* ── MODAL GÉNÉRATION ── */}
+      {modal === "generate" && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-title">
+              <SparkleIcon /> Confirmer la génération
+            </div>
+            <div className="modal-body">
+              Vous allez déclencher la génération automatique du relevé de notes pour <strong>{selected?.etudiant}</strong> (<span className="modal-ref">{selected?.ref}</span>).<br /><br />
+              Le système va automatiquement récupérer les données académiques (notes, UE, crédits, résultats) et les injecter dans le template officiel de l'IFRI. <strong>Cette action est irréversible.</strong>
+            </div>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => setModal(null)}>Annuler</button>
+              <button className="modal-btn confirm-gen" onClick={handleGenerate}>✓ Confirmer la génération</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL REJET ── */}
+      {modal === "reject" && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-title">
+              <XIcon /> Rejeter la demande
+            </div>
+            <div className="modal-body">
+              Vous allez rejeter la demande <span className="modal-ref">{selected?.ref}</span> de <strong>{selected?.etudiant}</strong>.<br />
+              L'étudiant sera notifié par email avec le motif de rejet.
+            </div>
+            <div className="comment-global-label">Motif de rejet <span style={{ color: "var(--danger)" }}>*</span></div>
+            <textarea
+              className="motif-input"
+              rows={4}
+              placeholder="Expliquez précisément la raison du rejet (minimum 20 caractères)..."
+              value={motif}
+              onChange={e => { setMotif(e.target.value); setMotifError(""); }}
+            />
+            <div className="motif-count">{motif.length} / 20 caractères minimum</div>
+            {motifError && <div className="motif-error">{motifError}</div>}
+            <div className="modal-actions" style={{ marginTop: 20 }}>
+              <button className="modal-btn cancel" onClick={() => { setModal(null); setMotif(""); setMotifError(""); }}>Annuler</button>
+              <button className="modal-btn confirm-rej" onClick={handleReject}>✗ Confirmer le rejet</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ PREVIEW (CONSULTER) */}
+      {preview && (
+        <div className="modal-overlay" onClick={closePreview}>
+          <div
+            className="modal"
+            style={{ width: "900px", maxWidth: "95vw", height: "85vh" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-title">
+              <EyeIcon /> {preview.name}
+            </div>
+
+            <div style={{ height: "calc(85vh - 90px)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
+              <iframe title="preview" src={preview.url} style={{ width: "100%", height: "100%", border: "none" }} />
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: 14 }}>
+              <button className="modal-btn cancel" onClick={closePreview}>Fermer</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
 
 // ── Composants partagés ────────────────────────────────────

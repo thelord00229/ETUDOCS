@@ -9,8 +9,6 @@ exports.soumettre = asyncHandler(async (req, res) => {
   const files = req.files || {};
   const typeDocument = req.body?.typeDocument;
 
-  // ✅ règle actuelle (selon ce que tu as décrit)
-  // Relevé de notes + Attestation d'inscription => 4 pièces obligatoires
   const needFourPieces = ['RELEVE_NOTES', 'ATTESTATION_INSCRIPTION'].includes(typeDocument);
 
   const required = needFourPieces
@@ -57,12 +55,28 @@ exports.avancer = asyncHandler(async (req, res) => {
 });
 
 exports.validerPiece = asyncHandler(async (req, res) => {
+  const statut = req.body?.statut;
+
+  if (!['VALIDEE', 'REJETEE'].includes(statut)) {
+    return res.status(400).json({ message: "statut invalide. Attendu: VALIDEE ou REJETEE." });
+  }
+
+  // compat : certains users n'ont pas 'service'
+  const userService = req.user.service || req.user.serviceId || req.user.division || req.user.departement || null;
+
   res.json(
     await service.validerPiece(
       req.params.pieceId,
-      req.body.statut,
+      statut,
       req.body.commentaire,
-      req.user.id
+      req.user.id,
+      req.user.role,
+      req.user.institutionId,
+      userService
     )
   );
+});
+
+exports.getStatsChefDivision = asyncHandler(async (req, res) => {
+  res.json(await service.getStatsChefDivision(req.user));
 });
