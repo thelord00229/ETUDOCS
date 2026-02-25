@@ -1,36 +1,64 @@
 const WORKFLOW = {
+  // Niveau 1: Étudiant soumet sa demande
   SOUMISE: {
     roles: ['SECRETAIRE_ADJOINT'],
     actions: {
-      TRANSMETTRE: 'TRANSMISE_SECRETAIRE_GENERAL',
+      TRANSMETTRE: 'TRANSMISE_SECRETAIRE_ADJOINT', // Transmet au secrétaire général
       DEMANDER_CORRECTION: 'CORRECTION_DEMANDEE'
     }
   },
+  
   CORRECTION_DEMANDEE: {
     roles: ['ETUDIANT'],
-    actions: { SOUMETTRE_CORRECTION: 'SOUMISE' }
+    actions: { 
+      SOUMETTRE_CORRECTION: 'SOUMISE' 
+    }
   },
-  TRANSMISE_SECRETAIRE_GENERAL: {
+  
+  // Niveau 2: Secrétaire adjoint a transmis au secrétaire général
+  TRANSMISE_SECRETAIRE_ADJOINT: {
     roles: ['SECRETAIRE_GENERAL'],
-    actions: { TRANSMETTRE: 'TRANSMISE_CHEF_DIVISION' }
+    actions: { 
+      TRANSMETTRE: 'TRANSMISE_SECRETAIRE_GENERAL' // Transmet au chef de division
+    }
   },
-  TRANSMISE_CHEF_DIVISION: {
+  
+  // Niveau 3: Secrétaire général a transmis au chef de division
+  TRANSMISE_SECRETAIRE_GENERAL: {
     roles: ['CHEF_DIVISION'],
     actions: {
-      GENERER_DOCUMENT: 'ATTENTE_SIGNATURE_DIRECTEUR_ADJOINT',
+      GENERER_DOCUMENT: 'DOCUMENT_GENERE', // Génère le document après validation des pièces
       REJETER: 'REJETEE'
     }
   },
-  ATTENTE_SIGNATURE_DIRECTEUR_ADJOINT: {
+  
+  // Niveau 3 (suite): Document généré, prêt pour signature
+  DOCUMENT_GENERE: {
     roles: ['DIRECTEUR_ADJOINT'],
-    actions: { APPROUVER: 'ATTENTE_SIGNATURE_DIRECTEUR' }
+    actions: { 
+      APPROUVER: 'ATTENTE_SIGNATURE_DIRECTEUR_ADJOINT' // Signe et transmet au directeur
+    }
   },
-  ATTENTE_SIGNATURE_DIRECTEUR: {
+  
+  // Niveau 4: Directeur adjoint a signé
+  ATTENTE_SIGNATURE_DIRECTEUR_ADJOINT: {
     roles: ['DIRECTEUR'],
-    actions: { APPROUVER: 'DISPONIBLE' }
+    actions: { 
+      APPROUVER: 'DISPONIBLE' // Signe et rend disponible
+    }
   },
-  DISPONIBLE: { roles: [], actions: {} },
-  REJETEE:    { roles: [], actions: {} }
+  
+  // Niveau 5: Document disponible pour l'étudiant
+  DISPONIBLE: { 
+    roles: [], 
+    actions: {} 
+  },
+  
+  // Rejet
+  REJETEE: { 
+    roles: [], 
+    actions: {} 
+  }
 };
 
 exports.peutAgir = (role, statutActuel) => {

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getDemandes, avancerDemande } from "../../services/api";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
@@ -470,6 +471,39 @@ const XCircleIcon = () => (
 export default function DashboardDI() {
     const [searchQuery, setSearchQuery] = useState("");
 
+    const [demandes, setDemandes] = useState([]);
+
+    const chargerDemandes = async () => {
+      try {
+        const data = await getDemandes();
+        const list = Array.isArray(data) ? data : (data?.demandes ?? []);
+        setDemandes(list);
+      } catch (e) {
+        console.error(e);
+        setDemandes([]);
+      }
+    };
+
+    useEffect(() => {
+      chargerDemandes();
+    }, []);
+
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const data = await getDemandes();
+                const list = Array.isArray(data) ? data : (data?.demandes ?? []);
+                setDemandes(list);
+            } catch (e) {
+                console.error(e);
+                setDemandes([]);
+            }
+        })();
+    }, []);
+
+    
+
     return (
         <>
             <style>{styles}</style>
@@ -579,6 +613,45 @@ export default function DashboardDI() {
                                         <th>Action</th>
                                     </tr>
                                     </thead>
+                                    <tbody>
+                                      {demandes.length === 0 ? (
+                                        <tr>
+                                          <td colSpan={6} style={{ padding: 24, color: "var(--text-muted)" }}>
+                                            Aucun document en attente de signature finale
+                                          </td>
+                                        </tr>
+                                      ) : (
+                                        demandes
+                                          .filter(d => {
+                                            const q = (searchQuery || "").toLowerCase();
+                                            const ref = (d?.documents?.[0]?.reference || "").toLowerCase();
+                                            const nom = `${d?.utilisateur?.prenom || ""} ${d?.utilisateur?.nom || ""}`.toLowerCase();
+                                            return !q || ref.includes(q) || nom.includes(q);
+                                          })
+                                          .map((d) => (
+                                            <tr key={d.id}>
+                                              <td style={{ padding: "12px 28px" }}>{d.documents?.[0]?.reference ?? "—"}</td>
+                                              <td style={{ padding: "12px 28px" }}>
+                                                {d.utilisateur?.prenom} {d.utilisateur?.nom}
+                                              </td>
+                                              <td style={{ padding: "12px 28px" }}>{d.typeDocument}</td>
+                                              <td style={{ padding: "12px 28px" }}>{new Date(d.createdAt).toLocaleString()}</td>
+                                              <td style={{ padding: "12px 28px" }}>{d.statut}</td>
+                                              <td style={{ padding: "12px 28px" }}>
+                                                <button
+                                                  className="actualiser-btn"
+                                                  onClick={async () => {
+                                                    await avancerDemande(d.id, "APPROUVER");
+                                                    await chargerDemandes();
+                                                  }}
+                                                >
+                                                  Approuver
+                                                </button>
+                                              </td>
+                                            </tr>
+                                          ))
+                                      )}
+                                    </tbody>
                                 </table>
                                 <div className="empty-state">
                                     <div className="empty-icon">📄</div>

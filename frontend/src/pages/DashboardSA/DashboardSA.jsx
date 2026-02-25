@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { NavLink } from "react-router-dom";
+import { getDemandes, avancerDemande, clearSession } from "../../services/api";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
@@ -107,6 +108,7 @@ const css = `
     white-space: nowrap;
   }
   .btn-actualiser:hover { background: #243057; }
+  .btn-actualiser:disabled { opacity: .6; cursor: not-allowed; }
 
   /* STATS GRID */
   .agent-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
@@ -130,6 +132,7 @@ const css = `
   .agent-table-header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 18px 24px; border-bottom: 1px solid #f1f5f9;
+    gap: 12px;
   }
   .agent-table-title {
     font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem; color: #1a2744;
@@ -178,10 +181,8 @@ const css = `
 
   .badge { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px; font-size: .78rem; font-weight: 600; white-space: nowrap; }
   .badge--new        { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
-  .badge--attente    { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
   .badge--correction { background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; }
-  .badge--transmis   { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-  .badge--rejete     { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+  .badge--other      { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
 
   .td-actions { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
   .btn-verifier {
@@ -192,222 +193,729 @@ const css = `
   .btn-verifier:hover { color: #f5a623; }
   .btn-verifier:hover svg { stroke: #f5a623; }
   .btn-verifier svg { stroke: #1a2744; transition: stroke .2s; }
-  .btn-more {
-    width: 28px; height: 28px; border-radius: 6px; border: 1.5px solid #e2e8f0;
-    background: #fff; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: border-color .2s;
+
+  /* STATE */
+  .state-box { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 24px; color: #475569; font-size: .9rem; }
+  .state-error { color: #dc2626; border-color: #fecaca; background: #fef2f2; }
+
+  /* ── MODAL ── */
+  .sa-modal-overlay {
+    position: fixed; inset: 0; background: rgba(15,23,42,.5);
+    z-index: 100; display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(3px); padding: 16px;
   }
-  .btn-more:hover { border-color: #1a2744; }
+  .sa-modal {
+    background: #fff; border-radius: 16px; width: 100%; max-width: 520px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.18); overflow: hidden;
+  }
+  .sa-modal__head {
+    padding: 22px 26px 18px; border-bottom: 1px solid #f1f5f9;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  }
+  .sa-modal__title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.05rem; color: #1a2744; }
+  .sa-modal__ref   { font-size: .78rem; color: #94a3b8; margin-top: 3px; font-family: 'DM Sans', sans-serif; }
+  .sa-modal__close {
+    background: none; border: none; cursor: pointer; color: #94a3b8;
+    font-size: 1.3rem; line-height: 1; padding: 2px; flex-shrink: 0;
+    transition: color .15s;
+  }
+  .sa-modal__close:hover { color: #1a2744; }
+  .sa-modal__body { padding: 20px 26px; display: flex; flex-direction: column; gap: 14px; }
+
+  .sa-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .sa-info-item {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px;
+  }
+  .sa-info-key   { font-size: .72rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  .sa-info-val   { font-family: 'Sora', sans-serif; font-weight: 600; font-size: .88rem; color: #1a2744; }
+
+  .sa-pieces-label { font-family: 'Sora', sans-serif; font-weight: 600; font-size: .85rem; color: #1a2744; margin-bottom: 6px; }
+  .sa-piece-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 9px; margin-bottom: 6px; gap: 10px;
+  }
+  .sa-piece-row:last-child { margin-bottom: 0; }
+  .sa-piece-name { font-size: .85rem; font-weight: 600; color: #334155; }
+  .sa-piece-meta { font-size: .75rem; color: #94a3b8; margin-top: 2px; }
+  .sa-piece-tag  {
+    font-size: .75rem; font-weight: 600; color: #475569;
+    background: #f1f5f9; border-radius: 6px; padding: 3px 8px; white-space: nowrap;
+  }
+
+  .sa-modal__footer { padding: 0 26px 22px; display: flex; flex-direction: column; gap: 10px; }
+
+  .sa-correction-area {
+    width: 100%; padding: 11px 14px;
+    border: 1.5px solid #e2e8f0; border-radius: 9px;
+    font-family: 'DM Sans', sans-serif; font-size: .88rem; color: #334155;
+    resize: vertical; min-height: 80px; outline: none;
+    transition: border-color .2s; box-sizing: border-box;
+  }
+  .sa-correction-area:focus { border-color: #1a2744; }
+  .sa-correction-area::placeholder { color: #cbd5e1; }
+
+  .sa-btn-row { display: flex; gap: 10px; }
+  .sa-btn {
+    flex: 1; padding: 11px 16px; border-radius: 9px; border: none;
+    font-family: 'Sora', sans-serif; font-weight: 700; font-size: .88rem;
+    cursor: pointer; transition: all .2s; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .sa-btn:disabled { opacity: .55; cursor: not-allowed; }
+  .sa-btn--ghost  { background: #f8fafc; color: #475569; border: 1.5px solid #e2e8f0; }
+  .sa-btn--ghost:hover:not(:disabled)  { border-color: #1a2744; color: #1a2744; }
+  .sa-btn--warn   { background: #fff7ed; color: #c2410c; border: 1.5px solid #fed7aa; }
+  .sa-btn--warn:hover:not(:disabled)   { background: #ffedd5; }
+  .sa-btn--primary { background: #1a2744; color: #fff; }
+  .sa-btn--primary:hover:not(:disabled) { background: #243057; }
+
+  /* Toast */
+  .sa-toast {
+    position: fixed; bottom: 28px; right: 28px; z-index: 200;
+    background: #1a2744; color: #fff;
+    padding: 13px 20px; border-radius: 11px;
+    font-family: 'DM Sans', sans-serif; font-size: .88rem; font-weight: 500;
+    box-shadow: 0 8px 30px rgba(0,0,0,.2);
+    animation: sa-toast-in .2s ease;
+  }
+  .sa-toast--error { background: #dc2626; }
+  @keyframes sa-toast-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 `;
 
 const NAV = [
-    { to: "/dashboardsa", label: "Tableau de bord", d: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
+  { to: "/dashboardsa", label: "Tableau de bord", d: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
 ];
 
-const STATUTS = {
-    "Nouvelle":            "badge--new",
-    "En attente":          "badge--attente",
-    "Correction demandée": "badge--correction",
-    "Transmis":            "badge--transmis",
-    "Rejeté":              "badge--rejete",
+/* ─── helpers ─────────────────────────────────────────── */
+const TYPE_LABEL = {
+  RELEVE_NOTES: "Relevé de notes",
+  ATTESTATION_INSCRIPTION: "Attestation d'inscription",
 };
 
-const DEMANDES = [
-    { ref: "ETD-2026-IFRI-INS-00235-LM48", nom: "HOUNHOUI Darina", num: "22P0045", doc: "Attestation d'inscription", date: "11/20/2025", status: "Correction demandée" },
-    { ref: "ETD-2026-IFRI-RN-00234-KA12",  nom: "KOFFI Amen",      num: "21P0078", doc: "Relevé de notes",           date: "11/19/2025", status: "En attente" },
-    { ref: "ETD-2026-IFRI-SUC-00233-MB09", nom: "MISSEBA Brice",   num: "20P0031", doc: "Attestation de succès",     date: "11/18/2025", status: "Nouvelle" },
-];
+const PIECE_LABEL = {
+  CIP: "Carte d'Identité Personnelle",
+  QUITTANCE: "Quittance de paiement",
+  ACTE_NAISSANCE: "Acte de naissance",
+  JUSTIFICATIF_INSCRIPTION: "Justificatif d'inscription",
+};
 
-export default function DashboardSA() {
-    const [search, setSearch] = useState("");
+// ✅ Statuts que le SA traite réellement
+const SA_STATUTS = ["SOUMISE", "CORRECTION_DEMANDEE"];
 
-    const filtered = DEMANDES.filter(d =>
-        d.ref.toLowerCase().includes(search.toLowerCase()) ||
-        d.nom.toLowerCase().includes(search.toLowerCase()) ||
-        d.doc.toLowerCase().includes(search.toLowerCase())
-    );
+const badgeClass = (statut) => {
+  if (statut === "SOUMISE") return "badge--new";
+  if (statut === "CORRECTION_DEMANDEE") return "badge--correction";
+  return "badge--other";
+};
 
-    return (
-        <div className="agent-layout">
-            <style>{css}</style>
+const badgeLabel = (statut) => {
+  if (statut === "SOUMISE") return "Nouvelle";
+  if (statut === "CORRECTION_DEMANDEE") return "Correction demandée";
+  return statut;
+};
 
-            {/* ── SIDEBAR ── */}
-            <aside className="agent-sidebar">
-                <a href="/agent" className="agent-sidebar__brand">
-                    <div className="agent-sidebar__brand-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                             stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                        </svg>
-                    </div>
-                    EtuDocs <span className="agent-sidebar__brand-tag">Agent</span>
-                </a>
+const fmtDate = (d) =>
+  d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
-                <nav className="agent-sidebar__nav">
-                    {NAV.map(n => (
-                        <NavLink key={n.to} to={n.to} end={n.to === "/agent"}
-                                 className={({ isActive }) => "agent-sidebar__link" + (isActive ? " active" : "")}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                 strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d={n.d} />
-                            </svg>
-                            {n.label}
-                        </NavLink>
-                    ))}
-                </nav>
+const initials = (nom = "", prenom = "") =>
+  `${prenom?.[0] || ""}${nom?.[0] || ""}`.toUpperCase();
 
-                <div className="agent-sidebar__divider" />
-                <button className="agent-sidebar__logout">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                    </svg>
-                    Déconnexion
-                </button>
-            </aside>
+/* ─── Modal vérification ──────────────────────────────── */
+function ModalVerifier({ demande, onClose, onSuccess }) {
+  const [step, setStep] = useState("actions"); // "actions" | "correction"
+  const [motif, setMotif] = useState("");
+  const [loading, setLoading] = useState(false);
 
-            {/* ── MAIN ── */}
-            <div className="agent-main">
+  if (!demande) return null;
 
-                {/* TOPBAR */}
-                <header className="agent-topbar">
-                    <div className="agent-topbar__role">Secrétaire Adjoint — IFRI</div>
-                    <div className="agent-topbar__right">
-                        <button className="agent-topbar__notif">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                                 stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                            </svg>
-                            <span className="agent-topbar__badge" />
-                        </button>
-                        <div className="agent-topbar__user">
-                            <div className="agent-topbar__info" style={{ textAlign:"right" }}>
-                                <div className="agent-topbar__name">Adéola BOSSOU</div>
-                                <div className="agent-topbar__meta">IFRI</div>
-                            </div>
-                            <div className="agent-topbar__avatar">AD</div>
-                        </div>
-                    </div>
-                </header>
+  const peutTransmettre =
+    demande.statut === "SOUMISE" || demande.statut === "CORRECTION_DEMANDEE";
 
-                {/* CONTENT */}
-                <div className="agent-content">
+  const handleTransmettre = async () => {
+    setLoading(true);
+    try {
+      await avancerDemande(demande.id, "TRANSMETTRE");
+      onSuccess("Demande transmise au Secrétaire Général ✓");
+      onClose();
+    } catch (e) {
+      onSuccess(e?.message || "Erreur lors de la transmission", true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                    {/* Page header */}
-                    <div className="agent-page-header">
-                        <div>
-                            <h2 className="agent-page-title">Tableau de bord</h2>
-                            <p className="agent-page-sub">Gérez les nouvelles demandes des étudiants.</p>
-                        </div>
-                        <button className="btn-actualiser">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                                 stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="23 4 23 10 17 10"/>
-                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-                            </svg>
-                            Actualiser
-                        </button>
-                    </div>
+  const handleCorrection = async () => {
+    if (!motif.trim()) return;
+    setLoading(true);
+    try {
+      // IMPORTANT: api.js doit envoyer `commentaire` (voir correctif plus bas)
+      await avancerDemande(demande.id, "DEMANDER_CORRECTION", motif.trim());
+      onSuccess("Correction demandée à l'étudiant ✓");
+      onClose();
+    } catch (e) {
+      onSuccess(e?.message || "Erreur", true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                    {/* Stats */}
-                    <div className="agent-stats">
-                        {[
-                            { value: "0",  label: "NOUVELLES DEMANDES",    iconBg: "#eff6ff", iconColor: "#1d4ed8",
-                                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/></svg> },
-                            { value: "1",  label: "EN ATTENTE",             iconBg: "#fffbeb", iconColor: "#d97706",
-                                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
-                            { value: "45", label: "TRANSMISES (MOIS)",      iconBg: "#f0fdf4", iconColor: "#16a34a",
-                                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
-                            { value: "1",  label: "CORRECTIONS DEMANDÉES",  iconBg: "#fff7ed", iconColor: "#ea580c",
-                                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> },
-                        ].map((s, i) => (
-                            <div className="agent-stat-card" key={i}>
-                                <div className="agent-stat-card__icon" style={{ background: s.iconBg }}>{s.icon}</div>
-                                <div>
-                                    <div className="agent-stat-card__value">{s.value}</div>
-                                    <div className="agent-stat-card__label">{s.label}</div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+  // ✅ backend renvoie `utilisateur`, pas `etudiant`
+  const etudiant = demande.utilisateur || {};
+  const pieces = Array.isArray(demande.pieces) ? demande.pieces : [];
 
-                    {/* Table */}
-                    <div className="agent-table-card">
-                        <div className="agent-table-header">
-                            <div className="agent-table-title">
-                                Demandes à traiter
-                                <span className="count-badge">{filtered.length}</span>
-                            </div>
-                            <div className="agent-table-actions">
-                                <div className="search-box">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                                    </svg>
-                                    <input placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} />
-                                </div>
-                                <button className="btn-filter">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <table className="agent-table">
-                            <thead>
-                            <tr>
-                                <th>Référence</th>
-                                <th>Étudiant</th>
-                                <th>Document</th>
-                                <th>Date</th>
-                                <th>Statut</th>
-                                <th style={{ textAlign:"right" }}>Actions</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {filtered.map((d, i) => (
-                                <tr key={i}>
-                                    <td className="td-ref">{d.ref}</td>
-                                    <td>
-                                        <div className="td-etudiant-name">{d.nom}</div>
-                                        <div className="td-etudiant-num">{d.num}</div>
-                                    </td>
-                                    <td className="td-doc">{d.doc}</td>
-                                    <td className="td-date">{d.date}</td>
-                                    <td><span className={`badge ${STATUTS[d.status] || ""}`}>{d.status}</span></td>
-                                    <td>
-                                        <div className="td-actions">
-                                            <button className="btn-verifier">
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                                    <circle cx="12" cy="12" r="3"/>
-                                                </svg>
-                                                Vérifier
-                                            </button>
-                                            <button className="btn-more">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                    <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                            {filtered.length === 0 && (
-                                <tr>
-                                    <td colSpan="6" style={{ textAlign:"center", padding:"32px", color:"#94a3b8", fontSize:".9rem" }}>
-                                        Aucune demande trouvée
-                                    </td>
-                                </tr>
-                            )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                </div>
+  return (
+    <div className="sa-modal-overlay" onClick={onClose}>
+      <div className="sa-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="sa-modal__head">
+          <div>
+            <div className="sa-modal__title">
+              {TYPE_LABEL[demande.typeDocument] || demande.typeDocument}
             </div>
+            <div className="sa-modal__ref">
+              Réf : {demande.id} · soumise le {fmtDate(demande.createdAt)}
+            </div>
+          </div>
+          <button className="sa-modal__close" onClick={onClose}>
+            ×
+          </button>
         </div>
-    );
+
+        <div className="sa-modal__body">
+          <div className="sa-info-grid">
+            <div className="sa-info-item">
+              <div className="sa-info-key">Étudiant</div>
+              <div className="sa-info-val">
+                {etudiant.prenom} {etudiant.nom}
+              </div>
+            </div>
+            <div className="sa-info-item">
+              <div className="sa-info-key">N° Étudiant</div>
+              <div className="sa-info-val">{etudiant.numeroEtudiant || "—"}</div>
+            </div>
+            <div className="sa-info-item">
+              <div className="sa-info-key">Document</div>
+              <div className="sa-info-val">
+                {TYPE_LABEL[demande.typeDocument] || demande.typeDocument}
+              </div>
+            </div>
+            <div className="sa-info-item">
+              <div className="sa-info-key">Statut</div>
+              <div className="sa-info-val">{badgeLabel(demande.statut)}</div>
+            </div>
+          </div>
+
+          {pieces.length > 0 && (
+            <div>
+              <div className="sa-pieces-label">Pièces justificatives ({pieces.length})</div>
+              {pieces.map((p) => (
+                <div key={p.id} className="sa-piece-row">
+                  <div>
+                    <div className="sa-piece-name">
+                      {PIECE_LABEL[p.typePiece] || p.typePiece}
+                    </div>
+                    <div className="sa-piece-meta">
+                      {p.nom ? p.nom : "Fichier uploadé"}
+                    </div>
+                  </div>
+                  <span className="sa-piece-tag">{p.statut || "SOUMISE"}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {step === "correction" && (
+            <div>
+              <div className="sa-pieces-label">Motif de la correction demandée</div>
+              <textarea
+                className="sa-correction-area"
+                placeholder="Ex : La quittance est illisible. Merci de soumettre une version claire."
+                value={motif}
+                onChange={(e) => setMotif(e.target.value)}
+                autoFocus
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="sa-modal__footer">
+          {step === "actions" ? (
+            <div className="sa-btn-row">
+              <button className="sa-btn sa-btn--ghost" onClick={onClose}>
+                Fermer
+              </button>
+
+              <button
+                className="sa-btn sa-btn--warn"
+                onClick={() => setStep("correction")}
+                disabled={!peutTransmettre}
+              >
+                ⚠ Correction
+              </button>
+
+              <button
+                className="sa-btn sa-btn--primary"
+                onClick={handleTransmettre}
+                disabled={loading || !peutTransmettre}
+              >
+                {loading ? "Envoi…" : "Transmettre au SG →"}
+              </button>
+            </div>
+          ) : (
+            <div className="sa-btn-row">
+              <button
+                className="sa-btn sa-btn--ghost"
+                onClick={() => setStep("actions")}
+                disabled={loading}
+              >
+                ← Retour
+              </button>
+              <button
+                className="sa-btn sa-btn--warn"
+                onClick={handleCorrection}
+                disabled={loading || !motif.trim()}
+              >
+                {loading ? "Envoi…" : "Envoyer la correction"}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Component principal ─────────────────────────────── */
+export default function DashboardSA() {
+  const [demandes, setDemandes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState(null);
+  const [toast, setToast] = useState(null); // { msg, error }
+
+  const user = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("etudocs_user")) || {};
+    } catch {
+      return {};
+    }
+  })();
+
+  const displayName =
+    user.prenom && user.nom ? `${user.prenom} ${user.nom}` : "Agent";
+  const avatarText = initials(user.nom || "", user.prenom || "");
+  const institution = user.institution?.sigle || user.institution?.nom || "IFRI";
+
+  const showToast = (msg, isError = false) => {
+    setToast({ msg, isError });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await getDemandes();
+      const list = Array.isArray(data) ? data : data?.demandes || [];
+
+      // ✅ On garde les demandes SA pertinentes (si backend renvoie aussi correction)
+      const filtered = list.filter((d) => SA_STATUTS.includes(d.statut));
+      setDemandes(filtered);
+    } catch (e) {
+      if (e?.message === "UNAUTHORIZED") {
+        clearSession();
+        window.location.href = "/login";
+      } else {
+        setError("Impossible de charger les demandes.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const stats = {
+    nouvelles: demandes.filter((d) => d.statut === "SOUMISE").length,
+    corrections: demandes.filter((d) => d.statut === "CORRECTION_DEMANDEE").length,
+    total: demandes.length,
+    transmises: 0, // SA ne voit pas après transmission (normal si backend filtre)
+  };
+
+  const filtered = demandes.filter((d) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+
+    const u = d.utilisateur || {};
+    const nom = `${u.prenom || ""} ${u.nom || ""}`.toLowerCase();
+    const ref = String(d.id || "").toLowerCase();
+    const doc = String(TYPE_LABEL[d.typeDocument] || d.typeDocument || "").toLowerCase();
+    const num = String(u.numeroEtudiant || "").toLowerCase();
+
+    return nom.includes(q) || ref.includes(q) || doc.includes(q) || num.includes(q);
+  });
+
+  const handleLogout = () => {
+    clearSession();
+    window.location.href = "/login";
+  };
+
+  return (
+    <div className="agent-layout">
+      <style>{css}</style>
+
+      {toast && (
+        <div className={`sa-toast${toast.isError ? " sa-toast--error" : ""}`}>
+          {toast.msg}
+        </div>
+      )}
+
+      {selected && (
+        <ModalVerifier
+          demande={selected}
+          onClose={() => {
+            setSelected(null);
+            load();
+          }}
+          onSuccess={(msg, isErr) => {
+            showToast(msg, isErr);
+            if (!isErr) load();
+          }}
+        />
+      )}
+
+      <aside className="agent-sidebar">
+        <a href="/agent" className="agent-sidebar__brand">
+          <div className="agent-sidebar__brand-icon">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+          </div>
+          EtuDocs <span className="agent-sidebar__brand-tag">Agent</span>
+        </a>
+
+        <nav className="agent-sidebar__nav">
+          {NAV.map((n) => (
+            <NavLink
+              key={n.to}
+              to={n.to}
+              end={n.to === "/agent"}
+              className={({ isActive }) =>
+                "agent-sidebar__link" + (isActive ? " active" : "")
+              }
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d={n.d} />
+              </svg>
+              {n.label}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="agent-sidebar__divider" />
+        <button className="agent-sidebar__logout" onClick={handleLogout}>
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          Déconnexion
+        </button>
+      </aside>
+
+      <div className="agent-main">
+        <header className="agent-topbar">
+          <div className="agent-topbar__role">
+            Secrétaire Adjoint — {institution}
+          </div>
+          <div className="agent-topbar__right">
+            <button className="agent-topbar__notif">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              {stats.nouvelles > 0 && <span className="agent-topbar__badge" />}
+            </button>
+            <div className="agent-topbar__user">
+              <div className="agent-topbar__info" style={{ textAlign: "right" }}>
+                <div className="agent-topbar__name">{displayName}</div>
+                <div className="agent-topbar__meta">{institution}</div>
+              </div>
+              <div className="agent-topbar__avatar">{avatarText || "AG"}</div>
+            </div>
+          </div>
+        </header>
+
+        <div className="agent-content">
+          <div className="agent-page-header">
+            <div>
+              <h2 className="agent-page-title">Tableau de bord</h2>
+              <p className="agent-page-sub">Gérez les nouvelles demandes des étudiants.</p>
+            </div>
+            <button className="btn-actualiser" onClick={load} disabled={loading}>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="23 4 23 10 17 10" />
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+              </svg>
+              {loading ? "Chargement…" : "Actualiser"}
+            </button>
+          </div>
+
+          <div className="agent-stats">
+            {[
+              {
+                value: stats.nouvelles,
+                label: "NOUVELLES DEMANDES",
+                iconBg: "#eff6ff",
+                icon: (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#1d4ed8"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0" />
+                  </svg>
+                ),
+              },
+              {
+                value: stats.corrections,
+                label: "CORRECTIONS DEMANDÉES",
+                iconBg: "#fff7ed",
+                icon: (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#ea580c"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                ),
+              },
+              {
+                value: stats.total,
+                label: "TOTAL À TRAITER",
+                iconBg: "#f1f5f9",
+                icon: (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#475569"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="3" y="3" width="7" height="7" />
+                    <rect x="14" y="3" width="7" height="7" />
+                    <rect x="3" y="14" width="7" height="7" />
+                    <rect x="14" y="14" width="7" height="7" />
+                  </svg>
+                ),
+              },
+              {
+                value: stats.transmises,
+                label: "TRANSMISES",
+                iconBg: "#f0fdf4",
+                icon: (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#16a34a"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                ),
+              },
+            ].map((s, i) => (
+              <div className="agent-stat-card" key={i}>
+                <div className="agent-stat-card__icon" style={{ background: s.iconBg }}>
+                  {s.icon}
+                </div>
+                <div>
+                  <div className="agent-stat-card__value">{loading ? "…" : s.value}</div>
+                  <div className="agent-stat-card__label">{s.label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {error && <div className="state-box state-error">{error}</div>}
+
+          <div className="agent-table-card">
+            <div className="agent-table-header">
+              <div className="agent-table-title">
+                Demandes à traiter <span className="count-badge">{filtered.length}</span>
+              </div>
+
+              <div className="agent-table-actions">
+                <div className="search-box">
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#94a3b8"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input
+                    placeholder="Rechercher..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+                <button className="btn-filter" type="button">
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#475569"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <table className="agent-table">
+              <thead>
+                <tr>
+                  <th>Référence</th>
+                  <th>Étudiant</th>
+                  <th>Document</th>
+                  <th>Date</th>
+                  <th>Statut</th>
+                  <th style={{ textAlign: "right" }}>Actions</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      style={{ textAlign: "center", padding: "32px", color: "#94a3b8", fontSize: ".9rem" }}
+                    >
+                      Chargement…
+                    </td>
+                  </tr>
+                ) : filtered.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      style={{ textAlign: "center", padding: "32px", color: "#94a3b8", fontSize: ".9rem" }}
+                    >
+                      {search ? "Aucune demande trouvée" : "Aucune demande en attente"}
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((d) => {
+                    const u = d.utilisateur || {};
+                    return (
+                      <tr key={d.id}>
+                        <td className="td-ref">{d.id}</td>
+                        <td>
+                          <div className="td-etudiant-name">{u.prenom} {u.nom}</div>
+                          <div className="td-etudiant-num">{u.numeroEtudiant || "—"}</div>
+                        </td>
+                        <td className="td-doc">{TYPE_LABEL[d.typeDocument] || d.typeDocument}</td>
+                        <td className="td-date">{fmtDate(d.createdAt)}</td>
+                        <td>
+                          <span className={`badge ${badgeClass(d.statut)}`}>
+                            {badgeLabel(d.statut)}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="td-actions">
+                            <button className="btn-verifier" onClick={() => setSelected(d)}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                              </svg>
+                              Vérifier
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -1,4 +1,5 @@
-import { useState } from "react";
+// src/pages/Register/Register.jsx
+import { useMemo, useState } from "react";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
@@ -21,6 +22,12 @@ const css = `
     --blue-bg: #eff6ff;
     --blue-bd: #bfdbfe;
     --blue-tx: #1e40af;
+    --red-bg:  #fef2f2;
+    --red-bd:  #fecaca;
+    --red-tx:  #991b1b;
+    --ok-bg:   #ecfdf5;
+    --ok-bd:   #bbf7d0;
+    --ok-tx:   #166534;
   }
 
   html, body, #root { margin:0; padding:0; width:100%; min-height:100%; font-family:'DM Sans',sans-serif; }
@@ -83,6 +90,16 @@ const css = `
   }
   .banner svg { flex-shrink:0; margin-top:1px; }
 
+  .alert {
+    width:100%; max-width:620px;
+    border-radius:10px; padding:12px 16px;
+    display:flex; align-items:flex-start; gap:10px;
+    font-size:.88rem; line-height:1.5;
+    margin-bottom:14px;
+  }
+  .alert.error { background:var(--red-bg); border:1px solid var(--red-bd); color:var(--red-tx); }
+  .alert.ok    { background:var(--ok-bg);  border:1px solid var(--ok-bd);  color:var(--ok-tx); }
+
   /* CARD */
   .card {
     background:var(--white); border-radius:18px;
@@ -127,23 +144,15 @@ const css = `
     padding:13px; border:1.5px solid var(--g200); background:var(--white);
     border-radius:10px; font-family:'Sora',sans-serif; font-size:.95rem;
     font-weight:600; color:var(--g700); cursor:pointer;
-    transition:border-color .2s, color .2s;
+    transition:border-color .2s, color .2s, opacity .2s;
   }
   .btn-outline:hover { border-color:var(--navy); color:var(--navy); }
-
-  .btn-primary {
-    padding:13px; background:var(--navy); color:#fff; border:none;
-    border-radius:10px; font-family:'Sora',sans-serif; font-size:.95rem;
-    font-weight:700; cursor:pointer;
-    transition:background .2s, transform .15s, box-shadow .2s;
-  }
-  .btn-primary:hover { background:var(--navy2); transform:translateY(-1px); box-shadow:0 6px 20px rgba(26,39,68,.25); }
 
   .btn-continue {
     width:100%; padding:14px; background:var(--navy); color:#fff; border:none;
     border-radius:10px; font-family:'Sora',sans-serif; font-size:1rem;
     font-weight:700; cursor:pointer;
-    transition:background .2s, transform .15s, box-shadow .2s;
+    transition:background .2s, transform .15s, box-shadow .2s, opacity .2s;
   }
   .btn-continue:hover { background:var(--navy2); transform:translateY(-1px); box-shadow:0 6px 20px rgba(26,39,68,.25); }
 
@@ -151,9 +160,11 @@ const css = `
     padding:13px; background:var(--green); color:#fff; border:none;
     border-radius:10px; font-family:'Sora',sans-serif; font-size:.95rem;
     font-weight:700; cursor:pointer;
-    transition:background .2s, transform .15s;
+    transition:background .2s, transform .15s, opacity .2s;
   }
   .btn-green:hover { background:var(--green-lt); transform:translateY(-1px); }
+
+  button:disabled { opacity: .55; cursor:not-allowed; transform:none !important; box-shadow:none !important; }
 
   /* FOOTER */
   .card__footer {
@@ -172,195 +183,418 @@ const css = `
 `;
 
 const NIVEAUX = [
-    "Licence 1 (L1)", "Licence 2 (L2)", "Licence 3 (L3)",
-    "Master 1 (M1)", "Master 2 (M2)",
-    "Doctorat 1ère année", "Doctorat 2ème année", "Doctorat 3ème année",
+  "Licence 1 (L1)", "Licence 2 (L2)", "Licence 3 (L3)",
+  "Master 1 (M1)", "Master 2 (M2)",
+  "Doctorat 1ère année", "Doctorat 2ème année", "Doctorat 3ème année",
 ];
 
 const INSTITUTIONS = [
-    { value: "IFRI", label: "IFRI - Institut de Formation et de Recherche en Informatique" },
-    { value: "EPAC", label: "EPAC - École Polytechnique d'Abomey-Calavi" },
-    { value: "FSS",  label: "FSS - Faculté des Sciences de la Santé" },
+  { value: "IFRI", label: "IFRI - Institut de Formation et de Recherche en Informatique" },
+  { value: "EPAC", label: "EPAC - École Polytechnique d'Abomey-Calavi" },
+  { value: "FSS",  label: "FSS - Faculté des Sciences de la Santé" },
 ];
 
 const CheckIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-         stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="20 6 9 17 4 12"/>
-    </svg>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+       stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
 );
 
 const InfoIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="8" x2="12" y2="12"/>
-        <line x1="12" y1="16" x2="12.01" y2="16"/>
-    </svg>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+       stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="12" y1="8" x2="12" y2="12"/>
+    <line x1="12" y1="16" x2="12.01" y2="16"/>
+  </svg>
 );
 
 const DocIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-         stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <line x1="16" y1="13" x2="8" y2="13"/>
-        <line x1="16" y1="17" x2="8" y2="17"/>
-    </svg>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+       stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+    <line x1="16" y1="13" x2="8" y2="13"/>
+    <line x1="16" y1="17" x2="8" y2="17"/>
+  </svg>
 );
 
+const splitNomComplet = (nomComplet) => {
+  const clean = String(nomComplet || "").trim().replace(/\s+/g, " ");
+  if (!clean) return { prenom: "", nom: "" };
+  const parts = clean.split(" ");
+  if (parts.length === 1) return { prenom: parts[0], nom: parts[0] };
+  const nom = parts[parts.length - 1];
+  const prenom = parts.slice(0, -1).join(" ");
+  return { prenom, nom };
+};
+
 export default function Register() {
-    const [step, setStep] = useState(1);
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-    // Étape 1
-    const [numEtudiant, setNumEtudiant] = useState("");
-    const [nomComplet,  setNomComplet]  = useState("");
-    const [email,       setEmail]       = useState("");
-    const [password,    setPassword]    = useState("");
-    const [confirm,     setConfirm]     = useState("");
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [okMsg, setOkMsg] = useState("");
 
-    // Étape 2
-    const [institution, setInstitution] = useState("");
-    const [filiere,     setFiliere]     = useState("");
-    const [niveau,      setNiveau]      = useState("");
+  // Étape 1
+  const [numEtudiant, setNumEtudiant] = useState("");
+  const [nomComplet, setNomComplet] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
 
-    const goStep2 = (e) => { e.preventDefault(); setStep(2); window.scrollTo(0,0); };
-    const goBack  = ()    => setStep(1);
-    const submit  = (e)   => { e.preventDefault(); alert("Compte créé !"); };
+  // Étape 2
+  const [institution, setInstitution] = useState("");
+  const [filiere, setFiliere] = useState("");
+  const [niveau, setNiveau] = useState("");
 
-    return (
-        <div className="page">
-            <style>{css}</style>
+  const passwordMismatch = useMemo(() => {
+    return confirm.length > 0 && password !== confirm;
+  }, [password, confirm]);
 
-            {/* Brand */}
-            <a href="/" className="brand">
-                <div className="brand__icon"><DocIcon /></div>
-                EtuDocs
-            </a>
+  const splitNomComplet = (full) => {
+    const parts = String(full || "")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
 
-            {/* Stepper */}
-            <div className="stepper">
-                <div className="step-item">
-                    <div className={`step-circle ${step > 1 ? "done" : "active"}`}>
-                        {step > 1 ? <CheckIcon /> : "1"}
-                    </div>
-                    <span className={`step-label ${step > 1 ? "done" : "active"}`}>Informations personnelles</span>
-                </div>
+    if (parts.length === 0) return { prenom: "", nom: "" };
+    if (parts.length === 1) return { prenom: parts[0], nom: parts[0] };
 
-                <div className={`step-line ${step > 1 ? "done" : "idle"}`} />
+    const nom = parts[parts.length - 1];
+    const prenom = parts.slice(0, -1).join(" ");
+    return { prenom, nom };
+  };
 
-                <div className="step-item">
-                    <div className={`step-circle ${step === 2 ? "active" : "idle"}`}>2</div>
-                    <span className={`step-label ${step === 2 ? "active" : "idle"}`}>Informations académiques</span>
-                </div>
-            </div>
+  const goStep2 = (e) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setOkMsg("");
 
-            {/* Banner */}
-            <div className="banner">
-                <InfoIcon />
-                Un email de vérification sera envoyé à votre adresse après l'inscription.
-            </div>
+    const ne = String(numEtudiant).trim();
+    const nc = String(nomComplet).trim();
+    const em = String(email).trim();
 
-            {/* ── ÉTAPE 1 ── */}
-            {step === 1 && (
-                <div className="card" key="step1">
-                    <h2 className="card__title">Créer un compte étudiant</h2>
-                    <form className="form" onSubmit={goStep2}>
-                        <div className="field">
-                            <label>Numéro étudiant *</label>
-                            <input
-                                type="text" placeholder="Ex: 20220001"
-                                value={numEtudiant} onChange={e => setNumEtudiant(e.target.value)}
-                                required
-                            />
-                            <span className="hint">Votre numéro d'identification étudiant</span>
-                        </div>
-                        <div className="field">
-                            <label>Nom complet *</label>
-                            <input
-                                type="text" placeholder="Prénom(s) NOM"
-                                value={nomComplet} onChange={e => setNomComplet(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="field">
-                            <label>Email *</label>
-                            <input
-                                type="email" placeholder="votre.email@example.com"
-                                value={email} onChange={e => setEmail(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="field">
-                            <label>Mot de passe *</label>
-                            <input
-                                type="password" placeholder="••••••••"
-                                value={password} onChange={e => setPassword(e.target.value)}
-                                minLength={8} required
-                            />
-                            <span className="hint">Minimum 8 caractères</span>
-                        </div>
-                        <div className="field">
-                            <label>Confirmer le mot de passe *</label>
-                            <input
-                                type="password" placeholder="••••••••"
-                                value={confirm} onChange={e => setConfirm(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <button type="submit" className="btn-continue">Continuer</button>
-                    </form>
-                    <div className="card__footer">
-                        Vous avez déjà un compte ? <a href="/login">Se connecter</a>
-                    </div>
-                </div>
-            )}
+    if (!ne || !nc || !em) {
+      setErrorMsg("Veuillez remplir tous les champs obligatoires.");
+      return;
+    }
+    if (password.length < 8) {
+      setErrorMsg("Le mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
+    if (passwordMismatch) {
+      setErrorMsg("Les mots de passe ne correspondent pas.");
+      return;
+    }
 
-            {/* ── ÉTAPE 2 ── */}
-            {step === 2 && (
-                <div className="card" key="step2">
-                    <h2 className="card__title">Créer un compte étudiant</h2>
-                    <form className="form" onSubmit={submit}>
-                        <div className="field">
-                            <label>Institution *</label>
-                            <div className="select-wrap">
-                                <select value={institution} onChange={e => setInstitution(e.target.value)} required>
-                                    <option value="" disabled>Sélectionnez votre institution</option>
-                                    {INSTITUTIONS.map(i => (
-                                        <option key={i.value} value={i.value}>{i.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                        <div className="field">
-                            <label>Filière *</label>
-                            <input
-                                type="text" placeholder="Ex: Génie Logiciel"
-                                value={filiere} onChange={e => setFiliere(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="field">
-                            <label>Niveau d'études *</label>
-                            <div className="select-wrap">
-                                <select value={niveau} onChange={e => setNiveau(e.target.value)} required>
-                                    <option value="" disabled>Sélectionnez votre niveau</option>
-                                    {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
-                                </select>
-                            </div>
-                        </div>
-                        <div className="btn-row">
-                            <button type="button" className="btn-outline" onClick={goBack}>Retour</button>
-                            <button type="submit" className="btn-green">Créer mon compte</button>
-                        </div>
-                    </form>
-                    <div className="card__footer">
-                        Vous avez déjà un compte ? <a href="/login">Se connecter</a>
-                    </div>
-                </div>
-            )}
+    setStep(2);
+    window.scrollTo(0, 0);
+  };
 
-            <a href="/" className="back">← Retour à l'accueil</a>
+  const goBack = () => {
+    setErrorMsg("");
+    setOkMsg("");
+    setStep(1);
+    window.scrollTo(0, 0);
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setOkMsg("");
+
+    if (!institution || !String(filiere).trim() || !niveau) {
+      setErrorMsg("Veuillez compléter les informations académiques.");
+      return;
+    }
+    if (password.length < 8) {
+      setErrorMsg("Le mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
+    if (passwordMismatch) {
+      setErrorMsg("Les mots de passe ne correspondent pas.");
+      return;
+    }
+
+    const { prenom, nom } = splitNomComplet(nomComplet);
+
+    // ✅ Payload robuste :
+    // - Si ton backend attend institutionId (UUID) -> il faut envoyer l’UUID.
+    // - Si ton backend résout IFRI/EPAC/FSS -> tu peux envoyer le sigle.
+    // Ici on envoie les 2 clés pour éviter les soucis côté backend.
+    const payload = {
+      numeroEtudiant: String(numEtudiant).trim(),
+      prenom,
+      nom,
+      email: String(email).trim().toLowerCase(),
+      password,
+
+      // institution sélectionnée (sigle)
+      institution: institution,
+      institutionSigle: institution,
+
+      // si ton backend résout le sigle -> OK
+      // si ton backend exige UUID -> remplace "institution" par le vrai id
+      institutionId: institution,
+
+      filiere: String(filiere).trim(),
+      niveau,
+    };
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const contentType = res.headers.get("content-type") || "";
+      const isJson = contentType.includes("application/json");
+      const data = isJson ? await res.json().catch(() => ({})) : {};
+
+      if (!res.ok) {
+        throw new Error(data?.message || "Inscription impossible. Vérifie les champs.");
+      }
+
+      setOkMsg(
+        data?.message ||
+          "Compte créé. Vérifie ta boîte mail pour valider ton email, puis connecte-toi."
+      );
+
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 900);
+    } catch (err) {
+      setErrorMsg(err?.message || "Erreur lors de l'inscription.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="page">
+      <style>{css}</style>
+
+      {/* Brand */}
+      <a href="/" className="brand">
+        <div className="brand__icon">
+          <DocIcon />
         </div>
-    );
+        EtuDocs
+      </a>
+
+      {/* Stepper */}
+      <div className="stepper">
+        <div className="step-item">
+          <div className={`step-circle ${step > 1 ? "done" : "active"}`}>
+            {step > 1 ? <CheckIcon /> : "1"}
+          </div>
+          <span className={`step-label ${step > 1 ? "done" : "active"}`}>
+            Informations personnelles
+          </span>
+        </div>
+
+        <div className={`step-line ${step > 1 ? "done" : "idle"}`} />
+
+        <div className="step-item">
+          <div className={`step-circle ${step === 2 ? "active" : "idle"}`}>2</div>
+          <span className={`step-label ${step === 2 ? "active" : "idle"}`}>
+            Informations académiques
+          </span>
+        </div>
+      </div>
+
+      {/* Banner */}
+      <div className="banner">
+        <InfoIcon />
+        Un email de vérification sera envoyé à votre adresse après l'inscription.
+      </div>
+
+      {/* Alert */}
+      {errorMsg && (
+        <div className="alert error">
+          <InfoIcon /> {errorMsg}
+        </div>
+      )}
+      {okMsg && (
+        <div className="alert ok">
+          <InfoIcon /> {okMsg}
+        </div>
+      )}
+
+      {/* ── ÉTAPE 1 ── */}
+      {step === 1 && (
+        <div className="card" key="step1">
+          <h2 className="card__title">Créer un compte étudiant</h2>
+
+          <form className="form" onSubmit={goStep2}>
+            <div className="field">
+              <label>Numéro étudiant *</label>
+              <input
+                type="text"
+                placeholder="Ex: 20220001"
+                value={numEtudiant}
+                onChange={(e) => setNumEtudiant(e.target.value)}
+                required
+                disabled={loading}
+              />
+              <span className="hint">Votre numéro d'identification étudiant</span>
+            </div>
+
+            <div className="field">
+              <label>Nom complet *</label>
+              <input
+                type="text"
+                placeholder="Prénom(s) NOM"
+                value={nomComplet}
+                onChange={(e) => setNomComplet(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+
+            <div className="field">
+              <label>Email *</label>
+              <input
+                type="email"
+                placeholder="votre.email@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+
+            <div className="field">
+              <label>Mot de passe *</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                minLength={8}
+                required
+                disabled={loading}
+              />
+              <span className="hint">Minimum 8 caractères</span>
+            </div>
+
+            <div className="field">
+              <label>Confirmer le mot de passe *</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                required
+                disabled={loading}
+              />
+              {passwordMismatch && (
+                <span className="hint" style={{ color: "#ef4444" }}>
+                  Les mots de passe ne correspondent pas.
+                </span>
+              )}
+            </div>
+
+            <button type="submit" className="btn-continue" disabled={loading}>
+              Continuer
+            </button>
+          </form>
+
+          <div className="card__footer">
+            Vous avez déjà un compte ? <a href="/login">Se connecter</a>
+          </div>
+        </div>
+      )}
+
+      {/* ── ÉTAPE 2 ── */}
+      {step === 2 && (
+        <div className="card" key="step2">
+          <h2 className="card__title">Créer un compte étudiant</h2>
+
+          <form className="form" onSubmit={submit}>
+            <div className="field">
+              <label>Institution *</label>
+              <div className="select-wrap">
+                <select
+                  value={institution}
+                  onChange={(e) => setInstitution(e.target.value)}
+                  required
+                  disabled={loading}
+                >
+                  <option value="" disabled>
+                    Sélectionnez votre institution
+                  </option>
+                  {INSTITUTIONS.map((i) => (
+                    <option key={i.value} value={i.value}>
+                      {i.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="field">
+              <label>Filière *</label>
+              <input
+                type="text"
+                placeholder="Ex: Génie Logiciel"
+                value={filiere}
+                onChange={(e) => setFiliere(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+
+            <div className="field">
+              <label>Niveau d'études *</label>
+              <div className="select-wrap">
+                <select
+                  value={niveau}
+                  onChange={(e) => setNiveau(e.target.value)}
+                  required
+                  disabled={loading}
+                >
+                  <option value="" disabled>
+                    Sélectionnez votre niveau
+                  </option>
+                  {NIVEAUX.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="btn-row">
+              <button
+                type="button"
+                className="btn-outline"
+                onClick={goBack}
+                disabled={loading}
+              >
+                Retour
+              </button>
+              <button type="submit" className="btn-green" disabled={loading}>
+                {loading ? "Création..." : "Créer mon compte"}
+              </button>
+            </div>
+          </form>
+
+          <div className="card__footer">
+            Vous avez déjà un compte ? <a href="/login">Se connecter</a>
+          </div>
+        </div>
+      )}
+
+      <a href="/" className="back">
+        ← Retour à l'accueil
+      </a>
+    </div>
+  );
 }
