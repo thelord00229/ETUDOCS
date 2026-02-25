@@ -214,7 +214,7 @@ export default function Login() {
       // ✅ redirection simple par rôle (à adapter à vos routes)
       const role = data.user?.role;
       if (role === "ETUDIANT") window.location.href = "/dashboardEtu";
-      else if (role === "SUPER_ADMIN") window.location.href = "/dashboard/admin";
+      else if (role === "SUPER_ADMIN") window.location.href = "/superadmin";
       else window.location.href = "/dashboard/agent";
     } catch (err) {
       setError("Erreur réseau (backend éteint ?)");

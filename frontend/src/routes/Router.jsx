@@ -34,6 +34,10 @@ const Router = () => {
                 <Route path="/dashboarddi" element={<DashboardDI />} />
                 <Route path="/dashboardsg" element={<DashboardSG />} />
                 <Route path="/dashboardce" element={<ChefDivisionExamens/>} />
+                <Route path="/superadmin"              element={<SADashboard />} />
+                <Route path="/superadmin/institutions" element={<SAInstitutions />} />
+                <Route path="/superadmin/agents"       element={<SAAgents />} />
+                <Route path="/superadmin/academique"   element={<SAAcademique />} />
             </Routes>
         );
 };
