@@ -1,5 +1,6 @@
 import { useState } from "react";
-import SALayout from "../components/SALayout.jsx";
+import SALayout from "../../components/DashboardAdmin/SALayout.jsx";
+import { importNotes } from "../../services/admin.service";
 
 const css = `
   .da-filter-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 22px 24px; }
@@ -89,7 +90,39 @@ const FORMAT_FIELDS = [
 
 export default function SAAcademique() {
     const [tab, setTab] = useState("excel");
-    const [fileReady, setFileReady] = useState(false);
+    const [file, setFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [institution, setInstitution] = useState("IFRI");
+    const [annee, setAnnee] = useState("2025-2026");
+
+    const handleFileChange = (e) => {
+        const selected = e.target.files[0];
+        if (selected) setFile(selected);
+    };
+
+    const handleUpload = async () => {
+        if (!file) return;
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("institution", institution);
+        formData.append("annee", annee);
+
+        setUploading(true);
+        try {
+            await importNotes(formData);
+            alert("Import réussi !");
+            setFile(null);
+        } catch (err) {
+            console.error(err);
+            alert("Erreur lors de l'import");
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const downloadModel = () => {
+        window.open(`${import.meta.env.VITE_API_URL}/admin/model-notes`, '_blank');
+    };
 
     return (
         <SALayout>
@@ -105,7 +138,7 @@ export default function SAAcademique() {
                 <div className="da-filter-grid">
                     <div className="da-field">
                         <label>Institution</label>
-                        <select className="da-select">
+                        <select className="da-select" value={institution} onChange={e => setInstitution(e.target.value)}>
                             <option>IFRI</option>
                             <option>EPAC</option>
                             <option>FSS</option>
@@ -113,7 +146,7 @@ export default function SAAcademique() {
                     </div>
                     <div className="da-field">
                         <label>Année académique</label>
-                        <select className="da-select">
+                        <select className="da-select" value={annee} onChange={e => setAnnee(e.target.value)}>
                             <option>2025-2026</option>
                             <option>2024-2025</option>
                             <option>2023-2024</option>
@@ -133,7 +166,7 @@ export default function SAAcademique() {
                 <div className="da-import-card">
                     <div className="da-import-title">Import via fichier Excel</div>
 
-                    <button className="btn-dl-model">
+                    <button className="btn-dl-model" onClick={downloadModel}>
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
                             <polyline points="7 10 12 15 17 10"/>
@@ -149,23 +182,40 @@ export default function SAAcademique() {
                         ))}
                     </div>
 
-                    <div className="da-upload-zone" onClick={() => setFileReady(true)}>
+                    <div className="da-upload-zone" onClick={() => document.getElementById('fileInput').click()}>
                         <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="16 16 12 12 8 16"/>
                             <line x1="12" y1="12" x2="12" y2="21"/>
                             <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
                         </svg>
-                        <div className="da-upload-title">Glissez-déposez votre fichier Excel ici</div>
-                        <div className="da-upload-sub">ou cliquez pour parcourir</div>
-                        <button className="btn-parcourir" onClick={e => { e.stopPropagation(); setFileReady(true); }}>
+                        <div className="da-upload-title">
+                            {file ? file.name : "Glissez-déposez votre fichier Excel ici"}
+                        </div>
+                        <div className="da-upload-sub">
+                            {file ? `${(file.size / 1024).toFixed(2)} Ko` : "ou cliquez pour parcourir"}
+                        </div>
+                        <input
+                            id="fileInput"
+                            type="file"
+                            accept=".xlsx,.xls"
+                            style={{ display: "none" }}
+                            onChange={handleFileChange}
+                        />
+                        <button className="btn-parcourir" onClick={(e) => { e.stopPropagation(); document.getElementById('fileInput').click(); }}>
                             Parcourir les fichiers
                         </button>
                         <div className="da-upload-hint">Format: .xlsx, .xls • Max: 10 Mo</div>
                     </div>
 
                     <div className="da-footer">
-                        <button className="btn-annuler" onClick={() => setFileReady(false)}>Annuler</button>
-                        <button className={`btn-importer${fileReady ? " ready" : ""}`}>Importer les données</button>
+                        <button className="btn-annuler" onClick={() => setFile(null)}>Annuler</button>
+                        <button
+                            className={`btn-importer${file ? " ready" : ""}`}
+                            onClick={handleUpload}
+                            disabled={!file || uploading}
+                        >
+                            {uploading ? "Import en cours..." : "Importer les données"}
+                        </button>
                     </div>
                 </div>
             )}

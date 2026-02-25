@@ -589,15 +589,30 @@ export default function Dashboard() {
   /* ── Chargement données ── */
   useEffect(() => {
     const load = async () => {
-      setLoading(true); setErrorMsg("");
+      const token = localStorage.getItem("etudocs_token") || localStorage.getItem("token");
+
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
+
+      setLoading(true);
+      setErrorMsg("");
       try {
-        const me   = await getMe();
+        const me = await getMe();
         localStorage.setItem("etudocs_user", JSON.stringify(me));
         setUser(me);
         const list = await getDemandes();
         setDemandes(Array.isArray(list) ? list : []);
-      } catch {
-        window.location.href = "/login";
+      } catch (err) {
+        if (err.message === "UNAUTHORIZED") {
+          localStorage.removeItem("etudocs_token");
+          localStorage.removeItem("token");
+          localStorage.removeItem("etudocs_user");
+          window.location.href = "/login";
+        } else {
+          setErrorMsg("Erreur de chargement. Veuillez réessayer.");
+        }
       } finally {
         setLoading(false);
       }

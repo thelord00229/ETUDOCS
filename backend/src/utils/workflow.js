@@ -35,16 +35,16 @@ const WORKFLOW = {
   // Niveau 3 (suite): Document généré, prêt pour signature
   DOCUMENT_GENERE: {
     roles: ['DIRECTEUR_ADJOINT'],
-    actions: { 
-      APPROUVER: 'ATTENTE_SIGNATURE_DIRECTEUR_ADJOINT' // Signe et transmet au directeur
+    actions: {
+      APPROUVER: 'ATTENTE_SIGNATURE_DIRECTEUR'  // ✅ après DA, on attend le Directeur
     }
   },
   
   // Niveau 4: Directeur adjoint a signé
-  ATTENTE_SIGNATURE_DIRECTEUR_ADJOINT: {
+  ATTENTE_SIGNATURE_DIRECTEUR: {
     roles: ['DIRECTEUR'],
-    actions: { 
-      APPROUVER: 'DISPONIBLE' // Signe et rend disponible
+    actions: {
+      APPROUVER: 'DISPONIBLE'  // ✅ document final disponible
     }
   },
   

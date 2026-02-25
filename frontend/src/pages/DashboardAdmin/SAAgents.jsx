@@ -1,7 +1,8 @@
-import { useState } from "react";
-import SALayout from "../components/SALayout.jsx";
-import SAToggle from "../components/SAToggle.jsx";
-import SAInstBadge from "../components/SAInstBadge.jsx";
+import { useState, useEffect } from "react";
+import SALayout from "../../components/DashboardAdmin/SALayout.jsx";
+import SAToggle from "../../components/DashboardAdmin/SAToggle.jsx";
+import SAInstBadge from "../../components/DashboardAdmin/SAInstBadge.jsx";
+import { getAgents, toggleAgentActif } from "../../services/admin.service";
 
 const css = `
   .sa-agents-header { display: flex; align-items: flex-start; justify-content: space-between; }
@@ -58,14 +59,44 @@ const INITIAL_AGENTS = [
 
 export default function SAAgents() {
     const [search, setSearch] = useState("");
-    const [agents, setAgents] = useState(INITIAL_AGENTS);
+    const [agents, setAgents] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const toggle = (email) => setAgents(a => a.map(ag => ag.email === email ? { ...ag, actif: !ag.actif } : ag));
+    const loadAgents = async () => {
+        setLoading(true);
+        try {
+            const res = await getAgents();
+            setAgents(res.data);
+        } catch (err) {
+            console.error(err);
+            alert("Erreur lors du chargement des agents");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadAgents();
+    }, []);
+
+    const handleToggle = async (agent) => {
+        try {
+            await toggleAgentActif(agent.id);
+            setAgents(prev =>
+                prev.map(a =>
+                    a.id === agent.id ? { ...a, actif: !a.actif } : a
+                )
+            );
+        } catch (err) {
+            console.error(err);
+            alert("Erreur lors du changement de statut");
+        }
+    };
 
     const filtered = agents.filter(a =>
         a.nom.toLowerCase().includes(search.toLowerCase()) ||
         a.email.toLowerCase().includes(search.toLowerCase()) ||
-        a.inst.toLowerCase().includes(search.toLowerCase())
+        (a.role || "").toLowerCase().includes(search.toLowerCase())
     );
 
     return (
@@ -93,70 +124,76 @@ export default function SAAgents() {
                     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
                 <input
-                    placeholder="Rechercher par nom, email ou institution..."
+                    placeholder="Rechercher par nom, email ou rôle..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                 />
             </div>
 
             <div className="agents-table-wrap">
-                <table className="agents-tbl">
-                    <thead>
-                    <tr>
-                        <th>Nom</th>
-                        <th>Institution</th>
-                        <th>Email</th>
-                        <th>Statut</th>
-                        <th>Date de création</th>
-                        <th style={{ textAlign: "right" }}>Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {filtered.map((a, i) => (
-                        <tr key={i}>
-                            <td className="ag-name">{a.nom}</td>
-                            <td>
-                                <div className="ag-inst-cell">
-                                    <SAInstBadge code={a.ic.slice(0,1)} size="sm" />
-                                    {a.inst}
-                                </div>
-                            </td>
-                            <td className="ag-email">{a.email}</td>
-                            <td>
-                  <span className={a.actif ? "badge-actif" : "badge-inactif"}>
-                    {a.actif ? "Actif" : "Inactif"}
-                  </span>
-                            </td>
-                            <td className="ag-date">{a.date}</td>
-                            <td>
-                                <div className="ag-actions">
-                                    <SAToggle defaultOn={a.actif} onChange={() => toggle(a.email)} />
-                                    <button className="btn-reinit">
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
-                                            <path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
-                                        </svg>
-                                        Réinitialiser
-                                    </button>
-                                    <button className="btn-mail">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                                            <polyline points="22,6 12,13 2,6"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    ))}
-                    {filtered.length === 0 && (
-                        <tr>
-                            <td colSpan="6" style={{ textAlign: "center", padding: "32px", color: "#94a3b8", fontSize: ".9rem" }}>
-                                Aucun agent trouvé
-                            </td>
-                        </tr>
-                    )}
-                    </tbody>
-                </table>
+                {loading ? (
+                    <div style={{ padding: "40px", textAlign: "center" }}>Chargement...</div>
+                ) : (
+                    <table className="agents-tbl">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Institution</th>
+                                <th>Email</th>
+                                <th>Rôle</th>
+                                <th>Statut</th>
+                                <th>Date de création</th>
+                                <th style={{ textAlign: "right" }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filtered.map((a) => (
+                                <tr key={a.id}>
+                                    <td className="ag-name">{a.prenom} {a.nom}</td>
+                                    <td>
+                                        <div className="ag-inst-cell">
+                                            <SAInstBadge code={a.institutionId?.slice(0,1) || "?"} size="sm" />
+                                            {a.institutionId}
+                                        </div>
+                                    </td>
+                                    <td className="ag-email">{a.email}</td>
+                                    <td>{a.role}</td>
+                                    <td>
+                                        <span className={a.actif ? "badge-actif" : "badge-inactif"}>
+                                            {a.actif ? "Actif" : "Inactif"}
+                                        </span>
+                                    </td>
+                                    <td className="ag-date">{new Date(a.createdAt).toLocaleDateString('fr-FR')}</td>
+                                    <td>
+                                        <div className="ag-actions">
+                                            <SAToggle defaultOn={a.actif} onChange={() => handleToggle(a)} />
+                                            <button className="btn-reinit">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+                                                    <path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+                                                </svg>
+                                                Réinitialiser
+                                            </button>
+                                            <button className="btn-mail">
+                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                                    <polyline points="22,6 12,13 2,6"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {filtered.length === 0 && (
+                                <tr>
+                                    <td colSpan="7" style={{ textAlign: "center", padding: "32px", color: "#94a3b8" }}>
+                                        Aucun agent trouvé
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                )}
             </div>
         </SALayout>
     );

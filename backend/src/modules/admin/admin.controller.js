@@ -31,3 +31,8 @@ exports.getStatistiques = asyncHandler(async (req, res) => {
   const stats = await adminService.getStatistiques(institutionId);
   res.json(stats);
 });
+
+exports.getInstitutions = asyncHandler(async (req, res) => {
+  const institutions = await adminService.getInstitutions();
+  res.json(institutions);
+});

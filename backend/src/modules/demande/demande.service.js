@@ -109,31 +109,33 @@ exports.getDemandes = async (user) => {
   else if (role === "SECRETAIRE_GENERAL") {
     where = { 
       institutionId, 
-      statut: "TRANSMISE_SECRETAIRE_GENERAL"  // ← ici
+      statut: "TRANSMISE_SECRETAIRE_ADJOINT"  // ✅ SG reçoit ce que SA a transmis
     };
   }
   else if (role === "CHEF_DIVISION") {
     where = {
       institutionId,
-      statut: "TRANSMISE_CHEF_DIVISION",      // ← ici
+      statut: "TRANSMISE_SECRETAIRE_GENERAL",  // ✅ Chef reçoit ce que SG a transmis
       ...(service ? { serviceCible: service } : {}),
     };
   }
   else if (role === "DIRECTEUR_ADJOINT") {
     where = { 
       institutionId, 
-      statut: "ATTENTE_SIGNATURE_DIRECTEUR_ADJOINT" 
+      statut: "DOCUMENT_GENERE"  // ✅ DA reçoit après génération du document
     };
   }
   else if (role === "DIRECTEUR") {
     where = { 
       institutionId, 
-      statut: "ATTENTE_SIGNATURE_DIRECTEUR" 
+      statut: "ATTENTE_SIGNATURE_DIRECTEUR"  // ✅ aligné avec workflow.js
     };
   }
   else if (role === "SUPER_ADMIN") {
     where = { institutionId };
   }
+
+
 
   console.log(`[getDemandes] Role: ${role}, Where:`, where);
 
@@ -370,8 +372,8 @@ exports.validerPiece = async (
   }
 
   // On tolère toujours "TRANSMISE_CHEF_DIVISION" (stade attendu)
-  if (piece.demande.statut !== 'TRANSMISE_CHEF_DIVISION') {
-    const err = new Error('La demande n’est pas au stade Chef de Division.');
+  if (piece.demande.statut !== 'TRANSMISE_SECRETAIRE_GENERAL') {
+    const err = new Error('La demande n\'est pas au stade Chef de Division.');
     err.statusCode = 400;
     throw err;
   }
