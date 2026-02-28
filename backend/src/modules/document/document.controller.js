@@ -1,5 +1,6 @@
 const prisma = require('../../config/prisma');
 const path = require('path');
+const fs = require('fs');
 const asyncHandler = require('../../utils/asyncHandler');
 
 exports.telecharger = asyncHandler(async (req, res) => {
@@ -26,6 +27,36 @@ exports.telecharger = asyncHandler(async (req, res) => {
 
   const safePath = doc.urlPdf.replace(/\\/g, '/');
   res.download(path.resolve(safePath));
+});
+
+exports.supprimer = asyncHandler(async (req, res) => {
+  const { reference } = req.params;
+
+  const doc = await prisma.document.findUnique({
+    where: { reference },
+    include: { demande: true }
+  });
+
+  if (!doc) {
+    return res.status(404).json({ message: 'Document introuvable' });
+  }
+  if (doc.demande.utilisateurId !== req.user.id) {
+    return res.status(403).json({ message: 'Accès refusé' });
+  }
+
+  // Supprimer le fichier PDF du disque si il existe
+  if (doc.urlPdf) {
+    const safePath = doc.urlPdf.replace(/\\/g, '/');
+    const absPath = path.resolve(safePath);
+    if (fs.existsSync(absPath)) {
+      fs.unlinkSync(absPath);
+    }
+  }
+
+  // Supprimer le document en base
+  await prisma.document.delete({ where: { id: doc.id } });
+
+  res.json({ success: true, message: 'Document supprimé' });
 });
 
 exports.verifier = asyncHandler(async (req, res) => {

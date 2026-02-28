@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar.jsx";
 import TopBar from "./Topbar.jsx";
+import { getDemandes } from "../../services/api";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
@@ -8,13 +10,92 @@ const css = `
   .dash-content { padding:28px 32px; display:flex; flex-direction:column; gap:24px; padding-bottom:48px; }
 `;
 
+const labelType = (t) => {
+  if (t === "RELEVE_NOTES") return "Relevé de notes";
+  if (t === "ATTESTATION_INSCRIPTION") return "Attestation d'inscription";
+  return t || "Document";
+};
+
+function getUser() {
+  try {
+    const raw = localStorage.getItem("etudocs_user") || sessionStorage.getItem("etudocs_user");
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+const NOTIF_KEY = "etudocs_notifs_dismissed";
+
+function getDismissed() {
+  try { return JSON.parse(localStorage.getItem(NOTIF_KEY) || "[]"); }
+  catch { return []; }
+}
+
+function saveDismissed(ids) {
+  localStorage.setItem(NOTIF_KEY, JSON.stringify(ids));
+}
+
 export default function DashboardLayout({ children }) {
+  const user = getUser();
+  const prenom    = user.prenom || "";
+  const nom       = user.nom    || "";
+  const fullName  = `${prenom} ${nom}`.trim() || "Étudiant";
+  const matricule = user.matricule || user.email || "";
+  const filiere   = user.filiere || user.institution?.sigle || "IFRI";
+  const meta      = [matricule, filiere].filter(Boolean).join(" • ");
+  const initials  = `${prenom[0] || ""}${nom[0] || ""}`.toUpperCase() || "EU";
+
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const demandes = await getDemandes();
+        if (!Array.isArray(demandes)) return;
+
+        const dismissed = getDismissed();
+
+        // ✅ Uniquement les demandes DISPONIBLES
+        const notifs = demandes
+          .filter(d => d.statut === "DISPONIBLE")
+          .map(d => ({
+            id: `${d.id}-DISPONIBLE`,
+            message: `✅ Votre ${labelType(d.typeDocument)} est prêt. Rendez-vous dans "Mes documents" pour le télécharger.`,
+            createdAt: d.updatedAt || d.createdAt,
+          }))
+          .filter(n => !dismissed.includes(n.id))
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        setNotifications(notifs);
+      } catch { /* silencieux */ }
+    };
+    load();
+  }, []);
+
+  const handleDelete = (id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    const dismissed = getDismissed();
+    if (!dismissed.includes(id)) saveDismissed([...dismissed, id]);
+  };
+
+  const handleClearAll = () => {
+    const ids = notifications.map(n => n.id);
+    saveDismissed([...new Set([...getDismissed(), ...ids])]);
+    setNotifications([]);
+  };
+
   return (
     <div className="dash-layout">
       <style>{css}</style>
       <Sidebar />
       <div className="dash-main">
-        <TopBar name="Koffi AGUEH" meta="20220001 • IFRI" initials="KA" notifCount={1} />
+        <TopBar
+          name={fullName}
+          meta={meta}
+          initials={initials}
+          notifications={notifications}
+          onDeleteNotif={handleDelete}
+          onClearAllNotifs={handleClearAll}
+        />
         <div className="dash-content">{children}</div>
       </div>
     </div>

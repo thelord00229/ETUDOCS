@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
-import { getDemandes, downloadDocument } from "../../services/api";
+import { getDemandes } from "../../services/api";
 
 /* ─────────────────────────────────────────────────────────────
    STYLES
@@ -31,6 +32,7 @@ const css = `
   }
   .filter-tab.active { background:#1a2744; color:#fff; border-color:#1a2744; }
   .filter-tab:not(.active):hover { border-color:#1a2744; color:#1a2744; }
+
   .search-wrap { flex:1; min-width:200px; position:relative; }
   .search-wrap svg { position:absolute; left:12px; top:50%; transform:translateY(-50%); }
   .search-input {
@@ -44,7 +46,11 @@ const css = `
   .table-card { background:#fff; border:1px solid #e2e8f0; border-radius:14px; overflow:hidden; }
   .table { width:100%; border-collapse:collapse; }
   .table thead tr { border-bottom:1px solid #f1f5f9; }
-  .table th { text-align:left; padding:14px 20px; font-family:'Sora',sans-serif; font-weight:600; font-size:.82rem; color:#94a3b8; text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
+  .table th {
+    text-align:left; padding:14px 20px;
+    font-family:'Sora',sans-serif; font-weight:600; font-size:.82rem;
+    color:#94a3b8; text-transform:uppercase; letter-spacing:.04em; white-space:nowrap;
+  }
   .table td { padding:16px 20px; border-bottom:1px solid #f8fafc; }
   .table tbody tr:last-child td { border-bottom:none; }
   .table tbody tr:hover { background:#fafbff; }
@@ -64,10 +70,40 @@ const css = `
   .badge--disponible { background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; }
   .badge--attente    { background:#fffbeb; color:#d97706; border:1px solid #fde68a; }
   .badge--rejete     { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
+  .badge--expire     { background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; }
 
   .state-box { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:18px 20px; color:#475569; }
   .state-error { color:#dc2626; }
 
+  /* Group separators */
+  .group-row td {
+    padding:14px 20px;
+    background:#fbfdff;
+    border-bottom:1px solid #f1f5f9;
+  }
+  .group-title {
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    font-size:.88rem;
+    color:#0f172a;
+  }
+  .group-count {
+    font-family:'DM Sans',sans-serif;
+    font-weight:600;
+    font-size:.85rem;
+    color:#94a3b8;
+    text-align:right;
+  }
+
+  /* Expired row style */
+  .row-expired td { background:#fcfcfd; }
+  .row-expired .td-type,
+  .row-expired .td-date,
+  .row-expired .td-ref { color:#94a3b8; }
+  .row-expired .btn-view { color:#94a3b8; }
+  .row-expired .btn-view:hover { color:#64748b; }
+
+  /* ── DETAIL (même style que ton dashboard detail) ── */
   .detail-back {
     display:inline-flex; align-items:center; gap:7px;
     background:none; border:none; cursor:pointer;
@@ -76,7 +112,7 @@ const css = `
   }
   .detail-back:hover { color:#1a2744; }
 
-  .detail-toprow { display:flex; align-items:flex-start; gap:14px; margin-bottom:28px; }
+  .detail-toprow { display:flex; align-items:flex-start; gap:14px; margin-bottom:18px; }
   .detail-title {
     font-family:'Sora',sans-serif; font-weight:800; font-size:1.5rem;
     color:#1a2744; margin-bottom:6px; line-height:1.2;
@@ -90,6 +126,39 @@ const css = `
   .dbadge--disponible { background:#dcfce7; color:#166534; }
   .dbadge--rejete     { background:#fee2e2; color:#991b1b; }
   .dbadge--attente    { background:#fffbeb; color:#92400e; border:1px solid #fde68a; }
+  .dbadge--expire     { background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; }
+
+  /* Stepper */
+  .stepper-card {
+    background:#fff; border:1px solid #e2e8f0; border-radius:16px;
+    padding:28px 32px; margin-bottom:20px;
+  }
+  .stepper-title {
+    font-family:'Sora',sans-serif; font-weight:700; font-size:.95rem;
+    color:#1a2744; margin-bottom:24px;
+  }
+  .stepper { display:flex; align-items:flex-start; justify-content:space-between; position:relative; }
+  .stepper::before {
+    content:''; position:absolute; top:17px; left:34px; right:34px;
+    height:2px; background:#e2e8f0; z-index:0;
+  }
+  .stepper-step { display:flex; flex-direction:column; align-items:center; gap:8px; flex:1; position:relative; z-index:1; }
+  .stepper-dot {
+    width:36px; height:36px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    border:2px solid transparent; flex-shrink:0; background:#fff;
+  }
+  .stepper-dot--done { background:#1a2744; border-color:#1a2744; }
+  .stepper-dot--active { background:#fff; border-color:#1a2744; box-shadow:0 0 0 4px rgba(26,39,68,.1); }
+  .stepper-dot--todo { background:#fff; border-color:#cbd5e1; }
+
+  .stepper-label {
+    font-size:.75rem; font-weight:500; color:#64748b; text-align:center;
+    max-width:80px; line-height:1.35;
+  }
+  .stepper-label--done { color:#1a2744; font-weight:600; }
+  .stepper-label--active { color:#1a2744; font-weight:700; }
+  .stepper-label--sub { font-size:.7rem; color:#22c55e; font-weight:600; margin-top:2px; }
 
   .detail-body { display:grid; grid-template-columns:1fr 300px; gap:20px; align-items:start; }
   .pieces-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:24px 26px; }
@@ -127,17 +196,20 @@ const css = `
     font-family:'Sora',sans-serif; font-size:.9rem; font-weight:700;
     display:flex; align-items:center; justify-content:center; gap:8px;
     transition:background .2s, transform .15s;
+    text-decoration:none;
   }
   .btn-dl:hover { background:#15803d; transform:translateY(-1px); }
   .btn-dl:disabled { opacity:.75; cursor:not-allowed; transform:none; }
-  .btn-dl-count { font-size:.75rem; opacity:.8; font-weight:500; }
 
   @media (max-width:900px) {
     .detail-body { grid-template-columns:1fr; }
+    .stepper { flex-wrap:wrap; gap:16px; }
+    .stepper::before { display:none; }
   }
 `;
 
-const FILTERS = ["Toutes", "En attente", "En traitement", "Disponible", "Rejetée"];
+/* Ajout Expirée + petite cohérence des libellés */
+const FILTERS = ["Toutes", "En attente", "En traitement", "Disponible", "Expirée", "Rejetée"];
 
 const labelType = (t) => {
   if (t === "RELEVE_NOTES") return "Relevé de notes";
@@ -145,15 +217,25 @@ const labelType = (t) => {
   return t || "Document";
 };
 
-const labelStatut = (s) => {
-  if (s === "DISPONIBLE") return "Disponible";
-  if (s === "REJETEE" || s === "REJETE") return "Rejetée";
-  if (s === "SOUMISE") return "En attente";
+/* Statut UI basé sur statut backend + downloadCount */
+const computeUiStatus = (demande) => {
+  const raw = demande?.statut || null;
+  const doc0 = Array.isArray(demande?.documents) ? demande.documents[0] : null;
+  const downloadCount = typeof doc0?.downloadCount === "number" ? doc0.downloadCount : null;
+
+  // Expiré si: DISPONIBLE mais 3 téléchargements déjà faits
+  const isExpired = raw === "DISPONIBLE" && downloadCount !== null && downloadCount >= 3;
+  if (isExpired) return "Expirée";
+
+  if (raw === "DISPONIBLE") return "Disponible";
+  if (raw === "REJETEE" || raw === "REJETE") return "Rejetée";
+  if (raw === "SOUMISE" || raw === "CORRECTION_DEMANDEE") return "En attente";
   return "En traitement";
 };
 
 const badgeClass = (l) => {
   if (l === "Disponible") return "badge--disponible";
+  if (l === "Expirée") return "badge--expire";
   if (l === "Rejetée") return "badge--rejete";
   if (l === "En attente") return "badge--attente";
   return "badge--traitement";
@@ -161,6 +243,7 @@ const badgeClass = (l) => {
 
 const dbadgeClass = (l) => {
   if (l === "Disponible") return "dbadge--disponible";
+  if (l === "Expirée") return "dbadge--expire";
   if (l === "Rejetée") return "dbadge--rejete";
   if (l === "En attente") return "dbadge--attente";
   return "dbadge--traitement";
@@ -168,22 +251,69 @@ const dbadgeClass = (l) => {
 
 const uiRef = (rawRef) => rawRef || "—";
 
-const uiIntervenant = (type) => {
-  if (type === "RELEVE_NOTES") return "Serge DOSSOU";
-  return "Adéola BOSSOU";
+/* ─────────────────────────────────────────────────────────────
+   STEPPER SYNC (statut backend → step index)
+───────────────────────────────────────────────────────────── */
+const STEPS = [
+  { key: "soumise", label: "Soumise" },
+  { key: "sec_adj", label: "Reçue (Sec.\nAdj)" },
+  { key: "sec_gen", label: "Transmise (Sec.\nGén)" },
+  { key: "chef_div", label: "Traitement (Chef\nDiv)" },
+  { key: "sign_da", label: "Signature DA" },
+  { key: "sign_dir", label: "Signature DIR" },
+  { key: "disponible", label: "Disponible" },
+];
+
+const statusToActiveIndex = (rawStatut, uiStatut) => {
+  // uiStatut peut être Expirée/Disponible/Rejetée...
+  if (uiStatut === "Disponible" || uiStatut === "Expirée") return 6;
+
+  switch (rawStatut) {
+    case "SOUMISE":
+    case "CORRECTION_DEMANDEE":
+      return 0;
+
+    case "TRANSMISE_SECRETAIRE_GENERAL":
+      return 2;
+
+    case "TRANSMISE_CHEF_DIVISION":
+      return 3;
+
+    case "ATTENTE_SIGNATURE_DIRECTEUR_ADJOINT":
+      return 4;
+
+    case "ATTENTE_SIGNATURE_DIRECTEUR":
+      return 5;
+
+    case "DISPONIBLE":
+      return 6;
+
+    case "REJETEE":
+    case "REJETE":
+      // rejet peut arriver à plusieurs étapes, mais par défaut: traitement
+      return 3;
+
+    default:
+      // fallback
+      return 3;
+  }
 };
 
+const getSteps = (rawStatut, uiStatut) => {
+  const activeIdx = statusToActiveIndex(rawStatut, uiStatut);
+  return STEPS.map((s, i) => ({
+    ...s,
+    state: i < activeIdx ? "done" : i === activeIdx ? "active" : "todo",
+  }));
+};
+
+/* ─────────────────────────────────────────────────────────────
+   ICÔNES
+───────────────────────────────────────────────────────────── */
 const IcoArrow = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="19" y1="12" x2="5" y2="12" />
     <polyline points="12 19 5 12 12 5" />
-  </svg>
-);
-const IcoDl = () => (
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-    <polyline points="7 10 12 15 17 10" />
-    <line x1="12" y1="15" x2="12" y2="3" />
   </svg>
 );
 const IcoEye = () => (
@@ -204,19 +334,62 @@ const IcoCheckGreen = () => (
     <polyline points="22 4 12 14.01 9 11.01" />
   </svg>
 );
+const SvgStepDone = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
 
 /* ─────────────────────────────────────────────────────────────
-   PAGE DÉTAIL
+   GROUPING (Aujourd'hui, semaine, mois, année, longtemps)
 ───────────────────────────────────────────────────────────── */
-function DetailDemande({ demande, onBack }) {
-  const title = labelType(demande.typeDocument);
-  const status = labelStatut(demande.statut);
+const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const startOfWeek = (d) => {
+  // semaine qui commence lundi
+  const dd = new Date(d);
+  const day = (dd.getDay() + 6) % 7; // lundi=0
+  dd.setDate(dd.getDate() - day);
+  return startOfDay(dd);
+};
+const startOfMonth = (d) => new Date(d.getFullYear(), d.getMonth(), 1);
+const startOfYear = (d) => new Date(d.getFullYear(), 0, 1);
 
-  // ✅ backend renvoie documents[] (tableau)
+const groupKeyForDate = (iso) => {
+  if (!iso) return "LONGTEMPS";
+  const now = new Date();
+  const d = new Date(iso);
+
+  const sdNow = startOfDay(now);
+  const swNow = startOfWeek(now);
+  const smNow = startOfMonth(now);
+  const syNow = startOfYear(now);
+
+  const sd = startOfDay(d);
+  if (sd.getTime() === sdNow.getTime()) return "AUJOURDHUI";
+  if (sd >= swNow) return "SEMAINE";
+  if (sd >= smNow) return "MOIS";
+  if (sd >= syNow) return "ANNEE";
+  return "LONGTEMPS";
+};
+
+const groupLabel = (k) => {
+  if (k === "AUJOURDHUI") return "Aujourd'hui";
+  if (k === "SEMAINE") return "Cette semaine";
+  if (k === "MOIS") return "Ce mois";
+  if (k === "ANNEE") return "Cette année";
+  return "Il y a longtemps";
+};
+
+/* ─────────────────────────────────────────────────────────────
+   PAGE DÉTAIL (même page que dashboard)
+   - Bouton "Télécharger" => redirection Mes documents
+───────────────────────────────────────────────────────────── */
+function DetailDemande({ demande, onBack, onGoDocuments }) {
+  const title = labelType(demande.typeDocument);
+  const uiStatus = computeUiStatus(demande);
+
   const doc0 = Array.isArray(demande.documents) ? demande.documents[0] : null;
   const reference = doc0?.reference || null;
-  const downloadCount = typeof doc0?.downloadCount === "number" ? doc0.downloadCount : null;
-
   const ref = reference || demande.id;
 
   const dateStr = demande.createdAt
@@ -228,25 +401,7 @@ function DetailDemande({ demande, onBack }) {
     : "—";
 
   const pieces = Array.isArray(demande.pieces) ? demande.pieces : [];
-
-  const [dlLoading, setDlLoading] = useState(false);
-  const [dlError, setDlError] = useState("");
-
-  const handleDownload = async () => {
-    if (!reference) {
-      setDlError("Aucune référence de document disponible.");
-      return;
-    }
-    setDlError("");
-    setDlLoading(true);
-    try {
-      await downloadDocument(reference);
-    } catch (e) {
-      setDlError(e?.message || "Erreur téléchargement");
-    } finally {
-      setDlLoading(false);
-    }
-  };
+  const steps = getSteps(demande.statut, uiStatus);
 
   return (
     <>
@@ -259,7 +414,27 @@ function DetailDemande({ demande, onBack }) {
           <div className="detail-title">{title}</div>
           <div className="detail-ref">Réf : {ref}</div>
         </div>
-        <span className={`dbadge ${dbadgeClass(status)}`}>{status}</span>
+        <span className={`dbadge ${dbadgeClass(uiStatus)}`}>{uiStatus}</span>
+      </div>
+
+      <div className="stepper-card">
+        <div className="stepper-title">Suivi de la demande</div>
+        <div className="stepper">
+          {steps.map((s) => (
+            <div key={s.key} className="stepper-step">
+              <div className={`stepper-dot stepper-dot--${s.state}`}>
+                {s.state === "done" && <SvgStepDone />}
+                {s.state === "active" && (
+                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#1a2744" }} />
+                )}
+              </div>
+              <div className={`stepper-label stepper-label--${s.state}`}>
+                {s.label}
+                {s.state === "active" && <div className="stepper-label--sub">En cours</div>}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="detail-body">
@@ -302,15 +477,11 @@ function DetailDemande({ demande, onBack }) {
         </div>
 
         <div className="detail-right">
-          {status === "Disponible" && (
-            <>
-              <button className="btn-dl" onClick={handleDownload} disabled={dlLoading || !reference}>
-                <IcoDl />
-                {dlLoading ? "Téléchargement..." : "Télécharger mon document"}
-                {downloadCount !== null && <span className="btn-dl-count">({downloadCount})</span>}
-              </button>
-              {dlError && <div className="state-box state-error">{dlError}</div>}
-            </>
+          {/* ✅ Plus de download ici : redirection Mes documents */}
+          {(uiStatus === "Disponible") && (
+            <button className="btn-dl" type="button" onClick={onGoDocuments}>
+              Télécharger
+            </button>
           )}
 
           <div className="meta-card">
@@ -325,7 +496,7 @@ function DetailDemande({ demande, onBack }) {
             </div>
             <div className="meta-row">
               <span className="meta-key">Intervenant</span>
-              <span className="meta-val">{uiIntervenant(demande.typeDocument)}</span>
+              <span className="meta-val">—</span>
             </div>
           </div>
 
@@ -349,6 +520,8 @@ function DetailDemande({ demande, onBack }) {
    COMPOSANT PRINCIPAL
 ───────────────────────────────────────────────────────────── */
 export default function MesDemandes() {
+  const navigate = useNavigate();
+
   const [filter, setFilter] = useState("Toutes");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -373,42 +546,76 @@ export default function MesDemandes() {
   }, []);
 
   const counts = useMemo(() => {
-    const base = { Toutes: 0, "En attente": 0, "En traitement": 0, Disponible: 0, Rejetée: 0 };
+    const base = { Toutes: 0, "En attente": 0, "En traitement": 0, Disponible: 0, Expirée: 0, Rejetée: 0 };
     base.Toutes = demandes.length;
     for (const d of demandes) {
-      const s = labelStatut(d?.statut);
+      const s = computeUiStatus(d);
       if (base[s] !== undefined) base[s] += 1;
     }
     return base;
   }, [demandes]);
 
+  const flatRows = useMemo(() => {
+    return demandes.map((d) => {
+      const doc0 = Array.isArray(d.documents) ? d.documents[0] : null;
+      const ref = uiRef(doc0?.reference || d.id);
+      const type = labelType(d.typeDocument);
+      const dateObj = d.createdAt ? new Date(d.createdAt) : null;
+      const date = dateObj
+        ? dateObj.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })
+        : "—";
+      const status = computeUiStatus(d);
+      const groupKey = groupKeyForDate(d.createdAt);
+
+      return {
+        raw: d,
+        ref,
+        type,
+        date,
+        status,
+        groupKey,
+        sortTs: dateObj ? dateObj.getTime() : 0,
+        isExpired: status === "Expirée",
+      };
+    });
+  }, [demandes]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return demandes
-      .map((d) => {
-        const doc0 = Array.isArray(d.documents) ? d.documents[0] : null;
-        return {
-          raw: d,
-          ref: uiRef(doc0?.reference || d.id),
-          type: labelType(d.typeDocument),
-          date: d.createdAt
-            ? new Date(d.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })
-            : "—",
-          status: labelStatut(d.statut),
-        };
-      })
-      .filter((d) => {
-        const matchFilter = filter === "Toutes" || d.status === filter;
-        const matchSearch = !q || d.ref.toLowerCase().includes(q) || d.type.toLowerCase().includes(q);
-        return matchFilter && matchSearch;
-      });
-  }, [demandes, filter, search]);
+
+    const list = flatRows.filter((row) => {
+      const matchFilter = filter === "Toutes" || row.status === filter;
+      const matchSearch = !q || row.ref.toLowerCase().includes(q) || row.type.toLowerCase().includes(q);
+      return matchFilter && matchSearch;
+    });
+
+    // tri récent -> ancien
+    list.sort((a, b) => b.sortTs - a.sortTs);
+
+    return list;
+  }, [flatRows, filter, search]);
+
+  const grouped = useMemo(() => {
+    const order = ["AUJOURDHUI", "SEMAINE", "MOIS", "ANNEE", "LONGTEMPS"];
+    const map = new Map(order.map((k) => [k, []]));
+    for (const r of filtered) {
+      if (!map.has(r.groupKey)) map.set(r.groupKey, []);
+      map.get(r.groupKey).push(r);
+    }
+    return order
+      .map((k) => ({ key: k, label: groupLabel(k), items: map.get(k) || [] }))
+      .filter((g) => g.items.length > 0);
+  }, [filtered]);
 
   if (detailItem) {
     return (
       <DashboardLayout>
         <style>{css}</style>
-        <DetailDemande demande={detailItem} onBack={() => setDetailItem(null)} />
+        <DetailDemande
+          demande={detailItem}
+          onBack={() => setDetailItem(null)}
+          onGoDocuments={() => navigate("/dashboardEtu/documents")}
+        />
       </DashboardLayout>
     );
   }
@@ -422,7 +629,9 @@ export default function MesDemandes() {
           <h2 className="md-title">Mes demandes</h2>
           <p className="md-sub">Suivez l'état de toutes vos demandes de documents</p>
         </div>
-        <a href="/dashboardEtu/demandes" className="btn-new-orange">
+
+        {/* ✅ doit aller vers NouvelleDemande */}
+        <a href="/dashboardEtu/nouvelle" className="btn-new-orange">
           Nouvelle demande
         </a>
       </div>
@@ -468,31 +677,45 @@ export default function MesDemandes() {
                 <th style={{ textAlign: "right" }}>Actions</th>
               </tr>
             </thead>
+
             <tbody>
-              {filtered.length === 0 ? (
+              {grouped.length === 0 ? (
                 <tr>
                   <td colSpan={5} style={{ padding: "18px 20px", color: "#475569" }}>
                     Aucune demande trouvée.
                   </td>
                 </tr>
               ) : (
-                filtered.map((d) => (
-                  <tr key={d.raw.id}>
-                    <td className="td-ref">{d.ref}</td>
-                    <td className="td-type">{d.type}</td>
-                    <td className="td-date">{d.date}</td>
-                    <td>
-                      <span className={`badge ${badgeClass(d.status)}`}>{d.status}</span>
-                    </td>
-                    <td>
-                      <div className="td-actions">
-                        <button className="btn-view" type="button" onClick={() => setDetailItem(d.raw)}>
-                          <IcoEye /> Voir détails
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                grouped.flatMap((g) => {
+                  const headerRow = (
+                    <tr key={`g-${g.key}`} className="group-row">
+                      <td colSpan={4}>
+                        <span className="group-title">{g.label}</span>
+                      </td>
+                      <td className="group-count">{g.items.length}</td>
+                    </tr>
+                  );
+
+                  const rows = g.items.map((d) => (
+                    <tr key={d.raw.id} className={d.isExpired ? "row-expired" : ""}>
+                      <td className="td-ref">{d.ref}</td>
+                      <td className="td-type">{d.type}</td>
+                      <td className="td-date">{d.date}</td>
+                      <td>
+                        <span className={`badge ${badgeClass(d.status)}`}>{d.status}</span>
+                      </td>
+                      <td>
+                        <div className="td-actions">
+                          <button className="btn-view" type="button" onClick={() => setDetailItem(d.raw)}>
+                            <IcoEye /> Voir détails
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ));
+
+                  return [headerRow, ...rows];
+                })
               )}
             </tbody>
           </table>

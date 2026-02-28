@@ -101,6 +101,9 @@ model Utilisateur {
   tokenVerification  String?
   tokenResetPassword String?
   tokenResetExpiry   DateTime?
+
+  filiere  String?
+  niveau   String?
 }
 
 model Demande {

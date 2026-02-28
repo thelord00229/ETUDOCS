@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getMe, getDemandes } from "../../services/api";
 
 import Sidebar from "../../components/DashboardEtudiant/Sidebar.jsx";
@@ -314,14 +314,12 @@ const uiTitle = (type) => {
   return type || "Demande";
 };
 
-/* Choisit la référence fictive selon le type */
 const uiRef = (type, rawRef) => {
   if (type === "RELEVE_NOTES") return rawRef || "ETD-2026-IFRI-S1-00847-XK29";
   if (type === "ATTESTATION_INSCRIPTION") return rawRef || "ETD-2026-IFRI-INS-00234-LM47";
   return rawRef || "ETD-2026-IFRI-INS-00234-LM47";
 };
 
-/* Intermédiaire de traitement fictif selon le type */
 const uiIntervenant = (type) => {
   if (type === "RELEVE_NOTES") return "Serge DOSSOU";
   return "Adéola BOSSOU";
@@ -331,55 +329,55 @@ const uiIntervenant = (type) => {
    ICÔNES SVG
 ───────────────────────────────────────────────────────────── */
 const SvgClock = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-    </svg>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+  </svg>
 );
 const SvgDownload = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-      <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-    </svg>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+    <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+  </svg>
 );
 const SvgX = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-    </svg>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+  </svg>
 );
 const SvgArrowLeft = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-    </svg>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+  </svg>
 );
 const SvgCheckCircle = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-      <polyline points="22 4 12 14.01 9 11.01"/>
-    </svg>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+    <polyline points="22 4 12 14.01 9 11.01"/>
+  </svg>
 );
 const SvgFile = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-    </svg>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+  </svg>
 );
 const SvgDlBtn = () => (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-      <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-    </svg>
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+    <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+  </svg>
 );
 const SvgStepDone = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12"/>
-    </svg>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
 );
 const SvgAlert = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#991b1b" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-    </svg>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#991b1b" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+  </svg>
 );
 
 /* ─────────────────────────────────────────────────────────────
@@ -387,20 +385,16 @@ const SvgAlert = () => (
 ───────────────────────────────────────────────────────────── */
 const getSteps = (status) => {
   const all = [
-    { key: "soumise",   label: "Soumise" },
-    { key: "sec_adj",   label: "Reçue (Sec. Adj)" },
-    { key: "sec_gen",   label: "Transmise (Sec. Gén)" },
-    { key: "traitement",label: "En traitement" },
-    { key: "sign_da",   label: "Signature DA" },
-    { key: "sign_dir",  label: "Signature DIR" },
-    { key: "disponible",label: "Disponible" },
+    { key: "soumise",    label: "Soumise" },
+    { key: "sec_adj",    label: "Reçue (Sec. Adj)" },
+    { key: "sec_gen",    label: "Transmise (Sec. Gén)" },
+    { key: "traitement", label: "En traitement" },
+    { key: "sign_da",    label: "Signature DA" },
+    { key: "sign_dir",   label: "Signature DIR" },
+    { key: "disponible", label: "Disponible" },
   ];
 
-  const activeMap = {
-    "En traitement": 3,
-    "Disponible":    6,
-    "Rejeté":        3,
-  };
+  const activeMap = { "En traitement": 3, "Disponible": 6, "Rejeté": 3 };
   const activeIdx = activeMap[status] ?? 3;
 
   return all.map((s, i) => ({
@@ -413,353 +407,499 @@ const getSteps = (status) => {
    PAGE DÉTAIL
 ───────────────────────────────────────────────────────────── */
 function DetailDemande({ demande, onBack }) {
-  const title    = uiTitle(demande.typeDocument || demande.title);
-  const status   = demande.statut ? uiStatus(demande.statut) : demande.status;
-  const ref      = uiRef(demande.typeDocument, demande.document?.reference || demande.ref_);
-  const steps    = getSteps(status);
+  const title = uiTitle(demande.typeDocument || demande.title);
+  const status = demande.statut ? uiStatus(demande.statut) : demande.status;
+  const ref = uiRef(demande.typeDocument, demande.document?.reference || demande.ref_);
+  const steps = getSteps(status);
   const isReleve = (demande.typeDocument === "RELEVE_NOTES") || title.includes("Relevé");
 
   const badgeClass =
-      status === "Disponible"    ? "badge--disponible" :
-          status === "Rejeté"        ? "badge--rejete"     :
-              status === "En traitement" ? "badge--traitement" : "badge--soumise";
+    status === "Disponible" ? "badge--disponible" :
+    status === "Rejeté" ? "badge--rejete" :
+    status === "En traitement" ? "badge--traitement" : "badge--soumise";
 
   const dateStr = demande.createdAt
-      ? new Date(demande.createdAt).toLocaleDateString("fr-FR", { day:"2-digit", month:"long", year:"numeric" })
-      : demande.date || "—";
+    ? new Date(demande.createdAt).toLocaleDateString("fr-FR", { day:"2-digit", month:"long", year:"numeric" })
+    : demande.date || "—";
 
   return (
-      <div className="dash-content">
-        {/* Bouton retour */}
-        <button className="detail-back" onClick={onBack}>
-          <SvgArrowLeft /> Retour
-        </button>
+    <div className="dash-content">
+      <button className="detail-back" onClick={onBack}>
+        <SvgArrowLeft /> Retour
+      </button>
 
-        {/* En-tête */}
-        <div className="detail-header">
-          <div style={{ flex: 1 }}>
-            <div className="detail-header-title">{title}</div>
-            <div className="detail-ref">Réf : {ref}</div>
-          </div>
-          <span className={`badge ${badgeClass}`}>{status}</span>
+      <div className="detail-header">
+        <div style={{ flex: 1 }}>
+          <div className="detail-header-title">{title}</div>
+          <div className="detail-ref">Réf : {ref}</div>
         </div>
+        <span className={`badge ${badgeClass}`}>{status}</span>
+      </div>
 
-        {/* Stepper */}
-        <div className="stepper-card">
-          <div className="stepper-title">Suivi de la demande</div>
-          <div className="stepper">
-            {steps.map((s) => (
-                <div key={s.key} className="stepper-step">
-                  <div className={`stepper-dot stepper-dot--${s.state}`}>
-                    {s.state === "done" && <SvgStepDone />}
-                    {s.state === "active" && (
-                        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#1a2744" }} />
-                    )}
-                  </div>
-                  <div className={`stepper-label stepper-label--${s.state}`}>
-                    {s.label}
-                    {s.state === "active" && (
-                        <div className="stepper-label--sub">En cours</div>
-                    )}
-                  </div>
-                </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Motif rejet */}
-        {status === "Rejeté" && (
-            <div className="rejection-card">
-              <div className="rejection-title"><SvgAlert /> Motif de rejet</div>
-              <div className="rejection-text">
-                {demande.motifRejet || "Pièce justificative non conforme. Veuillez soumettre une nouvelle demande avec une quittance de paiement lisible et en cours de validité."}
+      <div className="stepper-card">
+        <div className="stepper-title">Suivi de la demande</div>
+        <div className="stepper">
+          {steps.map((s) => (
+            <div key={s.key} className="stepper-step">
+              <div className={`stepper-dot stepper-dot--${s.state}`}>
+                {s.state === "done" && <SvgStepDone />}
+                {s.state === "active" && (
+                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#1a2744" }} />
+                )}
+              </div>
+              <div className={`stepper-label stepper-label--${s.state}`}>
+                {s.label}
+                {s.state === "active" && <div className="stepper-label--sub">En cours</div>}
               </div>
             </div>
-        )}
+          ))}
+        </div>
+      </div>
 
-        {/* Corps : pièces + métadonnées */}
-        <div className="detail-body">
+      {status === "Rejeté" && (
+        <div className="rejection-card">
+          <div className="rejection-title"><SvgAlert /> Motif de rejet</div>
+          <div className="rejection-text">
+            {demande.motifRejet || "Pièce justificative non conforme. Veuillez soumettre une nouvelle demande avec une quittance de paiement lisible et en cours de validité."}
+          </div>
+        </div>
+      )}
 
-          {/* Pièces jointes */}
-          <div className="pieces-card">
-            <div className="pieces-title">Pièces jointes</div>
+      <div className="detail-body">
+        <div className="pieces-card">
+          <div className="pieces-title">Pièces jointes</div>
 
-            {[
-              { name: "Carte d'Identification Personnelle (CIP)", meta: "PDF • 1.2 Mo" },
-              { name: "Quittance de paiement", meta: "PDF • 1.2 Mo" },
-              ...(isReleve ? [{ name: "Relevé de notes officiel", meta: "Généré automatiquement" }] : []),
-            ].map((p, i) => (
-                <div key={i} className="piece-row">
-                  <div className="piece-left">
-                    <div className="piece-icon-wrap"><SvgFile /></div>
-                    <div>
-                      <div className="piece-name">{p.name}</div>
-                      <div className="piece-meta">{p.meta}</div>
-                    </div>
-                  </div>
-                  <span className="piece-status">
+          {[
+            { name: "Carte d'Identification Personnelle (CIP)", meta: "PDF • 1.2 Mo" },
+            { name: "Quittance de paiement", meta: "PDF • 1.2 Mo" },
+            ...(isReleve ? [{ name: "Relevé de notes officiel", meta: "Généré automatiquement" }] : []),
+          ].map((p, i) => (
+            <div key={i} className="piece-row">
+              <div className="piece-left">
+                <div className="piece-icon-wrap"><SvgFile /></div>
+                <div>
+                  <div className="piece-name">{p.name}</div>
+                  <div className="piece-meta">{p.meta}</div>
+                </div>
+              </div>
+              <span className="piece-status">
                 <SvgCheckCircle /> Validée
               </span>
-                </div>
-            ))}
+            </div>
+          ))}
+        </div>
+
+        <div className="detail-right">
+          {status === "Disponible" && (
+            <button className="btn-download">
+              <SvgDlBtn />
+              Télécharger mon document
+              <span className="btn-download-count">(1/3)</span>
+            </button>
+          )}
+
+          <div className="detail-meta-card">
+            <div className="detail-meta-label">Détails</div>
+            <div className="detail-meta-row">
+              <span className="detail-meta-key">Date soumission</span>
+              <span className="detail-meta-val">{dateStr}</span>
+            </div>
+            <div className="detail-meta-row">
+              <span className="detail-meta-key">Dernière maj</span>
+              <span className="detail-meta-val">Il y a 2h</span>
+            </div>
+            <div className="detail-meta-row">
+              <span className="detail-meta-key">Intervenant</span>
+              <span className="detail-meta-val">{uiIntervenant(demande.typeDocument)}</span>
+            </div>
+            {isReleve && (
+              <div className="detail-meta-row">
+                <span className="detail-meta-key">Semestre</span>
+                <span className="detail-meta-val">Semestre 1</span>
+              </div>
+            )}
           </div>
 
-          {/* Panneau droit */}
-          <div className="detail-right">
-
-            {/* Bouton télécharger si Disponible */}
-            {status === "Disponible" && (
-                <button className="btn-download">
-                  <SvgDlBtn />
-                  Télécharger mon document
-                  <span className="btn-download-count">(1/3)</span>
-                </button>
-            )}
-
-            {/* Métadonnées */}
-            <div className="detail-meta-card">
-              <div className="detail-meta-label">Détails</div>
-              <div className="detail-meta-row">
-                <span className="detail-meta-key">Date soumission</span>
-                <span className="detail-meta-val">{dateStr}</span>
-              </div>
-              <div className="detail-meta-row">
-                <span className="detail-meta-key">Dernière maj</span>
-                <span className="detail-meta-val">Il y a 2h</span>
-              </div>
-              <div className="detail-meta-row">
-                <span className="detail-meta-key">Intervenant</span>
-                <span className="detail-meta-val">{uiIntervenant(demande.typeDocument)}</span>
-              </div>
-              {isReleve && (
-                  <div className="detail-meta-row">
-                    <span className="detail-meta-key">Semestre</span>
-                    <span className="detail-meta-val">Semestre 1</span>
-                  </div>
-              )}
+          <div className="detail-help-card">
+            <div className="detail-help-title">Besoin d'aide ?</div>
+            <div className="detail-help-text">
+              Si vous rencontrez un problème avec cette demande, contactez notre support à{" "}
+              <a href="mailto:support@etudocs.bj" style={{ color: "#1a2744", fontWeight: 600 }}>support@etudocs.bj</a>.
             </div>
-
-            {/* Aide */}
-            <div className="detail-help-card">
-              <div className="detail-help-title">Besoin d'aide ?</div>
-              <div className="detail-help-text">
-                Si vous rencontrez un problème avec cette demande, contactez notre support à{" "}
-                <a href="mailto:support@etudocs.bj" style={{ color: "#1a2744", fontWeight: 600 }}>support@etudocs.bj</a>.
-              </div>
-            </div>
-
           </div>
         </div>
       </div>
+    </div>
   );
 }
+
+/* ─────────────────────────────────────────────────────────────
+   NOTIFS (localStorage + diff statut)
+───────────────────────────────────────────────────────────── */
+const NOTIF_KEY = "etudocs_notifications";
+const STATUSMAP_KEY = "etudocs_status_map";
+const NOTIFIED_KEY = "etudocs_notified_ids"; // ✅ IDs déjà notifiés
+
+const safeJsonParse = (v, fallback) => {
+  try { return JSON.parse(v); } catch { return fallback; }
+};
+
+const buildNotifId = () =>
+  (typeof crypto !== "undefined" && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+const formatDocLabel = (typeDoc) => uiTitle(typeDoc);
+
+const makeStatusMap = (list) => {
+  const map = {};
+  (Array.isArray(list) ? list : []).forEach((d) => {
+    if (d?.id) map[d.id] = d.statut || null;
+  });
+  return map;
+};
+
+const detectStatusChanges = (prevMap, nextList) => {
+    const changes = [];
+    const alreadyNotified = safeJsonParse(localStorage.getItem(NOTIFIED_KEY), []);
+
+    (Array.isArray(nextList) ? nextList : []).forEach((d) => {
+      const id = d?.id;
+      if (!id) return;
+      const next = d.statut || null;
+      const notifId = `${id}-DISPONIBLE`;
+
+      // ✅ Notifier si DISPONIBLE et jamais notifié, peu importe prev
+      if (next === "DISPONIBLE" && !alreadyNotified.includes(notifId)) {
+        changes.push({ id, next, demande: d, notifId });
+      }
+    });
+    return changes;
+  };
+
+const notifMessage = ({ demande }) => {
+  const titre = formatDocLabel(demande?.typeDocument);
+  return `✅ Votre ${titre} est prêt. Rendez-vous dans "Mes documents" pour le télécharger.`;
+};
 
 /* ─────────────────────────────────────────────────────────────
    DASHBOARD PRINCIPAL
 ───────────────────────────────────────────────────────────── */
 export default function Dashboard() {
-  const [user,      setUser]      = useState(null);
-  const [demandes,  setDemandes]  = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [errorMsg,  setErrorMsg]  = useState("");
+  const [user, setUser] = useState(null);
+  const [demandes, setDemandes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  /* Vue détail : null = dashboard, sinon objet demande */
   const [detailDemande, setDetailDemande] = useState(null);
 
-  /* ── Stats calculées ── */
-  const nbEnCours    = useMemo(() => demandes.filter(d => d.statut !== "DISPONIBLE" && d.statut !== "REJETEE" && d.statut !== "REJETE").length, [demandes]);
-  const nbDisponibles= useMemo(() => demandes.filter(d => d.statut === "DISPONIBLE").length, [demandes]);
-  const nbRejetees   = useMemo(() => demandes.filter(d => d.statut === "REJETEE" || d.statut === "REJETE").length, [demandes]);
+  // ✅ Notifications
+  const [notifications, setNotifications] = useState(() => {
+    const saved = localStorage.getItem(NOTIF_KEY);
+    return Array.isArray(safeJsonParse(saved, [])) ? safeJsonParse(saved, []) : [];
+  });
 
-  /* ── Demandes récentes ── */
+  const statusMapRef = useRef(() => {
+    const saved = localStorage.getItem(STATUSMAP_KEY);
+    return safeJsonParse(saved, {});
+  });
+  // hack: on stocke la value dans ref correctement
+  if (typeof statusMapRef.current === "function") statusMapRef.current = statusMapRef.current();
+
+  const persistNotifs = (list) => localStorage.setItem(NOTIF_KEY, JSON.stringify(list));
+  const persistStatusMap = (map) => localStorage.setItem(STATUSMAP_KEY, JSON.stringify(map));
+
+  const addNotifications = (items) => {
+    if (!items.length) return;
+    
+    // Marquer ces demandes comme déjà notifiées
+    const alreadyNotified = safeJsonParse(localStorage.getItem(NOTIFIED_KEY), []);
+    const newIds = items.map(i => i.notifId).filter(Boolean);
+    localStorage.setItem(NOTIFIED_KEY, JSON.stringify([...new Set([...alreadyNotified, ...newIds])]));
+    
+    setNotifications((prev) => {
+      const merged = [...items, ...(Array.isArray(prev) ? prev : [])].slice(0, 50);
+      persistNotifs(merged);
+      return merged;
+    });
+  };
+
+  const deleteNotif = (id) => {
+    setNotifications((prev) => {
+      const next = (Array.isArray(prev) ? prev : []).filter((n) => n.id !== id);
+      persistNotifs(next);
+      return next;
+    });
+  };
+
+  const clearAllNotifs = () => {
+    setNotifications([]);
+    persistNotifs([]);
+  };
+
+  /* ✅ Compteurs */
+  const nbEnCours = useMemo(
+    () => demandes.filter(d => d.statut !== "DISPONIBLE" && d.statut !== "REJETEE" && d.statut !== "REJETE").length,
+    [demandes]
+  );
+
+  const docsCount = useMemo(
+    () => demandes
+      .filter(d => d.statut === "DISPONIBLE" && Array.isArray(d.documents))
+      .reduce((acc, d) => acc + d.documents.filter(doc => doc?.reference).length, 0),
+    [demandes]
+  );
+
+  const nbRejetees = useMemo(
+    () => demandes.filter(d => d.statut === "REJETEE" || d.statut === "REJETE").length,
+    [demandes]
+  );
+
+  /* ✅ Demandes récentes : MAX 3 */
   const demandesRecentes = useMemo(() => {
     const list = Array.isArray(demandes) ? demandes : [];
     return [...list]
-        .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))
-        .slice(0, 3)
-        .map(d => ({
-          ...d,                                  // on garde l'objet complet pour le détail
-          title:  uiTitle(d.typeDocument),
-          ref_:   uiRef(d.typeDocument, d.document?.reference || d.id),
-          date:   new Date(d.createdAt).toLocaleDateString("fr-FR", { day:"2-digit", month:"short", year:"numeric" }),
-          status: uiStatus(d.statut),
-        }));
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))
+      .slice(0, 3)
+      .map(d => ({
+        ...d,
+        title: uiTitle(d.typeDocument),
+        ref_: uiRef(d.typeDocument, d.document?.reference || d.id),
+        date: new Date(d.createdAt).toLocaleDateString("fr-FR", { day:"2-digit", month:"short", year:"numeric" }),
+        status: uiStatus(d.statut),
+      }));
   }, [demandes]);
 
-  /* ── Chargement données ── */
-  useEffect(() => {
-    const load = async () => {
-      const token = localStorage.getItem("etudocs_token") || localStorage.getItem("token");
+  const hardLogout = () => {
+    localStorage.removeItem("etudocs_token");
+    localStorage.removeItem("token");
+    localStorage.removeItem("etudocs_user");
+    window.location.href = "/login";
+  };
 
-      if (!token) {
-        window.location.href = "/login";
-        return;
+  // ✅ fetch demandes + generate notifications on status change
+  const refreshDemandes = async ({ notifyChanges } = { notifyChanges: false }) => {
+    const list = await getDemandes();
+    console.log("TYPE:", typeof list);
+    console.log("IS_ARRAY:", Array.isArray(list));
+    console.log("KEYS:", list && typeof list === "object" ? Object.keys(list) : null);
+    console.log("STRING:", JSON.stringify(list, null, 2));
+    const nextList = Array.isArray(list) ? list : [];
+    setDemandes(nextList);
+
+    const nextMap = makeStatusMap(nextList);
+
+    if (notifyChanges) {
+      const prevMap = statusMapRef.current || {};
+      const changes = detectStatusChanges(prevMap, nextList);
+
+      if (changes.length) {
+        const items = changes.map((c) => ({
+          id: buildNotifId(),
+          notifId: c.notifId,
+          message: notifMessage(c),
+          createdAt: Date.now(),
+        }));
+        addNotifications(items);
       }
+    }
 
+    statusMapRef.current = nextMap;
+    persistStatusMap(nextMap);
+  };
+
+  // ✅ Load initial + start polling
+  useEffect(() => {
+    const token = localStorage.getItem("etudocs_token") || localStorage.getItem("token");
+    if (!token) { window.location.href = "/login"; return; }
+
+    let timer = null;
+    let alive = true;
+
+    const init = async () => {
       setLoading(true);
       setErrorMsg("");
       try {
-        const me = await getMe();
-        localStorage.setItem("etudocs_user", JSON.stringify(me));
-        setUser(me);
-        const list = await getDemandes();
-        setDemandes(Array.isArray(list) ? list : []);
-      } catch (err) {
-        if (err.message === "UNAUTHORIZED") {
-          localStorage.removeItem("etudocs_token");
-          localStorage.removeItem("token");
-          localStorage.removeItem("etudocs_user");
-          window.location.href = "/login";
+        const me = await getMe().catch(() => null);
+        if (!alive) return;
+        if (me) {
+          localStorage.setItem("etudocs_user", JSON.stringify(me));
+          setUser(me);
         } else {
-          setErrorMsg("Erreur de chargement. Veuillez réessayer.");
+          // getMe a échoué mais on continue quand même
+          const cached = localStorage.getItem("etudocs_user");
+          if (cached) setUser(JSON.parse(cached));
         }
+
+        await refreshDemandes({ notifyChanges: true });
+
+        timer = setInterval(() => {
+          refreshDemandes({ notifyChanges: true });
+        }, 15000);
+
+      } catch (err) {
+        if (!alive) return;
+        if (err.message === "UNAUTHORIZED") hardLogout();
+        // ✅ On ne montre plus d'erreur si les demandes chargent bien
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     };
-    load();
+
+    init();
+
+    return () => {
+      alive = false;
+      if (timer) clearInterval(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fullName = useMemo(() => (!user ? "…" : `${user.prenom ?? ""} ${user.nom ?? ""}`.trim() || "Étudiant"), [user]);
-  const meta     = useMemo(() => (!user ? "…" : `${user.numeroEtudiant || "—"} • IFRI`), [user]);
+  const meta = useMemo(() => (!user ? "…" : `${user.numeroEtudiant || "—"} • IFRI`), [user]);
   const initials = useMemo(() => (!user ? "…" : getInitials(user.prenom, user.nom)), [user]);
 
-  /* ── Vue Détail ── */
   if (detailDemande) {
     return (
-        <div className="dash-layout">
-          <style>{css}</style>
-          <Sidebar />
-          <div className="dash-main">
-            <TopBar name={fullName} meta={meta} initials={initials} notifCount={1} />
-            <DetailDemande demande={detailDemande} onBack={() => setDetailDemande(null)} />
-          </div>
-        </div>
-    );
-  }
-
-  /* ── Vue Dashboard ── */
-  return (
       <div className="dash-layout">
         <style>{css}</style>
         <Sidebar />
-
         <div className="dash-main">
-          <TopBar name={fullName} meta={meta} initials={initials} notifCount={1} />
-
-          <div className="dash-content">
-
-            {/* Hero */}
-            <div className="dash-hero">
-              <div>
-                <h1>Bonjour {user ? user.prenom : "…"}, que pouvons-nous faire pour vous aujourd'hui ?</h1>
-                <p>Bienvenue sur votre espace personnel EtuDocs</p>
-                <a href="/dashboardEtu/nouvelle" className="btn-new-demand">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                  </svg>
-                  Nouvelle demande
-                </a>
-              </div>
-            </div>
-
-            {errorMsg && <div className="hint-error">{errorMsg}</div>}
-
-            {/* Stats */}
-            <div className="stats-grid">
-              <StatCard
-                  label="Demandes en cours"
-                  value={loading ? "…" : String(nbEnCours)}
-                  sub="Suivi de vos demandes"
-                  icon={<SvgClock />}
-                  accentColor="#f59e0b"
-                  iconBg="#fffbeb"
-              />
-              <StatCard
-                  label="Documents disponibles"
-                  value={loading ? "…" : String(nbDisponibles)}
-                  sub="Prêts à être téléchargés"
-                  icon={<SvgDownload />}
-                  accentColor="#22c55e"
-                  iconBg="#f0fdf4"
-              />
-              <StatCard
-                  label="Demandes rejetées"
-                  value={loading ? "…" : String(nbRejetees)}
-                  sub={nbRejetees === 0 ? "Aucune demande rejetée" : "Certaines demandes ont été rejetées"}
-                  icon={<SvgX />}
-                  accentColor="#ef4444"
-                  iconBg="#fef2f2"
-              />
-            </div>
-
-            {/* Demandes récentes */}
-            <div className="card-section">
-              <div className="card-section__header">
-                <span className="card-section__title">Demandes récentes</span>
-                <a href="/dashboardEtu/demandes" className="card-section__link">Voir tout</a>
-              </div>
-
-              {!loading && demandesRecentes.length === 0 && (
-                  <div style={{ color: "#64748b", fontSize: ".9rem", padding: "10px 0" }}>
-                    Aucune demande pour le moment.
-                  </div>
-              )}
-
-              {demandesRecentes.map((d, i) => (
-                  <DemandRow
-                      key={i}
-                      title={d.title}
-                      ref_={d.ref_}
-                      date={d.date}
-                      status={d.status}
-                      /* ← on passe l'objet complet au détail */
-                      onDetails={() => setDetailDemande(d)}
-                  />
-              ))}
-            </div>
-
-            {/* Bottom promo cards */}
-            <div className="bottom-grid">
-              <div className="promo-card">
-                <div className="promo-card__icon" style={{ background: "#eff6ff" }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a2744" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                  </svg>
-                </div>
-                <div className="promo-card__title" style={{ color: "#1a2744" }}>Besoin d'un document ?</div>
-                <div className="promo-card__sub">Soumettez une nouvelle demande en quelques clics</div>
-                <a href="/dashboardEtu/nouvelle" className="btn-outline-sm">Faire une demande</a>
-              </div>
-
-              <div className="promo-card">
-                <div className="promo-card__icon" style={{ background: "#f0fdf4" }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"/>
-                    <polyline points="9 11 12 14 22 4"/>
-                  </svg>
-                </div>
-                <div className="promo-card__title" style={{ color: "#16a34a" }}>Documents prêts</div>
-                <div className="promo-card__sub">{loading ? "Chargement..." : `${nbDisponibles} document(s) disponible(s)`}</div>
-                <a href="/dashboardEtu/documents" className="btn-outline-sm">Télécharger</a>
-              </div>
-            </div>
-
-            {/* Support */}
-            <div className="support-card">
-              <h3>Besoin d'aide ?</h3>
-              <p>Notre équipe est là pour vous accompagner dans vos démarches</p>
-              <div className="support-card__links">
-                <a href="mailto:support@etudocs.bj">support@etudocs.bj</a>
-                <span className="support-card__sep">|</span>
-                <a href="tel:+22900000000">+229 XX XX XX XX</a>
-              </div>
-            </div>
-
-          </div>
+          <TopBar
+            name={fullName}
+            meta={meta}
+            initials={initials}
+            notifications={notifications}
+            onDeleteNotif={deleteNotif}
+            onClearAllNotifs={clearAllNotifs}
+          />
+          <DetailDemande demande={detailDemande} onBack={() => setDetailDemande(null)} />
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="dash-layout">
+      <style>{css}</style>
+      <Sidebar />
+
+      <div className="dash-main">
+        <TopBar
+          name={fullName}
+          meta={meta}
+          initials={initials}
+          notifications={notifications}
+          onDeleteNotif={deleteNotif}
+          onClearAllNotifs={clearAllNotifs}
+        />
+
+        <div className="dash-content">
+          <div className="dash-hero">
+            <div>
+              <h1>Bonjour {user ? user.prenom : "…"}, que pouvons-nous faire pour vous aujourd'hui ?</h1>
+              <p>Bienvenue sur votre espace personnel EtuDocs</p>
+              <a href="/dashboardEtu/nouvelle" className="btn-new-demand">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                Nouvelle demande
+              </a>
+            </div>
+          </div>
+
+          {errorMsg && <div className="hint-error">{errorMsg}</div>}
+
+          <div className="stats-grid">
+            <StatCard
+              label="Demandes en cours"
+              value={loading ? "…" : String(nbEnCours)}
+              sub="Suivi de vos demandes"
+              icon={<SvgClock />}
+              accentColor="#f59e0b"
+              iconBg="#fffbeb"
+            />
+            <StatCard
+              label="Documents disponibles"
+              value={loading ? "…" : String(docsCount)}
+              sub="Prêts à être téléchargés"
+              icon={<SvgDownload />}
+              accentColor="#22c55e"
+              iconBg="#f0fdf4"
+            />
+            <StatCard
+              label="Demandes rejetées"
+              value={loading ? "…" : String(nbRejetees)}
+              sub={nbRejetees === 0 ? "Aucune demande rejetée" : "Certaines demandes ont été rejetées"}
+              icon={<SvgX />}
+              accentColor="#ef4444"
+              iconBg="#fef2f2"
+            />
+          </div>
+
+          <div className="card-section">
+            <div className="card-section__header">
+              <span className="card-section__title">Demandes récentes</span>
+              <a href="/dashboardEtu/demandes" className="card-section__link">Voir tout</a>
+            </div>
+
+            {!loading && demandesRecentes.length === 0 && (
+              <div style={{ color: "#64748b", fontSize: ".9rem", padding: "10px 0" }}>
+                Aucune demande pour le moment.
+              </div>
+            )}
+
+            {demandesRecentes.map((d, i) => (
+              <DemandRow
+                key={i}
+                title={d.title}
+                ref_={d.ref_}
+                date={d.date}
+                status={d.status}
+                onDetails={() => setDetailDemande(d)}
+              />
+            ))}
+          </div>
+
+          <div className="bottom-grid">
+            <div className="promo-card">
+              <div className="promo-card__icon" style={{ background: "#eff6ff" }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a2744" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+              </div>
+              <div className="promo-card__title" style={{ color: "#1a2744" }}>Besoin d'un document ?</div>
+              <div className="promo-card__sub">Soumettez une nouvelle demande en quelques clics</div>
+              <a href="/dashboardEtu/nouvelle" className="btn-outline-sm">Faire une demande</a>
+            </div>
+
+            <div className="promo-card">
+              <div className="promo-card__icon" style={{ background: "#f0fdf4" }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="9 11 12 14 22 4"/>
+                </svg>
+              </div>
+              <div className="promo-card__title" style={{ color: "#16a34a" }}>Documents prêts</div>
+              <div className="promo-card__sub">{loading ? "Chargement..." : `${docsCount} document(s) disponible(s)`}</div>
+              <a href="/dashboardEtu/documents" className="btn-outline-sm">Télécharger</a>
+            </div>
+          </div>
+
+          <div className="support-card">
+            <h3>Besoin d'aide ?</h3>
+            <p>Notre équipe est là pour vous accompagner dans vos démarches</p>
+            <div className="support-card__links">
+              <a href="mailto:support@etudocs.bj">support@etudocs.bj</a>
+              <span className="support-card__sep">|</span>
+              <a href="tel:+22900000000">+229 XX XX XX XX</a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
   );
 }

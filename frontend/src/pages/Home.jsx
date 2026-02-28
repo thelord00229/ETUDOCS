@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;1,400&display=swap');
@@ -79,12 +79,63 @@ const css = `
       radial-gradient(ellipse at 70% 50%, rgba(245,166,35,.09) 0%, transparent 60%),
       radial-gradient(ellipse at 15% 80%, rgba(45,212,191,.06) 0%, transparent 55%);
   }
+
+  .hero__decor { position:absolute; inset:0; pointer-events:none; z-index:0; }
+  .bubble {
+    position:absolute; border-radius:999px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.12);
+    backdrop-filter: blur(10px);
+    transform: translate3d(0,0,0);
+    animation: floatY var(--dur, 12s) ease-in-out infinite;
+  }
+  .bubble--ring {
+    background: transparent;
+    border: 2px solid rgba(255,255,255,.18);
+  }
+  .bubble--gold {
+    background: rgba(245,166,35,.14);
+    border: 1px solid rgba(245,166,35,.22);
+  }
+  .bubble--teal {
+    background: rgba(45,212,191,.12);
+    border: 1px solid rgba(45,212,191,.2);
+  }
+  @keyframes floatY {
+    0%   { transform: translateY(0) scale(1); }
+    50%  { transform: translateY(-14px) scale(1.02); }
+    100% { transform: translateY(0) scale(1); }
+  }
+  @keyframes floatX {
+    0%   { transform: translateX(0) scale(1); }
+    50%  { transform: translateX(14px) scale(1.02); }
+    100% { transform: translateX(0) scale(1); }
+  }
+  .bubble--x { animation-name: floatX; }
+
   .hero__inner {
     position: relative; z-index: 1;
     width: 100%;
     display: grid; grid-template-columns: 1fr 1fr;
     gap: 60px; align-items: center;
     padding: 80px 48px 90px;
+  }
+  .hero__left { position: relative; z-index: 1; }
+
+  .hero__slider {
+    position: relative;
+    min-height: 230px;
+  }
+  .hero__slide {
+    position: absolute; inset: 0;
+    opacity: 0;
+    transform: translateX(22px);
+    transition: opacity .55s ease, transform .55s ease;
+  }
+  .hero__slide.is-active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
   }
   .hero__title {
     font-size: clamp(2rem, 3.5vw, 3rem); font-weight: 800;
@@ -93,6 +144,7 @@ const css = `
   .hero__sub {
     color: rgba(255,255,255,.7); font-size: 1.05rem;
     line-height: 1.65; margin-bottom: 36px;
+    max-width: 560px;
   }
   .btn-cta {
     display: inline-flex; align-items: center; gap: 10px;
@@ -103,12 +155,29 @@ const css = `
     transition: background .2s, transform .2s, box-shadow .2s;
   }
   .btn-cta:hover { background: var(--gold-lt); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(245,166,35,.35); }
+
+  .hero__dots {
+    margin-top: 18px;
+    display:flex; gap:8px; align-items:center;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 999px;
+    background: rgba(255,255,255,.28);
+    border: 1px solid rgba(255,255,255,.22);
+    cursor: pointer;
+    transition: transform .2s, background .2s;
+  }
+  .dot:hover { transform: scale(1.1); background: rgba(255,255,255,.38); }
+  .dot.is-active { background: rgba(245,166,35,.75); border-color: rgba(245,166,35,.9); }
+
   .hero__card {
     background: rgba(255,255,255,.09); backdrop-filter: blur(16px);
     border: 1px solid rgba(255,255,255,.15);
     border-radius: 16px; padding: 28px;
     display: flex; flex-direction: column; gap: 20px;
+    position: relative; z-index: 1;
   }
+
   .feat { display: flex; align-items: flex-start; gap: 14px; }
   .feat__icon {
     width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
@@ -143,22 +212,130 @@ const css = `
   .section__title { font-size:clamp(1.6rem,3vw,2.2rem); font-weight:800; color:var(--navy); text-align:center; margin-bottom:10px; }
   .section__sub   { color:var(--g600); font-size:1rem; text-align:center; margin-bottom:50px; }
 
-  /* STEPS */
-  .steps { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
-  .step {
-    background:var(--white); border:1px solid var(--g200);
-    border-radius:16px; padding:28px 22px;
-    transition: box-shadow .2s, transform .2s;
+  /* ✅ NOUVELLE SECTION : CHEMIN / ITINÉRAIRE (Remplace .steps) */
+  .path-container {
+    position: relative;
+    max-width: 1000px;
+    margin: 60px auto 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 320px;
   }
-  .step:hover { box-shadow:0 8px 32px rgba(0,0,0,.08); transform:translateY(-4px); }
-  .step__icon { width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; margin-bottom:20px; }
-  .step__icon--blue   { background:#eff6ff; }
-  .step__icon--green  { background:#f0fdf4; }
-  .step__icon--amber  { background:#fffbeb; }
-  .step__icon--purple { background:#faf5ff; }
-  .step__label { font-size:.7rem; font-weight:700; color:var(--g400); letter-spacing:.08em; text-transform:uppercase; margin-bottom:8px; }
-  .step__title { font-family:'Sora',sans-serif; font-size:1rem; font-weight:700; color:var(--navy); margin-bottom:8px; }
-  .step__desc  { color:var(--g600); font-size:.88rem; line-height:1.6; }
+  .path-line {
+    position: absolute;
+    left: 8%; right: 8%; top: 50%;
+    height: 4px;
+    background: var(--g200);
+    border-radius: 2px;
+    z-index: 0;
+    transform: translateY(-50%);
+  }
+  /* Animation du génie/particule magique */
+  .magic-particle {
+    position: absolute;
+    top: 50%;
+    left: 8%;
+    width: 16px; height: 16px;
+    background: var(--gold);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 15px var(--gold), 0 0 30px var(--gold-lt);
+    animation: moveParticle 5s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
+    z-index: 4;
+  }
+  @keyframes moveParticle {
+    0% { left: 8%; transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    10% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    90% { transform: translate(-50%, -50%) scale(1); opacity: 1; left: 92%; }
+    100% { left: 92%; transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  }
+  .path-step {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 22%;
+  }
+  .path-icon {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: var(--white);
+    border: 4px solid var(--g100);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    z-index: 3;
+  }
+  .path-step:hover .path-icon {
+    border-color: var(--gold);
+    transform: translate(-50%, -50%) scale(1.15) rotate(5deg);
+    box-shadow: 0 8px 25px rgba(245, 166, 35, 0.3);
+  }
+  .path-content {
+    background: var(--white);
+    border: 1px solid var(--g200);
+    border-radius: 16px;
+    padding: 24px 16px;
+    text-align: center;
+    width: 100%;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+    position: relative;
+  }
+  .path-step:hover .path-content {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+    border-color: rgba(245, 166, 35, 0.4);
+  }
+  
+  /* Agencement en quinconce */
+  .path-step:nth-child(odd) .path-content { margin-bottom: 160px; }
+  .path-step:nth-child(even) .path-content { margin-top: 160px; }
+
+  /* Lignes pointillées qui connectent les cartes à la ligne principale */
+  .path-step:nth-child(odd) .path-content::after {
+    content: ''; position: absolute; bottom: -40px; left: 50%;
+    transform: translateX(-50%); width: 2px; height: 40px;
+    border-left: 2px dashed var(--g400);
+  }
+  .path-step:nth-child(even) .path-content::after {
+    content: ''; position: absolute; top: -40px; left: 50%;
+    transform: translateX(-50%); width: 2px; height: 40px;
+    border-left: 2px dashed var(--g400);
+  }
+
+  .path-label {
+    display: inline-block;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    padding: 6px 14px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+  }
+  .path-step:nth-child(odd) .path-label { background: var(--navy); color: var(--white); }
+  .path-step:nth-child(even) .path-label { background: rgba(245,166,35,0.15); color: #d97706; }
+
+  .path-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+  .path-desc {
+    font-size: 0.85rem;
+    color: var(--g600);
+    line-height: 1.6;
+  }
 
   /* INSTITUTIONS */
   .inst-univ { color:var(--g600); font-size:.95rem; text-align:center; margin-bottom:40px; }
@@ -178,8 +355,8 @@ const css = `
 
   /* TESTIMONIALS */
   .testi-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
-  .testi-card { background:var(--white); border:1px solid var(--g200); border-left:4px solid var(--gold); border-radius:16px; padding:28px; transition:box-shadow .2s; }
-  .testi-card:hover { box-shadow:0 8px 32px rgba(0,0,0,.08); }
+  .testi-card { background:var(--white); border:1px solid var(--g200); border-left:4px solid var(--gold); border-radius:16px; padding:28px; transition:box-shadow .2s, transform .2s; }
+  .testi-card:hover { box-shadow:0 8px 32px rgba(0,0,0,.08); transform: translateY(-3px); }
   .stars { color:var(--gold); font-size:.9rem; letter-spacing:2px; margin-bottom:14px; }
   .testi-text { color:var(--g700); font-size:.92rem; line-height:1.7; font-style:italic; margin-bottom:20px; }
   .testi-author { display:flex; align-items:center; gap:12px; }
@@ -210,9 +387,15 @@ const css = `
   .footer__legal a { color:rgba(255,255,255,.35); font-size:.82rem; text-decoration:none; transition:color .2s; }
   .footer__legal a:hover { color:var(--gold); }
 
+  /* Reduce motion */
+  @media (prefers-reduced-motion: reduce) {
+    .bubble, .magic-particle { animation: none !important; }
+    .hero__slide { transition: none !important; }
+    .btn-cta, .btn-gold, .path-content, .path-icon, .testi-card, .inst-card { transition: none !important; }
+  }
+
   /* RESPONSIVE */
   @media (max-width:1024px) {
-    .steps { grid-template-columns:repeat(2,1fr); }
     .testi-grid { grid-template-columns:repeat(2,1fr); }
     .footer__top { grid-template-columns:1fr 1fr; }
   }
@@ -223,198 +406,302 @@ const css = `
     .stats { grid-template-columns:1fr; }
     .stat + .stat { border-left:none; border-top:1px solid var(--g200); }
     .section { padding:60px 20px; }
-    .steps { grid-template-columns:1fr; }
     .inst-grid { grid-template-columns:1fr; }
     .testi-grid { grid-template-columns:1fr; }
     .cta-band { padding:60px 20px; }
     .footer__inner { padding:40px 20px 24px; }
     .footer__top { grid-template-columns:1fr; }
     .footer__bottom { flex-direction:column; gap:12px; text-align:center; }
+    .hero__slider { min-height: 250px; }
+
+    /* Chemin Responsive (Devient Vertical) */
+    .path-container {
+      flex-direction: column;
+      align-items: flex-start;
+      padding-left: 45px;
+      margin: 40px auto;
+    }
+    .path-line {
+      left: 20px; top: 0; bottom: 0;
+      width: 4px; height: 100%;
+      transform: none;
+    }
+    .magic-particle {
+      left: 20px; top: 0;
+      transform: translate(-50%, -50%);
+      animation: moveParticleVertical 5s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
+    }
+    @keyframes moveParticleVertical {
+      0% { top: 0%; transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+      10% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      90% { transform: translate(-50%, -50%) scale(1); opacity: 1; top: 100%; }
+      100% { top: 100%; transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    }
+    .path-step {
+      width: 100%;
+      flex-direction: row;
+      margin-bottom: 30px;
+    }
+    .path-step:last-child { margin-bottom: 0; }
+    .path-step:nth-child(odd) .path-content,
+    .path-step:nth-child(even) .path-content {
+      margin: 0 0 0 30px;
+      text-align: left;
+      padding: 20px;
+    }
+    .path-step:nth-child(odd) .path-content::after,
+    .path-step:nth-child(even) .path-content::after {
+      display: none; /* Cache les pointillés sur mobile */
+    }
+    .path-icon {
+      left: 20px; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 48px; height: 48px;
+      font-size: 1.3rem;
+    }
   }
 `;
 
 const DocIcon = ({ size = 20 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-         stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <line x1="16" y1="13" x2="8" y2="13"/>
-        <line x1="16" y1="17" x2="8" y2="17"/>
-        <polyline points="10 9 9 9 8 9"/>
-    </svg>
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+       stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+    <line x1="16" y1="13" x2="8" y2="13"/>
+    <line x1="16" y1="17" x2="8" y2="17"/>
+    <polyline points="10 9 9 9 8 9"/>
+  </svg>
 );
 
 export default function Home() {
-    return (
-        <div className="root" style={{width:"100%",maxWidth:"100%",margin:0,padding:0,boxSizing:"border-box"}}>
-            <style>{css}</style>
+  const slides = useMemo(() => ([
+    {
+      title: "Fini les files d'attente. Demandez vos documents universitaires en ligne.",
+      sub: "Vos documents universitaires, en quelques clics.",
+      cta: "Faire une demande",
+      href: "/login"
+    },
+    {
+      title: "Suivez chaque étape en temps réel, sans stress.",
+      sub: "Notifications + historique clair. Vous savez toujours où en est votre demande.",
+      cta: "Se connecter",
+      href: "/login"
+    },
+  ]), []);
 
-            <nav className="nav">
-                <div className="nav__inner">
-                    <a href="#" className="logo">
-                        <div className="logo__icon"><DocIcon size={20} /></div>
-                        EtuDocs
-                    </a>
-                    <div className="nav__actions">
-                        <a href="/login" ><button className="btn-ghost" >Connexion</button></a>
-                        <a href="/register" ><button className="btn-gold">Créer un compte</button></a>
-                    </div>
-                </div>
-            </nav>
+  const [active, setActive] = useState(0);
 
-            {/* HERO */}
-            <section className="hero">
-                <div className="hero__inner">
-                    <div>
-                        <h1 className="hero__title">
-                            Fini les files d'attente. Demandez vos documents universitaires en ligne.
-                        </h1>
-                        <p className="hero__sub">Vos documents universitaires, en quelques clics.</p>
-                        <a href="/login" className="btn-cta">Faire une demande <span>→</span></a>
-                    </div>
-                    <div className="hero__card">
-                        {[
-                            { cls: "feat__icon--gold",  icon: "⚡", title: "Rapide et simple",    sub: "Demande en 3 minutes" },
-                            { cls: "feat__icon--green", icon: "🔒", title: "100% sécurisé",       sub: "Documents certifiés avec QR code" },
-                            { cls: "feat__icon--teal",  icon: "⏱", title: "Suivi en temps réel", sub: "Notifications à chaque étape" },
-                        ].map((f, i) => (
-                            <div className="feat" key={i}>
-                                <div className={`feat__icon ${f.cls}`}>{f.icon}</div>
-                                <div>
-                                    <div className="feat__title">{f.title}</div>
-                                    <div className="feat__sub">{f.sub}</div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
+  useEffect(() => {
+    const id = setInterval(() => {
+      setActive((p) => (p + 1) % slides.length);
+    }, 5200);
+    return () => clearInterval(id);
+  }, [slides.length]);
 
-            {/* STATS */}
-            <div className="stats">
-                <div className="stat">
-                    <div className="stat__num">🏛 3</div>
-                    <div className="stat__label">institutions connectées</div>
-                    <div className="stat__sub">IFRI • EPAC • FSS</div>
-                </div>
-                <div className="stat">
-                    <div className="stat__num">📄 7</div>
-                    <div className="stat__label">types de documents disponibles</div>
-                </div>
-                <div className="stat">
-                    <div className="stat__num stat__num--amber">⏱ 48h</div>
-                    <div className="stat__label">délai moyen de traitement</div>
-                </div>
-            </div>
+  return (
+    <div className="root" style={{width:"100%",maxWidth:"100%",margin:0,padding:0,boxSizing:"border-box"}}>
+      <style>{css}</style>
 
-            <section className="section">
-                <h2 className="section__title">Comment ça marche ?</h2>
-                <p className="section__sub">Obtenez vos documents en 4 étapes simples</p>
-                <div className="steps">
-                    {[
-                        { col:"blue",   icon:"👤", n:1, title:"Créer un compte",           desc:"Inscrivez-vous avec votre numéro étudiant" },
-                        { col:"green",  icon:"📋", n:2, title:"Soumettre une demande",      desc:"Choisissez votre document et uploadez les pièces" },
-                        { col:"amber",  icon:"⏱", n:3, title:"Suivre en temps réel",       desc:"Recevez des notifications à chaque étape" },
-                        { col:"purple", icon:"📥", n:4, title:"Télécharger votre document", desc:"Document certifié avec QR code de vérification" },
-                    ].map(s => (
-                        <div className="step" key={s.n}>
-                            <div className={`step__icon step__icon--${s.col}`}>{s.icon}</div>
-                            <div className="step__label">ÉTAPE {s.n}</div>
-                            <div className="step__title">{s.title}</div>
-                            <div className="step__desc">{s.desc}</div>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            <section className="section section--gray">
-                <h2 className="section__title">Institutions partenaires</h2>
-                <p className="inst-univ">Université d'Abomey-Calavi (UAC)</p>
-                <div className="inst-grid">
-                    {[
-                        { k:"ifri", label:"IFRI", full:"Institut de Formation et de Recherche en Informatique" },
-                        { k:"epac", label:"EPAC", full:"École Polytechnique d'Abomey-Calavi" },
-                        { k:"fss",  label:"FSS",  full:"Faculté des Sciences de la Santé" },
-                    ].map(i => (
-                        <div className={`inst-card inst-card--${i.k}`} key={i.k}>
-                            <div className={`inst-avatar inst-avatar--${i.k}`}>{i.label}</div>
-                            <div className="inst-name">{i.label}</div>
-                            <div className="inst-full">{i.full}</div>
-                            <span className="badge">✅ Actif</span>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            <section className="section">
-                <h2 className="section__title">Ce que disent nos étudiants</h2>
-                <p className="section__sub">Ils ont adopté EtuDocs</p>
-                <div className="testi-grid">
-                    {[
-                        { q:"Plus besoin de faire la queue pendant des heures. J'ai reçu mon attestation en 2 jours !", name:"Koffi A.",   role:"IFRI · L3 Informatique", l:"K" },
-                        { q:"Interface très intuitive. Le suivi en temps réel est vraiment pratique.",                   name:"Mariam S.", role:"EPAC · M1 Génie Civil",   l:"M" },
-                        { q:"Enfin une solution moderne pour nos démarches administratives. Bravo !",                    name:"Yves D.",   role:"FSS · L2 Médecine",       l:"Y" },
-                    ].map((t, i) => (
-                        <div className="testi-card" key={i}>
-                            <div className="stars">★★★★★</div>
-                            <p className="testi-text">"{t.q}"</p>
-                            <div className="testi-author">
-                                <div className="testi-ava">{t.l}</div>
-                                <div>
-                                    <span className="testi-name">{t.name}</span>
-                                    <span className="testi-role">{t.role}</span>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            <section className="cta-band">
-                <h2 className="cta-band__title">Prêt à simplifier vos démarches administratives ?</h2>
-                <p className="cta-band__sub">Rejoignez les centaines d'étudiants qui ont déjà adopté EtuDocs</p>
-                <a href="/register" className="btn-cta">Créer mon compte gratuitement <span>→</span></a>
-            </section>
-
-            <footer className="footer">
-                <div className="footer__inner">
-                    <div className="footer__top">
-                        <div className="footer__brand">
-                            <a href="#" className="logo" style={{ color: "#fff" }}>
-                                <div className="logo__icon"><DocIcon size={18} /></div>
-                                EtuDocs
-                            </a>
-                            <p>Vos documents universitaires, en quelques clics.</p>
-                        </div>
-                        <div className="footer__col">
-                            <h5>Navigation</h5>
-                            <a href="/login">Connexion</a>
-                            <a href="/register">Créer un compte</a>
-                            <a href="/faq">FAQ</a>
-                        </div>
-                        <div className="footer__col">
-                            <h5>Institutions</h5>
-                            <a href="https://ifri-uac.bj/">IFRI</a>
-                            <a href="https://epac.uac.bj/">EPAC</a>
-                            <a href="https://www.fss-cotonou.com/">FSS</a>
-                        </div>
-                        <div className="footer__col">
-                            <h5>Contact</h5>
-                            <a href="#">contact@etudocs.bj</a>
-                            <a href="#">+229 XX XX XX XX</a>
-                            <a href="#">Abomey-Calavi, Bénin</a>
-                        </div>
-                    </div>
-                    <div className="footer__bottom">
-                        <span className="footer__copy">© 2026 EtuDocs. Tous droits réservés.</span>
-                        <div className="footer__legal">
-                            <a href="#">Mentions légales</a>
-                            <a href="#">Politique de confidentialité</a>
-                            <a href="#">CGU</a>
-                        </div>
-                    </div>
-                </div>
-            </footer>
+      <nav className="nav">
+        <div className="nav__inner">
+          <a href="#" className="logo">
+            <div className="logo__icon"><DocIcon size={20} /></div>
+            EtuDocs
+          </a>
+          <div className="nav__actions">
+            <a href="/login"><button className="btn-ghost">Connexion</button></a>
+            <a href="/register"><button className="btn-gold">Créer un compte</button></a>
+          </div>
         </div>
-    );
+      </nav>
+
+      {/* HERO */}
+      <section className="hero">
+        <div className="hero__decor" aria-hidden="true">
+          <div className="bubble bubble--ring" style={{ left:"6%", top:"18%", width:34, height:34, ["--dur"]:"12s" }} />
+          <div className="bubble bubble--gold" style={{ left:"18%", top:"70%", width:22, height:22, ["--dur"]:"9s" }} />
+          <div className="bubble bubble--teal bubble--x" style={{ left:"42%", top:"26%", width:18, height:18, ["--dur"]:"14s" }} />
+          <div className="bubble bubble--ring bubble--x" style={{ right:"10%", top:"22%", width:28, height:28, ["--dur"]:"11s" }} />
+          <div className="bubble bubble--gold" style={{ right:"8%", top:"62%", width:16, height:16, ["--dur"]:"10s" }} />
+          <div className="bubble" style={{ right:"22%", top:"78%", width:40, height:40, ["--dur"]:"16s" }} />
+        </div>
+
+        <div className="hero__inner">
+          <div className="hero__left">
+            <div className="hero__slider">
+              {slides.map((s, i) => (
+                <div className={`hero__slide ${i === active ? "is-active" : ""}`} key={i}>
+                  <h1 className="hero__title">{s.title}</h1>
+                  <p className="hero__sub">{s.sub}</p>
+                  <a href={s.href} className="btn-cta">{s.cta} <span>→</span></a>
+
+                  <div className="hero__dots">
+                    {slides.map((_, d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        className={`dot ${d === active ? "is-active" : ""}`}
+                        onClick={() => setActive(d)}
+                        aria-label={`Aller à la slide ${d + 1}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="hero__card">
+            {[
+              { cls: "feat__icon--gold",  icon: "⚡", title: "Rapide et simple",    sub: "Demande en 3 minutes" },
+              { cls: "feat__icon--green", icon: "🔒", title: "100% sécurisé",       sub: "Documents certifiés avec QR code" },
+              { cls: "feat__icon--teal",  icon: "⏱", title: "Suivi en temps réel", sub: "Notifications à chaque étape" },
+            ].map((f, i) => (
+              <div className="feat" key={i}>
+                <div className={`feat__icon ${f.cls}`}>{f.icon}</div>
+                <div>
+                  <div className="feat__title">{f.title}</div>
+                  <div className="feat__sub">{f.sub}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* STATS */}
+      <div className="stats">
+        <div className="stat">
+          <div className="stat__num">🏛 3</div>
+          <div className="stat__label">institutions connectées</div>
+          <div className="stat__sub">IFRI • EPAC • FSS</div>
+        </div>
+        <div className="stat">
+          <div className="stat__num">📄 7</div>
+          <div className="stat__label">types de documents disponibles</div>
+        </div>
+        <div className="stat">
+          <div className="stat__num stat__num--amber">⏱ 48h</div>
+          <div className="stat__label">délai moyen de traitement</div>
+        </div>
+      </div>
+
+      {/* ✅ NOUVELLE SECTION COMMENT ÇA MARCHE */}
+      <section className="section">
+        <h2 className="section__title">Comment ça marche ?</h2>
+        <p className="section__sub">Obtenez vos documents en 4 étapes simples</p>
+        
+        <div className="path-container">
+          {/* Ligne directrice et génie animé */}
+          <div className="path-line"></div>
+          <div className="magic-particle"></div>
+
+          {[
+            { n:1, icon:"👤", title:"Créer un compte",         desc:"Inscrivez-vous avec votre numéro étudiant." },
+            { n:2, icon:"📋", title:"Soumettre une demande",   desc:"Choisissez votre document et uploadez les pièces." },
+            { n:3, icon:"⏱", title:"Suivre en temps réel",    desc:"Recevez des notifications à chaque étape." },
+            { n:4, icon:"📥", title:"Télécharger le document", desc:"Document certifié avec QR code de vérification." },
+          ].map((s) => (
+            <div className="path-step" key={s.n}>
+              <div className="path-content">
+                <div className="path-label">ÉTAPE {s.n}</div>
+                <h3 className="path-title">{s.title}</h3>
+                <p className="path-desc">{s.desc}</p>
+              </div>
+              <div className="path-icon">{s.icon}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="section section--gray">
+        <h2 className="section__title">Institutions partenaires</h2>
+        <p className="inst-univ">Université d'Abomey-Calavi (UAC)</p>
+        <div className="inst-grid">
+          {[
+            { k:"ifri", label:"IFRI", full:"Institut de Formation et de Recherche en Informatique" },
+            { k:"epac", label:"EPAC", full:"École Polytechnique d'Abomey-Calavi" },
+            { k:"fss",  label:"FSS",  full:"Faculté des Sciences de la Santé" },
+          ].map(i => (
+            <div className={`inst-card inst-card--${i.k}`} key={i.k}>
+              <div className={`inst-avatar inst-avatar--${i.k}`}>{i.label}</div>
+              <div className="inst-name">{i.label}</div>
+              <div className="inst-full">{i.full}</div>
+              <span className="badge">✅ Actif</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="section">
+        <h2 className="section__title">Ce que disent nos étudiants</h2>
+        <p className="section__sub">Ils ont adopté EtuDocs</p>
+        <div className="testi-grid">
+          {[
+            { q:"Plus besoin de faire la queue pendant des heures. J'ai reçu mon attestation en 2 jours !", name:"Koffi A.",   role:"IFRI · L3 Informatique", l:"K" },
+            { q:"Interface très intuitive. Le suivi en temps réel est vraiment pratique.",                  name:"Mariam S.", role:"EPAC · M1 Génie Civil",   l:"M" },
+            { q:"Enfin une solution moderne pour nos démarches administratives. Bravo !",                   name:"Yves D.",   role:"FSS · L2 Médecine",       l:"Y" },
+          ].map((t, i) => (
+            <div className="testi-card" key={i}>
+              <div className="stars">★★★★★</div>
+              <p className="testi-text">"{t.q}"</p>
+              <div className="testi-author">
+                <div className="testi-ava">{t.l}</div>
+                <div>
+                  <span className="testi-name">{t.name}</span>
+                  <span className="testi-role">{t.role}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="cta-band">
+        <h2 className="cta-band__title">Prêt à simplifier vos démarches administratives ?</h2>
+        <p className="cta-band__sub">Rejoignez les centaines d'étudiants qui ont déjà adopté EtuDocs</p>
+        <a href="/register" className="btn-cta">Créer mon compte gratuitement <span>→</span></a>
+      </section>
+
+      <footer className="footer">
+        <div className="footer__inner">
+          <div className="footer__top">
+            <div className="footer__brand">
+              <a href="#" className="logo" style={{ color: "#fff" }}>
+                <div className="logo__icon"><DocIcon size={18} /></div>
+                EtuDocs
+              </a>
+              <p>Vos documents universitaires, en quelques clics.</p>
+            </div>
+            <div className="footer__col">
+              <h5>Navigation</h5>
+              <a href="/login">Connexion</a>
+              <a href="/register">Créer un compte</a>
+              <a href="/faq">FAQ</a>
+            </div>
+            <div className="footer__col">
+              <h5>Institutions</h5>
+              <a href="https://ifri-uac.bj/">IFRI</a>
+              <a href="https://epac.uac.bj/">EPAC</a>
+              <a href="https://epac.uac.bj/">FSS</a>
+            </div>
+            <div className="footer__col">
+              <h5>Contact</h5>
+              <a href="#">contact@etudocs.bj</a>
+              <a href="#">+229 XX XX XX XX</a>
+              <a href="#">Abomey-Calavi, Bénin</a>
+            </div>
+          </div>
+          <div className="footer__bottom">
+            <span className="footer__copy">© 2026 EtuDocs. Tous droits réservés.</span>
+            <div className="footer__legal">
+              <a href="#">Mentions légales</a>
+              <a href="#">Politique de confidentialité</a>
+              <a href="#">CGU</a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
 }
