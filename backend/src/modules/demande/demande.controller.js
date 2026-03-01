@@ -1,36 +1,51 @@
-const service = require('./demande.service');
-const asyncHandler = require('../../utils/asyncHandler');
+// src/modules/demande/demande.controller.js
+const service = require("./demande.service");
+const asyncHandler = require("../../utils/asyncHandler");
+
+const normalize = (v) => String(v || "").trim();
+const normalizeUpper = (v) => normalize(v).toUpperCase();
 
 const hasFile = (files, key) => {
   return !!(files && files[key] && Array.isArray(files[key]) && files[key].length > 0);
 };
 
+// Limites simples (anti spam / cohérence UX)
+const MAX_COMMENTAIRE_LEN = 500;
+
+function badRequest(res, message, extra = {}) {
+  return res.status(400).json({ message, ...extra });
+}
+
 exports.soumettre = asyncHandler(async (req, res) => {
   const files = req.files || {};
-  const typeDocument = req.body?.typeDocument;
-
-  const needFourPieces = ['RELEVE_NOTES', 'ATTESTATION_INSCRIPTION'].includes(typeDocument);
-
-  const required = needFourPieces
-    ? ['CIP', 'QUITTANCE', 'ACTE_NAISSANCE', 'JUSTIFICATIF_INSCRIPTION']
-    : ['CIP', 'QUITTANCE'];
-
-  const missing = required.filter((k) => !hasFile(files, k));
+  const typeDocumentRaw = req.body?.typeDocument;
+  const typeDocument = normalizeUpper(typeDocumentRaw);
 
   if (!typeDocument) {
-    return res.status(400).json({ message: "typeDocument est requis." });
+    return badRequest(res, "typeDocument est requis.");
   }
 
-  if (missing.length > 0) {
-    return res.status(400).json({
-      message: "Pièces manquantes pour soumettre la demande.",
-      missingPieces: missing
-    });
+  // ✅ Validation minimale (le service fait la vraie validation métier)
+  // Ici on évite juste les cas où aucun fichier n’est fourni.
+  const hasAnyFile = Object.keys(files).some((k) => hasFile(files, k));
+  if (!hasAnyFile) {
+    return badRequest(res, "Aucune pièce jointe détectée. Veuillez uploader vos pièces.");
   }
 
-  res.status(201).json(
-    await service.soumettre(req.user.id, req.user.institutionId, req.body, files)
+  // Optionnel : semestres (pour RELEVE_NOTES)
+  // On normalise mais on ne bloque pas trop ici. Le service décidera.
+  if (req.body?.semestres) {
+    // laissez passer: service parse
+  }
+
+  const created = await service.soumettre(
+    req.user.id,
+    req.user.institutionId,
+    { ...req.body, typeDocument }, // on force la version normalisée
+    files
   );
+
+  return res.status(201).json(created);
 });
 
 exports.getDemandes = asyncHandler(async (req, res) => {
@@ -42,33 +57,65 @@ exports.getById = asyncHandler(async (req, res) => {
 });
 
 exports.avancer = asyncHandler(async (req, res) => {
-  res.json(
-    await service.avancer(
-      req.params.id,
-      req.body.action,
-      req.user.id,
-      req.user.role,
-      req.user.institutionId,
-      req.body.commentaire
-    )
+  const actionRaw = req.body?.action;
+  const action = normalizeUpper(actionRaw);
+
+  if (!action) {
+    return badRequest(res, "action est requise.");
+  }
+
+  const commentaireRaw = req.body?.commentaire;
+  const commentaire = commentaireRaw == null ? null : normalize(commentaireRaw);
+
+  if (commentaire && commentaire.length > MAX_COMMENTAIRE_LEN) {
+    return badRequest(
+      res,
+      `commentaire trop long (max ${MAX_COMMENTAIRE_LEN} caractères).`
+    );
+  }
+
+  const updated = await service.avancer(
+    req.params.id,
+    action,
+    req.user.id,
+    req.user.role,
+    req.user.institutionId,
+    commentaire
   );
+
+  res.json(updated);
 });
 
 exports.validerPiece = asyncHandler(async (req, res) => {
-  const statut = req.body?.statut;
+  const statut = normalizeUpper(req.body?.statut);
 
-  if (!['VALIDEE', 'REJETEE'].includes(statut)) {
-    return res.status(400).json({ message: "statut invalide. Attendu: VALIDEE ou REJETEE." });
+  if (!["VALIDEE", "REJETEE"].includes(statut)) {
+    return badRequest(res, "statut invalide. Attendu: VALIDEE ou REJETEE.");
+  }
+
+  const commentaireRaw = req.body?.commentaire;
+  const commentaire = commentaireRaw == null ? null : normalize(commentaireRaw);
+
+  if (commentaire && commentaire.length > MAX_COMMENTAIRE_LEN) {
+    return badRequest(
+      res,
+      `commentaire trop long (max ${MAX_COMMENTAIRE_LEN} caractères).`
+    );
   }
 
   // compat : certains users n'ont pas 'service'
-  const userService = req.user.service || req.user.serviceId || req.user.division || req.user.departement || null;
+  const userService =
+    req.user.service ||
+    req.user.serviceId ||
+    req.user.division ||
+    req.user.departement ||
+    null;
 
   res.json(
     await service.validerPiece(
       req.params.pieceId,
       statut,
-      req.body.commentaire,
+      commentaire,
       req.user.id,
       req.user.role,
       req.user.institutionId,

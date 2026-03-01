@@ -19,7 +19,7 @@ const upload = multer({
 
 // ✅ Tous les rôles possibles pour Chef Division (Examens / autre)
 // (on garde CHEF_DIVISION pour compatibilité)
-const CHEF_DIVISION_ROLES = ['CHEF_DIVISION', 'CHEF_DIVISION_EXAMENS', 'CHEF_DIVISION_PEDAGOGIE'];
+const CHEF_DIVISION_ROLES = ["CHEF_DIVISION"]; // ✅ conforme Prisma
 
 // Étudiant soumet une demande
 router.post(
