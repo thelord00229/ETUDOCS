@@ -75,7 +75,6 @@ const css = `
   .state-box { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:18px 20px; color:#475569; }
   .state-error { color:#dc2626; }
 
-  /* Group separators */
   .group-row td {
     padding:14px 20px;
     background:#fbfdff;
@@ -95,7 +94,6 @@ const css = `
     text-align:right;
   }
 
-  /* Expired row style */
   .row-expired td { background:#fcfcfd; }
   .row-expired .td-type,
   .row-expired .td-date,
@@ -103,7 +101,6 @@ const css = `
   .row-expired .btn-view { color:#94a3b8; }
   .row-expired .btn-view:hover { color:#64748b; }
 
-  /* ── DETAIL (même style que ton dashboard detail) ── */
   .detail-back {
     display:inline-flex; align-items:center; gap:7px;
     background:none; border:none; cursor:pointer;
@@ -128,7 +125,6 @@ const css = `
   .dbadge--attente    { background:#fffbeb; color:#92400e; border:1px solid #fde68a; }
   .dbadge--expire     { background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; }
 
-  /* Stepper */
   .stepper-card {
     background:#fff; border:1px solid #e2e8f0; border-radius:16px;
     padding:28px 32px; margin-bottom:20px;
@@ -154,7 +150,7 @@ const css = `
 
   .stepper-label {
     font-size:.75rem; font-weight:500; color:#64748b; text-align:center;
-    max-width:80px; line-height:1.35;
+    max-width:90px; line-height:1.35;
   }
   .stepper-label--done { color:#1a2744; font-weight:600; }
   .stepper-label--active { color:#1a2744; font-weight:700; }
@@ -208,7 +204,6 @@ const css = `
   }
 `;
 
-/* Ajout Expirée + petite cohérence des libellés */
 const FILTERS = ["Toutes", "En attente", "En traitement", "Disponible", "Expirée", "Rejetée"];
 
 const labelType = (t) => {
@@ -217,19 +212,19 @@ const labelType = (t) => {
   return t || "Document";
 };
 
-/* Statut UI basé sur statut backend + downloadCount */
 const computeUiStatus = (demande) => {
   const raw = demande?.statut || null;
   const doc0 = Array.isArray(demande?.documents) ? demande.documents[0] : null;
   const downloadCount = typeof doc0?.downloadCount === "number" ? doc0.downloadCount : null;
 
-  // Expiré si: DISPONIBLE mais 3 téléchargements déjà faits
   const isExpired = raw === "DISPONIBLE" && downloadCount !== null && downloadCount >= 3;
   if (isExpired) return "Expirée";
 
   if (raw === "DISPONIBLE") return "Disponible";
   if (raw === "REJETEE" || raw === "REJETE") return "Rejetée";
   if (raw === "SOUMISE" || raw === "CORRECTION_DEMANDEE") return "En attente";
+
+  // Tous les statuts intermédiaires
   return "En traitement";
 };
 
@@ -252,50 +247,52 @@ const dbadgeClass = (l) => {
 const uiRef = (rawRef) => rawRef || "—";
 
 /* ─────────────────────────────────────────────────────────────
-   STEPPER SYNC (statut backend → step index)
+   STEPPER (aligné workflow backend)
 ───────────────────────────────────────────────────────────── */
 const STEPS = [
   { key: "soumise", label: "Soumise" },
-  { key: "sec_adj", label: "Reçue (Sec.\nAdj)" },
-  { key: "sec_gen", label: "Transmise (Sec.\nGén)" },
-  { key: "chef_div", label: "Traitement (Chef\nDiv)" },
-  { key: "sign_da", label: "Signature DA" },
-  { key: "sign_dir", label: "Signature DIR" },
-  { key: "disponible", label: "Disponible" },
+  { key: "sg", label: "Secrétaire\nGénéral" },
+  { key: "chef", label: "Chef de\nDivision" },
+  { key: "da", label: "Signature\nDA" },
+  { key: "dir", label: "Signature\nDIR" },
+  { key: "done", label: "Disponible" },
 ];
 
+/**
+ * Mapping strict : seulement des statuts existants backend
+ */
 const statusToActiveIndex = (rawStatut, uiStatut) => {
-  // uiStatut peut être Expirée/Disponible/Rejetée...
-  if (uiStatut === "Disponible" || uiStatut === "Expirée") return 6;
+  if (uiStatut === "Disponible" || uiStatut === "Expirée") return 5;
 
   switch (rawStatut) {
     case "SOUMISE":
     case "CORRECTION_DEMANDEE":
       return 0;
 
+    case "TRANSMISE_SECRETAIRE_ADJOINT":
+      // demande chez SG (il va transmettre)
+      return 1;
+
     case "TRANSMISE_SECRETAIRE_GENERAL":
+      // demande chez Chef Division
       return 2;
 
-    case "TRANSMISE_CHEF_DIVISION":
+    case "DOCUMENT_GENERE":
+      // demande chez Directeur Adjoint
       return 3;
 
-    case "ATTENTE_SIGNATURE_DIRECTEUR_ADJOINT":
-      return 4;
-
     case "ATTENTE_SIGNATURE_DIRECTEUR":
-      return 5;
-
-    case "DISPONIBLE":
-      return 6;
+      // demande chez Directeur
+      return 4;
 
     case "REJETEE":
     case "REJETE":
-      // rejet peut arriver à plusieurs étapes, mais par défaut: traitement
-      return 3;
+    case "ANNULEE":
+      // rejet/annulation: on met sur Chef (milieu) pour rester cohérent visuellement
+      return 2;
 
     default:
-      // fallback
-      return 3;
+      return 2;
   }
 };
 
@@ -308,7 +305,7 @@ const getSteps = (rawStatut, uiStatut) => {
 };
 
 /* ─────────────────────────────────────────────────────────────
-   ICÔNES
+   ICONES
 ───────────────────────────────────────────────────────────── */
 const IcoArrow = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -341,11 +338,10 @@ const SvgStepDone = () => (
 );
 
 /* ─────────────────────────────────────────────────────────────
-   GROUPING (Aujourd'hui, semaine, mois, année, longtemps)
+   GROUPING
 ───────────────────────────────────────────────────────────── */
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const startOfWeek = (d) => {
-  // semaine qui commence lundi
   const dd = new Date(d);
   const day = (dd.getDay() + 6) % 7; // lundi=0
   dd.setDate(dd.getDate() - day);
@@ -381,8 +377,7 @@ const groupLabel = (k) => {
 };
 
 /* ─────────────────────────────────────────────────────────────
-   PAGE DÉTAIL (même page que dashboard)
-   - Bouton "Télécharger" => redirection Mes documents
+   DETAIL
 ───────────────────────────────────────────────────────────── */
 function DetailDemande({ demande, onBack, onGoDocuments }) {
   const title = labelType(demande.typeDocument);
@@ -454,6 +449,7 @@ function DetailDemande({ demande, onBack, onGoDocuments }) {
 
               const meta = p.nom ? p.nom : (p.url ? String(p.url).split("\\").pop() : "—");
               const statutPiece = p.statut || "SOUMISE";
+              
 
               return (
                 <div key={p.id} className="piece-row">
@@ -477,8 +473,9 @@ function DetailDemande({ demande, onBack, onGoDocuments }) {
         </div>
 
         <div className="detail-right">
-          {/* ✅ Plus de download ici : redirection Mes documents */}
-          {(uiStatus === "Disponible") && (
+          {/* ✅ téléchargement uniquement depuis Mes documents
+              On affiche le bouton seulement si c'est "Disponible" OU "Expirée" (pour comprendre pourquoi c'est bloqué) */}
+          {(uiStatus === "Disponible" || uiStatus === "Expirée") && (
             <button className="btn-dl" type="button" onClick={onGoDocuments}>
               Télécharger
             </button>
@@ -517,7 +514,7 @@ function DetailDemande({ demande, onBack, onGoDocuments }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   COMPOSANT PRINCIPAL
+   PAGE
 ───────────────────────────────────────────────────────────── */
 export default function MesDemandes() {
   const navigate = useNavigate();
@@ -589,9 +586,7 @@ export default function MesDemandes() {
       return matchFilter && matchSearch;
     });
 
-    // tri récent -> ancien
     list.sort((a, b) => b.sortTs - a.sortTs);
-
     return list;
   }, [flatRows, filter, search]);
 
@@ -630,7 +625,6 @@ export default function MesDemandes() {
           <p className="md-sub">Suivez l'état de toutes vos demandes de documents</p>
         </div>
 
-        {/* ✅ doit aller vers NouvelleDemande */}
         <a href="/dashboardEtu/nouvelle" className="btn-new-orange">
           Nouvelle demande
         </a>

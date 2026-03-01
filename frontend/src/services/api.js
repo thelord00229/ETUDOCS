@@ -1,20 +1,14 @@
-import axios from 'axios';
-// Note: VITE_API_URL should NOT include the trailing `/api` segment.
-// All requests below append `/api/...` explicitly so that the base URL
-// stays consistent and we avoid double `/api/api` problems.
+// src/services/api.js
+import axios from "axios";
+
+// VITE_API_URL must NOT include trailing `/api`
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
 /* ================================
-   TOKEN
+   SESSION / TOKEN
 ================================ */
-export const getToken = () => localStorage.getItem("etudocs_token") || localStorage.getItem("token");
+export const getToken = () =>
+  localStorage.getItem("etudocs_token") || localStorage.getItem("token");
 
 export const clearSession = () => {
   localStorage.removeItem("etudocs_token");
@@ -23,26 +17,89 @@ export const clearSession = () => {
 };
 
 /* ================================
-   GENERIC REQUEST (JSON)
+   AXIOS INSTANCE (optional use)
 ================================ */
-const apiRequest = async (endpoint, options = {}) => {
-  const token = getToken();
+const api = axios.create({
+  baseURL: API_URL,
+  headers: { "Content-Type": "application/json" },
+});
 
+api.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+api.interceptors.response.use(
+  (r) => r,
+  (error) => {
+    if (error?.response?.status === 401) {
+      clearSession();
+    }
+    return Promise.reject(error);
+  }
+);
+
+/* ================================
+   LOW-LEVEL FETCH HELPERS
+================================ */
+
+const buildHeaders = ({ json = true, extraHeaders = {} } = {}) => {
+  const token = getToken();
+  const headers = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(json ? { "Content-Type": "application/json" } : {}),
+    ...extraHeaders,
+  };
+  return headers;
+};
+
+const parseErrorMessage = async (res) => {
+  const ct = res.headers.get("content-type") || "";
+  const isJson = ct.includes("application/json");
+  const data = isJson ? await res.json().catch(() => ({})) : {};
+  return data?.message || "Erreur API";
+};
+
+const handleUnauthorized = () => {
+  clearSession();
+  throw new Error("UNAUTHORIZED");
+};
+
+/**
+ * JSON request helper
+ */
+const apiRequest = async (endpoint, { method = "GET", body, headers } = {}) => {
   const res = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
+    method,
+    headers: buildHeaders({ json: true, extraHeaders: headers }),
+    body: body ? JSON.stringify(body) : undefined,
   });
 
-  if (res.status === 401) {
-    console.warn("401 reçu - session potentiellement expirée");
-    throw new Error("UNAUTHORIZED");
+  if (res.status === 401) return handleUnauthorized();
+
+  if (!res.ok) {
+    const msg = await parseErrorMessage(res);
+    throw new Error(msg);
   }
 
-  const contentType = res.headers.get("content-type") || "";
-  const isJson = contentType.includes("application/json");
+  return res.json().catch(() => ({}));
+};
+
+/**
+ * FormData request helper (no JSON content-type)
+ */
+const apiForm = async (endpoint, formData, { method = "POST", headers } = {}) => {
+  const res = await fetch(`${API_URL}${endpoint}`, {
+    method,
+    headers: buildHeaders({ json: false, extraHeaders: headers }),
+    body: formData,
+  });
+
+  if (res.status === 401) return handleUnauthorized();
+
+  const ct = res.headers.get("content-type") || "";
+  const isJson = ct.includes("application/json");
   const data = isJson ? await res.json().catch(() => ({})) : null;
 
   if (!res.ok) {
@@ -52,6 +109,24 @@ const apiRequest = async (endpoint, options = {}) => {
   return data;
 };
 
+/**
+ * Blob download helper
+ */
+const apiBlob = async (endpoint, { headers } = {}) => {
+  const res = await fetch(`${API_URL}${endpoint}`, {
+    headers: buildHeaders({ json: false, extraHeaders: headers }),
+  });
+
+  if (res.status === 401) return handleUnauthorized();
+
+  if (!res.ok) {
+    const msg = await parseErrorMessage(res);
+    throw new Error(msg);
+  }
+
+  return res.blob();
+};
+
 /* ================================
    AUTH
 ================================ */
@@ -59,110 +134,64 @@ export const getMe = async () => {
   const token = getToken();
   if (!token) throw new Error("UNAUTHORIZED");
 
-  const url = `${API_URL}/api/auth/me`;
-  console.log("→ getMe() URL appelée :", url);
-
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` }
+  const res = await fetch(`${API_URL}/api/auth/me`, {
+    headers: buildHeaders({ json: false }),
   });
 
-  console.log("→ getMe() status :", res.status);
-
-  if (res.status === 401) throw new Error("UNAUTHORIZED");
+  if (res.status === 401) return handleUnauthorized();
   if (!res.ok) throw new Error("SERVER_ERROR");
+
   return res.json();
 };
-
-
 
 /* ================================
    DEMANDES
 ================================ */
-
-export const getDemandes = async () => {
-  const token = getToken();
-  const res = await fetch(`${API_URL}/api/demandes`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  if (!res.ok) throw new Error("Erreur chargement");
-  return res.json();
-};
+export const getDemandes = async () => apiRequest("/api/demandes");
 
 export const getDemandeById = async (id) => apiRequest(`/api/demandes/${id}`);
 
 export const avancerDemande = async (id, action, commentaire = "") => {
   const body = { action };
   if (commentaire) body.commentaire = commentaire;
-
-  return apiRequest(`/api/demandes/${id}/avancer`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  return apiRequest(`/api/demandes/${id}/avancer`, { method: "POST", body });
 };
 
 export const submitDemande = async ({
   typeDocument,
   semestre,
+  semestres, // si tu veux envoyer plusieurs
   CIP,
   QUITTANCE,
   ACTE_NAISSANCE,
   JUSTIFICATIF_INSCRIPTION,
 }) => {
   const token = getToken();
-  if (!token) throw new Error("NO_TOKEN");
+  if (!token) throw new Error("UNAUTHORIZED");
 
   const form = new FormData();
   form.append("typeDocument", typeDocument);
-  if (semestre) form.append("semestre", String(semestre));
+
+  // Compat: ton backend parse "semestres" (array) mais tu envoyais "semestre"
+  if (Array.isArray(semestres)) {
+    semestres.forEach((s) => form.append("semestres", String(s)));
+  } else if (semestre) {
+    form.append("semestres", String(semestre));
+  }
 
   if (CIP) form.append("CIP", CIP);
   if (QUITTANCE) form.append("QUITTANCE", QUITTANCE);
   if (ACTE_NAISSANCE) form.append("ACTE_NAISSANCE", ACTE_NAISSANCE);
   if (JUSTIFICATIF_INSCRIPTION) form.append("JUSTIFICATIF_INSCRIPTION", JUSTIFICATIF_INSCRIPTION);
 
-  const res = await fetch(`${API_URL}/api/demandes`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: form,
-  });
-
-  if (res.status === 401) {
-    clearSession();
-    throw new Error("UNAUTHORIZED");
-  }
-
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.message || "Erreur API");
-  return data;
+  return apiForm("/api/demandes", form, { method: "POST" });
 };
 
 /* ================================
    DOCUMENTS
 ================================ */
-
-export const downloadDocumentBlob = async (reference) => {
-  const token = getToken();
-  if (!token) throw new Error("NO_TOKEN");
-
-  const res = await fetch(`${API_URL}/api/documents/download/${reference}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  if (res.status === 401) {
-    clearSession();
-    throw new Error("UNAUTHORIZED");
-  }
-
-  if (!res.ok) {
-    const contentType = res.headers.get("content-type") || "";
-    const isJson = contentType.includes("application/json");
-    const data = isJson ? await res.json().catch(() => ({})) : {};
-    throw new Error(data?.message || "Erreur téléchargement");
-  }
-
-  return await res.blob();
-};
+export const downloadDocumentBlob = async (reference) =>
+  apiBlob(`/api/documents/download/${reference}`);
 
 export const downloadDocument = async (reference, filename) => {
   const blob = await downloadDocumentBlob(reference);
@@ -177,79 +206,27 @@ export const downloadDocument = async (reference, filename) => {
   window.URL.revokeObjectURL(url);
 };
 
-// ✅ Suppression définitive d'un document (déclenché après limite atteinte)
-export const deleteDocument = async (reference) => {
-  const token = getToken();
-  if (!token) throw new Error("NO_TOKEN");
+// ⛔ Je déconseille la suppression auto (ça fait “perte de document”)
+// Mais je laisse l'API si tu en as besoin côté admin.
+export const deleteDocument = async (reference) =>
+  apiRequest(`/api/documents/${reference}`, { method: "DELETE" });
 
-  const res = await fetch(`${API_URL}/api/documents/${reference}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  if (res.status === 401) {
-    clearSession();
-    throw new Error("UNAUTHORIZED");
-  }
-
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.message || "Erreur suppression");
-  return data;
-};
-
-export const validerPiece = async (pieceId, statut, commentaire = "") => {
-  return apiRequest(`/api/demandes/pieces/${pieceId}`, {
+/* ================================
+   PIECES
+================================ */
+export const validerPiece = async (pieceId, statut, commentaire = "") =>
+  apiRequest(`/api/demandes/pieces/${pieceId}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ statut, commentaire }),
+    body: { statut, commentaire },
   });
-};
 
 export const getChefDivisionStats = async () =>
   apiRequest("/api/demandes/stats/chef-division");
 
-export const downloadPieceBlob = async (pieceId) => {
-  const token = getToken();
-  if (!token) throw new Error("NO_TOKEN");
+export const downloadPieceBlob = async (pieceId) =>
+  apiBlob(`/api/demandes/pieces/${pieceId}/download`);
 
-  const res = await fetch(`${API_URL}/api/demandes/pieces/${pieceId}/download`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  if (res.status === 401) {
-    clearSession();
-    throw new Error("UNAUTHORIZED");
-  }
-
-  if (!res.ok) {
-    const contentType = res.headers.get("content-type") || "";
-    const isJson = contentType.includes("application/json");
-    const data = isJson ? await res.json().catch(() => ({})) : {};
-    throw new Error(data?.message || "Erreur téléchargement pièce");
-  }
-
-  return await res.blob();
-};
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('etudocs_token') || localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response && error.response.status === 401) {
-      console.warn("401 reçu - session potentiellement expirée");
-      localStorage.removeItem('etudocs_token');
-      localStorage.removeItem('token');
-      localStorage.removeItem('etudocs_user');
-    }
-    return Promise.reject(error);
-  }
-);
-
+/* ================================
+   EXPORT DEFAULT (axios instance)
+================================ */
 export default api;

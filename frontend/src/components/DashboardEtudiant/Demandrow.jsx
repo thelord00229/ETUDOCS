@@ -20,7 +20,9 @@ const css = `
   .badge-status--traitement { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
   .badge-status--disponible { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
   .badge-status--rejete     { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-  .badge-status--soumis     { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+  .badge-status--attente    { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+  .badge-status--expire     { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
   .btn-details {
     font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500;
     color: #475569; background: none; border: 1px solid #e2e8f0;
@@ -31,35 +33,38 @@ const css = `
 `;
 
 const STATUS_CLASS = {
-    "En traitement": "badge-status--traitement",
-    "Disponible":    "badge-status--disponible",
-    "Rejeté":        "badge-status--rejete",
-    "Soumis":        "badge-status--soumis",
+  "En traitement": "badge-status--traitement",
+  "Disponible": "badge-status--disponible",
+  "Expirée": "badge-status--expire",
+  "Rejetée": "badge-status--rejete",
+  "En attente": "badge-status--attente",
 };
 
 export default function DemandRow({ title, ref_, date, status, onDetails }) {
-    return (
-        <>
-            <style>{css}</style>
-            <div className="demand-row">
-                <div className="demand-row__icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                         stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                    </svg>
-                </div>
-                <div className="demand-row__info">
-                    <div className="demand-row__title">{title}</div>
-                    <div className="demand-row__meta">{ref_} • {date}</div>
-                </div>
-                <div className="demand-row__right">
-                    <span className={`badge-status ${STATUS_CLASS[status] || "badge-status--soumis"}`}>{status}</span>
-                    <button className="btn-details" onClick={onDetails}>Voir détails</button>
-                </div>
-            </div>
-        </>
-    );
+  return (
+    <>
+      <style>{css}</style>
+      <div className="demand-row">
+        <div className="demand-row__icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        </div>
+        <div className="demand-row__info">
+          <div className="demand-row__title">{title}</div>
+          <div className="demand-row__meta">{ref_} • {date}</div>
+        </div>
+        <div className="demand-row__right">
+          <span className={`badge-status ${STATUS_CLASS[status] || "badge-status--traitement"}`}>
+            {status}
+          </span>
+          <button className="btn-details" onClick={onDetails}>Voir détails</button>
+        </div>
+      </div>
+    </>
+  );
 }

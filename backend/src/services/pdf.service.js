@@ -1,458 +1,890 @@
-const puppeteer = require('puppeteer');
-const { PDFDocument } = require('pdf-lib');
-const fs = require('fs');
-const path = require('path');
-const QRCode = require('qrcode');
+/**
+ * pdf.service.js
+ * Service de génération PDF pour EtuDocs
+ * Placé dans : backend/src/services/pdf.service.js
+ *
+ * Appelé depuis demande.service.js :
+ *   pdfService.generateDocument(demande, etudiant, null, reference, institution, qrData)
+ */
 
-// ═══════════════════════════════════════
-// OUTILS FICHIERS → DATA URL (base64)
-// ═══════════════════════════════════════
-const fileToDataUrl = (absPath) => {
-  const ext = path.extname(absPath).toLowerCase();
-  const mime =
-    ext === '.png' ? 'image/png' :
-    ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
-    null;
-  if (!mime) return null;
-  const buffer = fs.readFileSync(absPath);
-  return `data:${mime};base64,${buffer.toString('base64')}`;
-};
+const puppeteer = require("puppeteer");
+const path = require("path");
+const fs = require("fs");
+const QRCode = require("qrcode");
 
-const getLogoDataUrl = (institution) => {
-  const sigle = institution?.sigle || 'IFRI';
-  const logoPath = path.join(__dirname, '..', 'assets', 'logos', `${sigle}.png`);
-  if (!fs.existsSync(logoPath)) return null;
-  return fileToDataUrl(logoPath);
-};
+// ─────────────────────────────────────────────
+// CHEMINS
+// ─────────────────────────────────────────────
 
-// ═══════════════════════════════════════
-// UTILITAIRES NOTES / CALCULS
-// ═══════════════════════════════════════
-const noteAleatoire = (min = 8, max = 18) =>
-  parseFloat((Math.random() * (max - min) + min).toFixed(2));
+const ASSETS_DIR = path.resolve(__dirname, "../assets");
+const OUTPUT_DIR = path.resolve(process.cwd(), "uploads", "pdfs");
 
-const getCote = (note) => {
-  if (note >= 16) return 'A+';
-  if (note >= 15) return 'A';
-  if (note >= 14) return 'A-';
-  if (note >= 13) return 'B+';
-  if (note >= 12) return 'B-';
-  if (note >= 11) return 'C+';
-  if (note >= 10) return 'C';
-  if (note >= 9)  return 'D+';
-  if (note >= 5)  return 'D';
-  if (note > 0)   return 'E';
-  return 'N/A';
-};
+// Crée le dossier de sortie si inexistant
+if (!fs.existsSync(OUTPUT_DIR)) {
+  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+}
 
-const getDecision = (moyenne) => (moyenne >= 10 ? 'Continue' : 'Redouble');
+// ─────────────────────────────────────────────
+// UTILITAIRES ASSETS
+// ─────────────────────────────────────────────
 
-const getMoyennePonderee = (ues) => {
-  const totalCredits = ues.reduce((sum, ue) => sum + ue.credits, 0);
-  const totalPoints  = ues.reduce((sum, ue) => sum + (ue.moyenneUE * ue.credits), 0);
-  return totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : '0.00';
-};
-
-const genererUEs = (notes, sigle) => {
-  if (notes && notes.length > 0) {
-    return notes.map(n => ({
-      codeUE: n.ue.code,
-      intituleUE: n.ue.intitule,
-      credits: n.ue.credits,
-      moyenneUE: n.note_finale || noteAleatoire(),
-      ecus: []
-    }));
-  }
-
-  const uesParInstitution = {
-    IFRI: [
-      { codeUE: 'MTH1121', intituleUE: 'LOGIQUE, ARITHMETIQUE ET SES APPLICATIONS',      credits: 5, ecus: ['Logique, arithmétique et ses applications'] },
-      { codeUE: 'MTH1122', intituleUE: 'MATHEMATIQUES FONDAMENTALES',                     credits: 5, ecus: ['Algèbre linéaire et applications', 'Analyse et applications'] },
-      { codeUE: 'INF1124', intituleUE: 'ARCHITECTURE ET TOPOLOGIE DES RESEAUX',           credits: 4, ecus: ['Architecture et topologie des réseaux informatiques'] },
-      { codeUE: 'INF1125', intituleUE: "SYSTEME D'EXPLOITATION ET OUTILS DE BASE",        credits: 4, ecus: ["Utilisation et administration sous Windows/Linux", 'Outils de base en informatique'] },
-      { codeUE: 'INF1126', intituleUE: 'BASE DE LA PROGRAMMATION',                        credits: 4, ecus: ['Algorithmique', 'Langages C'] },
-      { codeUE: 'DRP1127', intituleUE: 'DEONTOLOGIE ET DROIT LIES AUX TIC',               credits: 2, ecus: ['Déontologie et droit liés aux TIC'] },
-      { codeUE: 'TCC1128', intituleUE: "TECHNIQUES D'EXPRESSION ECRITE ET ORALE",         credits: 1, ecus: ["Techniques d'expression écrite et orale"] },
-    ],
-    EPAC: [
-      { codeUE: 'GCI1101', intituleUE: 'MECANIQUE DES STRUCTURES',                        credits: 5, ecus: ['Résistance des matériaux', 'Statique des structures'] },
-      { codeUE: 'GCI1102', intituleUE: 'MATHEMATIQUES APPLIQUEES AU GENIE CIVIL',         credits: 5, ecus: ['Analyse numérique', 'Equations différentielles'] },
-      { codeUE: 'GCI1103', intituleUE: 'MATERIAUX DE CONSTRUCTION',                       credits: 4, ecus: ['Béton et acier', 'Matériaux locaux'] },
-      { codeUE: 'GCI1104', intituleUE: 'TOPOGRAPHIE ET CARTOGRAPHIE',                     credits: 4, ecus: ['Topographie générale', 'Cartographie numérique'] },
-      { codeUE: 'GCI1105', intituleUE: 'HYDRAULIQUE GENERALE',                            credits: 4, ecus: ['Hydraulique en charge', 'Hydraulique à surface libre'] },
-      { codeUE: 'GCI1106', intituleUE: 'DESSIN TECHNIQUE ET DAO',                         credits: 3, ecus: ['Dessin technique', 'DAO assisté par ordinateur'] },
-      { codeUE: 'GCI1107', intituleUE: 'COMMUNICATION TECHNIQUE',                         credits: 2, ecus: ['Rédaction technique', 'Expression orale professionnelle'] },
-    ],
-    FSS: [
-      { codeUE: 'BIO1101', intituleUE: 'BIOLOGIE CELLULAIRE ET MOLECULAIRE',              credits: 5, ecus: ['Biologie cellulaire', 'Biologie moléculaire'] },
-      { codeUE: 'BIO1102', intituleUE: 'ANATOMIE HUMAINE FONDAMENTALE',                   credits: 5, ecus: ['Anatomie descriptive', 'Anatomie topographique'] },
-      { codeUE: 'BIO1103', intituleUE: 'BIOCHIMIE GENERALE',                              credits: 4, ecus: ['Biochimie structurale', 'Biochimie métabolique'] },
-      { codeUE: 'BIO1104', intituleUE: 'PHYSIOLOGIE HUMAINE',                             credits: 4, ecus: ['Physiologie cardio-vasculaire', 'Physiologie respiratoire'] },
-      { codeUE: 'BIO1105', intituleUE: 'MICROBIOLOGIE ET PARASITOLOGIE',                  credits: 4, ecus: ['Microbiologie générale', 'Parasitologie médicale'] },
-      { codeUE: 'BIO1106', intituleUE: 'SANTE PUBLIQUE ET EPIDEMIOLOGIE',                 credits: 3, ecus: ['Epidémiologie descriptive', 'Santé communautaire'] },
-      { codeUE: 'BIO1107', intituleUE: 'ETHIQUE ET DEONTOLOGIE MEDICALE',                 credits: 2, ecus: ['Ethique médicale', 'Droits des patients'] },
-    ]
-  };
-
-  const liste = uesParInstitution[sigle] || uesParInstitution['IFRI'];
-  return liste.map(ue => ({ ...ue, moyenneUE: noteAleatoire() }));
-};
-
-// ═══════════════════════════════════════
-// CONFIGS PAR INSTITUTION
-// ═══════════════════════════════════════
-const getConfigInstitution = (institution) => {
-  const sigle = institution?.sigle || 'IFRI';
-
-  const configs = {
-    IFRI: {
-      sigle: 'IFRI',
-      nomComplet: "UNIVERSITE D'ABOMEY-CALAVI",
-      sousNom: 'INSTITUT DE FORMATION ET DE RECHERCHE EN INFORMATIQUE',
-      adresse: 'BP: 526 COTONOU - TEL: (+229) 55-028-070',
-      site: 'Site web: https://www.ifri-uac.bj - Courriel: contact@ifri.uac.bj',
-      mention: 'Informatique',
-      domaine: 'Sciences et Technologies',
-      grade: 'Licence',
-      specialiteDefaut: 'Systèmes Embarqués et Internet des Objets',
-      couleurPrimaire: '#1a5276',
-      couleurTableauHeader: '#2c3e50',
-      refFormat: (annee) => `N° ____ -${annee}/UAC/IFRI/SG/SSE/DS`,
-    },
-    EPAC: {
-      sigle: 'EPAC',
-      nomComplet: "UNIVERSITE D'ABOMEY-CALAVI",
-      sousNom: "ECOLE POLYTECHNIQUE D'ABOMEY-CALAVI",
-      adresse: 'BP: 2009 COTONOU - TEL: (+229) 21-36-00-00',
-      site: 'Site web: https://epac.uac.bj - Courriel: contact@epac.uac.bj',
-      mention: 'Génie Civil',
-      domaine: "Sciences de l'Ingénieur",
-      grade: 'Licence Professionnelle',
-      specialiteDefaut: 'Génie Civil et Construction',
-      couleurPrimaire: '#922b21',
-      couleurTableauHeader: '#7b241c',
-      refFormat: (annee) => `N° ____ -${annee}/UAC/EPAC/SG/SCO`,
-    },
-    FSS: {
-      sigle: 'FSS',
-      nomComplet: "UNIVERSITE D'ABOMEY-CALAVI",
-      sousNom: 'FACULTE DES SCIENCES DE LA SANTE',
-      adresse: 'BP: 188 COTONOU - TEL: (+229) 21-30-08-50',
-      site: 'Site web: https://fss.uac.bj - Courriel: contact@fss.uac.bj',
-      mention: 'Sciences de la Santé',
-      domaine: 'Sciences Biomédicales',
-      grade: 'Licence en Sciences de la Santé',
-      specialiteDefaut: 'Santé Publique',
-      couleurPrimaire: '#1e8449',
-      couleurTableauHeader: '#196f3d',
-      refFormat: (annee) => `N° ____ -${annee}/UAC/FSS/DIR/SCO`,
+/**
+ * Convertit une image (chemin local) en base64 data URL pour l'embarquer dans le HTML.
+ * Supporte aussi les URLs distantes (retournées telles quelles).
+ */
+function imageToBase64(filePath) {
+  try {
+    if (!filePath) return null;
+    if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
+      return filePath; // URL distante → on la passe directement à Puppeteer
     }
-  };
+    const abs = path.isAbsolute(filePath)
+      ? filePath
+      : path.resolve(process.cwd(), filePath);
+    if (!fs.existsSync(abs)) return null;
+    const ext = path.extname(abs).toLowerCase().replace(".", "");
+    const mime = ext === "jpg" ? "jpeg" : ext;
+    const data = fs.readFileSync(abs).toString("base64");
+    return `data:image/${mime};base64,${data}`;
+  } catch {
+    return null;
+  }
+}
 
-  return configs[sigle] || configs.IFRI;
+/**
+ * Retourne le logo d'une institution par son sigle.
+ * Si l'institution a un logoUrl enregistré en BD, on l'utilise.
+ * Sinon on cherche dans assets/logos/<SIGLE>.png
+ */
+function getLogoInstitution(institution) {
+  if (institution?.logoUrl) return imageToBase64(institution.logoUrl);
+  const sigle = (institution?.sigle || "IFRI").toUpperCase();
+  const localPath = path.join(ASSETS_DIR, "logos", `${sigle}.png`);
+  return imageToBase64(localPath);
+}
+
+/** Logo UAC (fixe) */
+function getLogoUAC() {
+  return imageToBase64(path.join(ASSETS_DIR, "logos", "UAC.png"));
+}
+
+/** Tampon Directeur Adjoint */
+function getTamponDA(institution) {
+  if (institution?.tamponDirecteurAdjointUrl)
+    return imageToBase64(institution.tamponDirecteurAdjointUrl);
+  return imageToBase64(path.join(ASSETS_DIR, "stamps", "DA.png"));
+}
+
+/** Tampon Directeur */
+function getTamponDIR(institution) {
+  if (institution?.tamponDirecteurUrl)
+    return imageToBase64(institution.tamponDirecteurUrl);
+  return imageToBase64(path.join(ASSETS_DIR, "stamps", "DIR.png"));
+}
+
+// ─────────────────────────────────────────────
+// GÉNÉRATION QR CODE
+// ─────────────────────────────────────────────
+
+async function generateQRDataURL(text) {
+  try {
+    return await QRCode.toDataURL(text, {
+      width: 80,
+      margin: 1,
+      color: { dark: "#000000", light: "#ffffff" },
+    });
+  } catch {
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────
+// STRUCTURE DES UE PAR SEMESTRE (données fixes IFRI/SE-IoT)
+// À remplacer par un import BD quand le modèle UE/NoteUE sera en place
+// ─────────────────────────────────────────────
+
+const UE_STRUCTURES = {
+  1: [
+    {
+      code: "MTH1121",
+      intitule: "LOGIQUE, ARITHMÉTIQUE ET SES APPLICATIONS",
+      credits: 5,
+      ecus: [
+        { code: "1MTH1121", intitule: "Logique, arithmétique et applications" },
+      ],
+    },
+    {
+      code: "MTH1122",
+      intitule: "MATHÉMATIQUES FONDAMENTALES",
+      credits: 5,
+      ecus: [
+        { code: "1MTH1122", intitule: "Algèbre linéaire et applications" },
+        { code: "2MTH1122", intitule: "Analyse et applications" },
+      ],
+    },
+    {
+      code: "MTH1123",
+      intitule: "PROBABILITÉ ET STATISTIQUE",
+      credits: 5,
+      ecus: [
+        {
+          code: "1MTH1123",
+          intitule: "Analyse combinatoire, calcul des probabilités et applications",
+        },
+        {
+          code: "2MTH1123",
+          intitule: "Statistiques inférentielles et applications",
+        },
+      ],
+    },
+    {
+      code: "INF1124",
+      intitule: "ARCHITECTURE ET TOPOLOGIE DES RÉSEAUX INFORMATIQUES",
+      credits: 4,
+      ecus: [
+        {
+          code: "1INF1124",
+          intitule: "Architecture et topologie des réseaux informatiques",
+        },
+      ],
+    },
+    {
+      code: "INF1125",
+      intitule: "SYSTÈME D'EXPLOITATION ET OUTILS DE BASE EN INFORMATIQUE",
+      credits: 4,
+      ecus: [
+        {
+          code: "1INF1125",
+          intitule: "Utilisation et administration sous Windows/Linux",
+        },
+        { code: "2INF1125", intitule: "Outils de base en informatique" },
+      ],
+    },
+    {
+      code: "INF1126",
+      intitule: "BASE DE LA PROGRAMMATION",
+      credits: 4,
+      ecus: [
+        { code: "1INF1126", intitule: "Algorithmique" },
+        { code: "2INF1126", intitule: "Langages C" },
+      ],
+    },
+    {
+      code: "DRP1127",
+      intitule: "DÉONTOLOGIE ET DROIT LIÉS AUX TIC",
+      credits: 2,
+      ecus: [
+        { code: "1DRP1127", intitule: "Déontologie et droit liés aux TIC" },
+      ],
+    },
+    {
+      code: "TCC1128",
+      intitule: "TECHNIQUES D'EXPRESSION ÉCRITE ET ORALE",
+      credits: 1,
+      ecus: [
+        {
+          code: "1TCC1128",
+          intitule: "Techniques d'expression écrite et orale",
+        },
+      ],
+    },
+  ],
+  2: [
+    {
+      code: "MTH1221",
+      intitule: "ALGÈBRE LINÉAIRE AVANCÉE",
+      credits: 5,
+      ecus: [
+        { code: "1MTH1221", intitule: "Espaces vectoriels et applications linéaires" },
+        { code: "2MTH1221", intitule: "Matrices et déterminants" },
+      ],
+    },
+    {
+      code: "INF1222",
+      intitule: "PROGRAMMATION ORIENTÉE OBJET",
+      credits: 5,
+      ecus: [
+        { code: "1INF1222", intitule: "Concepts POO et Java" },
+        { code: "2INF1222", intitule: "Structures de données et algorithmes avancés" },
+      ],
+    },
+    {
+      code: "INF1223",
+      intitule: "BASE DE DONNÉES",
+      credits: 4,
+      ecus: [
+        { code: "1INF1223", intitule: "Modélisation et conception de BDD" },
+        { code: "2INF1223", intitule: "SQL et administration" },
+      ],
+    },
+    {
+      code: "INF1224",
+      intitule: "SYSTÈMES D'INFORMATION",
+      credits: 4,
+      ecus: [
+        { code: "1INF1224", intitule: "Analyse et conception des SI" },
+        { code: "2INF1224", intitule: "UML et méthodes agiles" },
+      ],
+    },
+    {
+      code: "INF1225",
+      intitule: "RÉSEAUX INFORMATIQUES",
+      credits: 4,
+      ecus: [
+        { code: "1INF1225", intitule: "Protocoles réseau TCP/IP" },
+        { code: "2INF1225", intitule: "Administration réseau" },
+      ],
+    },
+    {
+      code: "DRP1226",
+      intitule: "DROIT DU NUMÉRIQUE",
+      credits: 2,
+      ecus: [
+        { code: "1DRP1226", intitule: "Cybercriminalité et protection des données" },
+      ],
+    },
+    {
+      code: "TCC1227",
+      intitule: "COMMUNICATION PROFESSIONNELLE",
+      credits: 1,
+      ecus: [
+        { code: "1TCC1227", intitule: "Rédaction professionnelle et présentation orale" },
+      ],
+    },
+  ],
 };
 
-// ═══════════════════════════════════════
-// HTML
-// ═══════════════════════════════════════
-const buildHTML = (config, etudiant, demande, ues, institution, reference, qrDataUrl, logoDataUrl) => {
-  const annee = new Date().getFullYear();
-  const anneeAcademique = `${annee - 1}-${annee}`;
-  const sexe = Math.random() > 0.5 ? 'Masculin' : 'Féminin'; // ✅ aléatoire
+// ─────────────────────────────────────────────
+// GÉNÉRATION DES NOTES ALÉATOIRES
+// ─────────────────────────────────────────────
 
-  const dateDoc = new Date().toLocaleDateString('fr-FR', {
-    day: '2-digit', month: '2-digit', year: 'numeric'
+/** Note aléatoire entre min et max (1 décimale) */
+function randNote(min = 8, max = 19) {
+  return Math.round((Math.random() * (max - min) + min) * 10) / 10;
+}
+
+/**
+ * Calcule la cote LMD à partir d'une note /20
+ */
+function getCote(note) {
+  if (note >= 16) return "A+";
+  if (note >= 15) return "A";
+  if (note >= 14) return "A−";
+  if (note >= 13) return "B+";
+  if (note >= 12) return "B−";
+  if (note >= 11) return "C+";
+  if (note >= 10) return "C";
+  if (note >= 9)  return "C−";
+  if (note >= 8)  return "D+";
+  if (note >= 5)  return "D";
+  return "F";
+}
+
+/**
+ * Génère les notes aléatoires pour un semestre donné.
+ * Chaque UE a une moyenne pondérée calculée depuis ses ECU.
+ * Retourne aussi la moyenne semestrielle et les crédits capitalisés.
+ */
+function generateRandomNotes(semestre) {
+  const ues = UE_STRUCTURES[semestre] || UE_STRUCTURES[1];
+  const anneeActuelle = new Date().getFullYear();
+
+  let totalCredits = 0;
+  let totalCreditsValides = 0;
+  let sommePonderee = 0;
+
+  const rows = ues.map((ue) => {
+    // Générer des notes pour chaque ECU
+    const ecuNotes = ue.ecus.map((ecu) => ({
+      ...ecu,
+      note: randNote(7, 19),
+    }));
+
+    // Moyenne UE = moyenne simple des ECU
+    const moyUE =
+      Math.round(
+        (ecuNotes.reduce((s, e) => s + e.note, 0) / ecuNotes.length) * 100
+      ) / 100;
+
+    const valide = moyUE >= 10;
+    const sessionValidation = valide
+      ? `VALIDE EN Févr ${anneeActuelle}`
+      : `NON VALIDE — Sept ${anneeActuelle}`;
+
+    totalCredits += ue.credits;
+    if (valide) totalCreditsValides += ue.credits;
+    sommePonderee += moyUE * ue.credits;
+
+    return {
+      ...ue,
+      moyUE,
+      cote: getCote(moyUE),
+      valide,
+      sessionValidation,
+      ecus: ecuNotes,
+    };
   });
 
-  const uacLogoPath = path.join(__dirname, '..', 'assets', 'logos', 'UAC.png');
-  const uacLogo = fs.existsSync(uacLogoPath) ? fileToDataUrl(uacLogoPath) : null;
+  const moyenneSemestrielle =
+    Math.round((sommePonderee / totalCredits) * 100) / 100;
+  const creditsCapitalises =
+    Math.round((totalCreditsValides / totalCredits) * 10000) / 100;
+  const decision = moyenneSemestrielle >= 10 ? "Continue" : "Redouble";
 
-  const qrHtml = qrDataUrl
-    ? `<img src="${qrDataUrl}" alt="QR" style="width:90px;height:90px;object-fit:contain;" />`
-    : `<div style="width:90px;height:90px;border:1px solid #333;"></div>`;
+  return { rows, moyenneSemestrielle, creditsCapitalises, decision, totalCredits };
+}
 
-  const ifriLogoHtml = logoDataUrl
-    ? `<img src="${logoDataUrl}" alt="${config.sigle}" style="width:120px;height:70px;object-fit:contain;" />`
-    : `<div style="width:120px;height:70px;"></div>`;
+// ─────────────────────────────────────────────
+// TEMPLATE HTML
+// ─────────────────────────────────────────────
 
-  const uacLogoHtml = uacLogo
-    ? `<img src="${uacLogo}" alt="UAC" style="width:80px;height:80px;object-fit:contain;" />`
-    : `<div style="width:80px;height:80px;"></div>`;
+function buildHtml({
+  // Institution
+  logoUACBase64,
+  logoInstitutionBase64,
+  institutionNom,
+  institutionSigle,
+  directeurNom,
+  directeurTitre,
+  directeurAdjointNom,
+  directeurAdjointTitre,
+  tamponDABase64,
+  tamponDIRBase64,
+  // Etudiant
+  etudiantNom,
+  etudiantPrenom,
+  etudiantMatricule,
+  etudiantFiliere,
+  etudiantNiveau,
+  // Demande
+  reference,
+  semestre,
+  anneeAcademique,
+  // Notes
+  notes,
+  // QR
+  qrBase64,
+  // Date
+  dateGeneration,
+}) {
+  const { rows, moyenneSemestrielle, creditsCapitalises, decision } = notes;
+  const semestreLabel =
+    semestre === 1
+      ? "Premier"
+      : semestre === 2
+      ? "Deuxième"
+      : semestre === 3
+      ? "Troisième"
+      : semestre === 4
+      ? "Quatrième"
+      : semestre === 5
+      ? "Cinquième"
+      : "Sixième";
 
-  const moyennePonderee = getMoyennePonderee(ues);
-  const decision = getDecision(parseFloat(moyennePonderee));
-  const creditsCapitalises = ues.filter(ue => ue.moyenneUE >= 10).reduce((s, ue) => s + ue.credits, 0);
-  const totalCredits = ues.reduce((s, ue) => s + ue.credits, 0);
+  // Génère les lignes du tableau
+  const tableRows = rows
+    .map(
+      (ue) => `
+    <!-- UE: ${ue.code} -->
+    <tr class="row-ue">
+      <td class="cell-code">${ue.code}</td>
+      <td class="cell-intitule">${ue.intitule}</td>
+      <td class="cell-num">${ue.credits}</td>
+      <td class="cell-num">${ue.moyUE.toFixed(2)}/20</td>
+      <td class="cell-cote">${ue.cote}</td>
+      <td class="cell-result">${ue.sessionValidation}</td>
+    </tr>
+    ${ue.ecus
+      .map(
+        (ecu) => `
+    <tr class="row-ecu">
+      <td class="cell-code">${ecu.code}</td>
+      <td class="cell-intitule ecu-indent">${ecu.intitule}</td>
+      <td class="cell-empty"></td>
+      <td class="cell-num">${ecu.note.toFixed(2)}/20</td>
+      <td class="cell-empty"></td>
+      <td class="cell-empty"></td>
+    </tr>`
+      )
+      .join("")}
+  `
+    )
+    .join("");
 
-  const lignesTableau = ues.map(ue => {
-    const cote = getCote(ue.moyenneUE);
-    const valide = ue.moyenneUE >= 10;
-    const resultat = valide ? 'VALIDE EN' : 'NON VALIDE';
-    const session = valide ? 'Févr 2025' : 'Sept 2025';
+  const logoUACSrc = logoUACBase64
+    ? `<img src="${logoUACBase64}" class="logo-img" alt="UAC"/>`
+    : `<div class="logo-placeholder">UAC</div>`;
 
-    let html = `
-      <tr class="ue-row">
-        <td class="code">${ue.codeUE}</td>
-        <td class="intitule">${ue.intituleUE}</td>
-        <td class="credit">${ue.credits}</td>
-        <td class="moy">${ue.moyenneUE.toFixed(2)}/20</td>
-        <td class="cote">${cote}</td>
-        <td class="resultat">${resultat}<small>${session}</small></td>
-      </tr>
-    `;
+  const logoInstSrc = logoInstitutionBase64
+    ? `<img src="${logoInstitutionBase64}" class="logo-ifri-img" alt="${institutionSigle}"/>`
+    : `<div class="logo-ifri-text">${institutionSigle || "IFRI"}</div>`;
 
-    ue.ecus.forEach((ecu, idx) => {
-      const noteEcu = noteAleatoire();
-      const codeEcu = `${idx + 1}${ue.codeUE}`;
-      html += `
-        <tr class="ecu-row">
-          <td class="code">${codeEcu}</td>
-          <td class="intitule">${ecu}</td>
-          <td class="credit"></td>
-          <td class="moy">${noteEcu.toFixed(2)}/20</td>
-          <td class="cote"></td>
-          <td class="resultat"></td>
-        </tr>
-      `;
-    });
+  const tamponDASrc = tamponDABase64
+    ? `<img src="${tamponDABase64}" class="stamp-img" alt="Tampon DA"/>`
+    : `<div class="stamp-placeholder">Tampon<br>Dir. Adjoint</div>`;
 
-    return html;
-  }).join('');
+  const tamponDIRSrc = tamponDIRBase64
+    ? `<img src="${tamponDIRBase64}" class="stamp-img" alt="Tampon DIR"/>`
+    : `<div class="stamp-placeholder">Tampon<br>Directeur</div>`;
 
-  const daStampPath = path.join(__dirname, '..', 'assets', 'stamps', 'DA.png');
-  const daStamp = fs.existsSync(daStampPath) ? fileToDataUrl(daStampPath) : null;
-  const daStampHtml = daStamp ? `<img src="${daStamp}" class="stamp-img da-stamp" />` : '';
+  const qrSrc = qrBase64
+    ? `<img src="${qrBase64}" style="width:100%;height:100%;" alt="QR Code"/>`
+    : `<div style="font-size:5pt;color:#666;text-align:center;">QR<br>Code</div>`;
 
-  const dirStampPath = path.join(__dirname, '..', 'assets', 'stamps', 'DIR.png');
-  const dirStamp = fs.existsSync(dirStampPath) ? fileToDataUrl(dirStampPath) : null;
-  const dirStampHtml = dirStamp ? `<img src="${dirStamp}" class="stamp-img dir-stamp" />` : '';
-
-  return `
-<!DOCTYPE html>
-<html>
+  return `<!DOCTYPE html>
+<html lang="fr">
 <head>
 <meta charset="UTF-8">
 <style>
-  body { font-family: Arial, sans-serif; padding:30px; }
+  * { margin:0; padding:0; box-sizing:border-box; }
 
-  .header { display:flex; justify-content:space-between; align-items:center; }
-  .header-center { text-align:center; flex:1; }
-  .header-center h1 { font-size:18px; margin:0; font-weight:bold; }
-  .header-center h2 { font-size:14px; margin:4px 0; font-weight:bold; }
-  .header-center p { margin:2px 0; font-size:12px; }
-
-  .numero { text-align:center; margin-top:10px; font-size:14px; font-weight:bold; }
-
-  .infos { display:flex; margin-top:20px; align-items:flex-start; }
-  .infos-text {
-    flex:1; margin:0 20px;
-    font-family: "Courier New", monospace;
-    font-size:13px;
-  }
-  .infos-text div { margin-bottom:4px; }
-  .photo { width:90px; height:110px; border:1px solid #333; }
-
-  .titre {
-    text-align:center; margin-top:25px;
-    font-size:16px; font-style:italic; text-decoration:underline;
-    font-family: "Courier New", monospace;
+  html, body {
+    width: 210mm;
+    font-family: 'Times New Roman', Times, serif;
+    color: #111;
+    font-size: 8.5pt;
+    background: #ffc8c8;
   }
 
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 5mm 7mm 5mm 7mm;
+    background: #ffc8c8;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    display: grid;
+    grid-template-columns: 22mm 1fr 22mm;
+    align-items: flex-start;
+    gap: 2mm;
+    margin-bottom: 1.5mm;
+  }
+
+  .logo-img { width:20mm; height:20mm; object-fit:contain; }
+  .logo-ifri-img { width:20mm; height:14mm; object-fit:contain; justify-self:end; display:block; margin-left:auto; }
+  .logo-placeholder {
+    width:20mm; height:20mm; border-radius:50%;
+    border:1.5px solid #888; display:flex; align-items:center;
+    justify-content:center; font-size:6pt; color:#666;
+    background:#f0e8e0; text-align:center;
+  }
+  .logo-ifri-text {
+    width:20mm; height:14mm; border:1.5px solid #1a4e8a;
+    display:flex; align-items:center; justify-content:center;
+    font-size:9pt; font-weight:900; color:#1a4e8a;
+    background:white; letter-spacing:1px; justify-self:end; margin-left:auto;
+  }
+
+  .header-center { text-align:center; line-height:1.4; }
+  .univ-name { font-size:12.5pt; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+  .ifri-name { font-size:9pt; font-weight:700; text-transform:uppercase; margin-top:1px; }
+  .header-sep { border:none; border-top:1px solid #333; margin:2px 20mm; }
+  .header-addr { font-size:7pt; color:#333; margin-top:1px; }
+  .header-web { font-size:7pt; color:#333; font-style:italic; }
+
+  /* ── NUMÉRO DE DOCUMENT ── */
+  .doc-number-line {
+    text-align:center; font-size:8.5pt; margin:1.5mm 0;
+  }
+  .doc-ref {
+    font-family:'Courier New', monospace; font-size:8pt;
+    font-weight:700; color:#1a1a1a; letter-spacing:0.5px;
+  }
+
+  /* ── BLOC ÉTUDIANT ── */
+  .student-block {
+    display:grid; grid-template-columns:16mm 1fr 20mm;
+    gap:2mm; margin-bottom:2mm; align-items:start;
+  }
+
+  .qr-box {
+    width:15mm; height:15mm; border:1px solid #555;
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+  }
+
+  .info-table { font-size:8pt; line-height:1.65; }
+  .info-row { display:flex; gap:1mm; }
+  .info-lbl { min-width:50mm; color:#222; }
+  .info-sep { margin-right:1mm; }
+  .info-val { font-weight:400; }
+  .info-val.bold { font-weight:700; }
+
+  .photo-box {
+    width:19mm; height:24mm; border:1.5px solid #777;
+    display:flex; align-items:center; justify-content:center;
+    font-size:5pt; color:#777; background:#e8ddd5; text-align:center;
+  }
+
+  /* ── TITRE ── */
+  .releve-title {
+    text-align:center; font-size:10.5pt; font-style:italic;
+    text-decoration:underline; font-weight:600;
+    margin:2mm 0 1.5mm 0;
+  }
+
+  /* ── TABLEAU NOTES ── */
   table.notes {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: "Courier New", monospace;
-    font-size: 13px;
-    margin-top: 14px;
+    width:100%; border-collapse:collapse; font-size:7.8pt;
   }
-  table.notes th, table.notes td {
-    border: 2px solid #333;
-    padding: 6px 8px;
-    vertical-align: top;
-  }
+
+  table.notes thead tr { background:#6b6b6b; color:white; }
   table.notes th {
-    text-align: center;
-    font-weight: bold;
-    background: rgba(0,0,0,0.08);
+    padding:3.5px 4px; border:1px solid #555;
+    font-size:7.5pt; font-weight:700; text-align:center;
+    font-family:Arial, sans-serif;
+  }
+  table.notes th:nth-child(2) { text-align:left; }
+
+  table.notes td {
+    padding:2px 4px; border:1px solid #bbb;
+    vertical-align:middle; line-height:1.3;
   }
 
-  td.code { width: 120px; }
-  td.intitule { width: auto; }
-  td.credit { width: 90px; text-align: center; }
-  td.moy { width: 140px; text-align: center; }
-  td.cote { width: 70px; text-align: center; }
-  td.resultat { width: 150px; text-align: center; font-weight: bold; }
-
-  tr.ue-row td.intitule { font-weight: bold; text-transform: uppercase; }
-  tr.ecu-row td { border-top: 0; }
-  tr.ecu-row td.intitule { font-style: italic; }
-
-  .resultat small { display: block; margin-top: 4px; font-weight: normal; }
-
-  .footer-table { margin-top:0; border-top:0; }
-  .footer-table td { font-weight:bold; }
-
-  .bas { margin-top: 10px; font-family: "Courier New", monospace; }
-  .legende { font-size: 10px; line-height: 1.45; }
-  .date-lieu { margin-top: 12px; text-align: right; font-size: 12px; font-style: italic; }
-
-  .signatures { margin-top: 18px; display: flex; justify-content: space-between; gap: 30px; }
-  .sig-col { width: 48%; }
-  .sig-titre { font-family: Arial, sans-serif; font-weight: bold; font-size: 18px; }
-  .sig-sous { margin-top: 6px; font-size: 12px; font-style: italic; }
-  .sig-zone { margin-top: 10px; height: 130px; position: relative; }
-
-  .stamp-img { position: absolute; width: 180px; opacity: 0.35; }
-  .da-stamp  { left: 80px;  top: -10px; transform: rotate(-15deg); } /* ✅ DA tourne à gauche */
-  .dir-stamp { right: 80px; top: -10px; transform: rotate(12deg);  } /* ✅ DIR tourne à droite */
-
-  .name-line {
-    margin-top: 12px; font-family: Arial, sans-serif; font-weight: bold;
-    font-size: 18px; display: inline-block;
-    border-bottom: 2px solid #000; padding-bottom: 2px;
+  /* Lignes UE parent */
+  .row-ue { background:#6b6b6b; color:white; }
+  .row-ue td {
+    border-color:#555; font-weight:700;
+    font-family:Arial, sans-serif; font-size:7.8pt;
   }
 
-  body { page-break-after: avoid; }
-  .signatures { page-break-inside: avoid; }
-  table { page-break-inside: auto; }
-  tr { page-break-inside: avoid; page-break-after: auto; }
+  /* Lignes ECU enfant */
+  .row-ecu { background:#ffc8c8; color:#111; }
+  .row-ecu td { border-color:#d4a0a0; font-size:7.5pt; }
+
+  .cell-code { text-align:center; font-family:'Courier New',monospace; font-size:6.8pt; white-space:nowrap; }
+  .cell-intitule { text-align:left; }
+  .ecu-indent { padding-left:8px !important; font-style:italic; color:#333; }
+  .cell-num { text-align:center; font-variant-numeric:tabular-nums; }
+  .cell-cote { text-align:center; font-weight:700; }
+  .cell-result { text-align:center; font-size:7pt; white-space:nowrap; }
+  .cell-empty { background:#ffc8c8; }
+
+  /* ── BARRE RÉSUMÉ ── */
+  .summary-bar {
+    display:flex; border:1.5px solid #333;
+    margin-top:2mm; font-size:8pt;
+  }
+  .sum-item {
+    flex:1; padding:3px 6px; text-align:center;
+    border-right:1px solid #333;
+  }
+  .sum-item:last-child { border-right:none; }
+  .sum-label { font-size:6.8pt; color:#444; display:block; }
+  .sum-val { font-weight:700; font-size:9pt; display:block; }
+
+  /* ── LÉGENDE ── */
+  .legend {
+    font-size:5.8pt; color:#444; margin-top:1.5mm;
+    line-height:1.5; border-top:1px solid #aaa; padding-top:1mm;
+  }
+
+  /* ── DATE ── */
+  .date-line {
+    text-align:right; font-size:8pt; color:#222;
+    margin-top:1.5mm; font-style:italic;
+  }
+  .date-val {
+    font-family:'Courier New',monospace; font-size:11pt;
+    font-weight:700; font-style:normal;
+    border-bottom:1.5px solid #333; padding:0 3px;
+  }
+
+  /* ── SIGNATURES ── */
+  .signatures {
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:6mm; margin-top:2mm;
+  }
+  .sig-block { text-align:center; }
+  .sig-title { font-size:8.5pt; font-weight:700; margin-bottom:1px; }
+  .sig-subtitle { font-size:7pt; font-style:italic; color:#444; margin-bottom:1.5mm; }
+
+  .sig-zone {
+    width:32mm; height:32mm; margin:0 auto 1.5mm;
+    position:relative; display:flex; align-items:center; justify-content:center;
+  }
+  .stamp-img { width:32mm; height:32mm; object-fit:contain; }
+  .stamp-placeholder {
+    width:32mm; height:32mm; border:2px dashed #1a4e8a;
+    border-radius:50%; display:flex; align-items:center;
+    justify-content:center; font-size:5.5pt; color:#1a4e8a;
+    text-align:center; line-height:1.5;
+  }
+
+  .sig-name { font-size:8.5pt; font-weight:700; text-decoration:underline; }
+
+  @media print {
+    html, body { width:210mm; background:#ffc8c8; }
+    @page { size:A4; margin:0; }
+    .page { min-height:297mm; }
+  }
 </style>
 </head>
 <body>
+<div class="page">
 
-<!-- HEADER — ✅ dynamique selon institution -->
-<div class="header">
-  ${uacLogoHtml}
-  <div class="header-center">
-    <h1>${config.nomComplet}</h1>
-    <h2>${config.sousNom}</h2>
-    <p>${config.adresse}</p>
-    <p><i>${config.site}</i></p>
-  </div>
-  ${ifriLogoHtml}
-</div>
-
-<div class="numero">${reference}</div>
-
-<!-- INFOS ÉTUDIANT — ✅ dynamique selon institution -->
-<div class="infos">
-  <div>${qrHtml}</div>
-  <div class="infos-text">
-    <div>Année académique : ${anneeAcademique}</div>
-    <div>Domaine          : ${config.domaine}</div>
-    <div>Grade            : ${config.grade}</div>
-    <div>Mention          : ${config.mention}</div>
-    <div>Spécialité       : ${etudiant.filiere || config.specialiteDefaut}</div>
-    <div>Nom et Prénoms   : <b>${etudiant.nom} ${etudiant.prenom}</b></div>
-    <div>Sexe             : ${sexe}</div>
-    <div>Date et lieu de naissance : 01/01/2000 à Cotonou (Bénin)</div>
-    <div>Numéro matricule : ${etudiant.numeroEtudiant}</div>
-  </div>
-  <div class="photo"></div>
-</div>
-
-<div class="titre">
-  Relevé de notes du ${demande.semestre === 1 ? 'Premier' : 'Deuxième'} semestre
-</div>
-
-<!-- TABLEAU NOTES -->
-<table class="notes">
-  <thead>
-    <tr>
-      <th>Code UE</th>
-      <th style="text-align:left">Intitulé de l'UE/ECU</th>
-      <th>Crédit</th>
-      <th>Moy. UE/ECU</th>
-      <th>Cote</th>
-      <th>Résultat</th>
-    </tr>
-  </thead>
-  <tbody>${lignesTableau}</tbody>
-</table>
-
-<!-- FOOTER NOTES -->
-<table class="notes footer-table">
-  <tr>
-    <td style="text-align:left;">
-      Crédits capitalisés : ${totalCredits > 0 ? ((creditsCapitalises / totalCredits) * 100).toFixed(2) : '0.00'} %
-    </td>
-    <td style="text-align:center;">
-      Moyenne semestrielle pondérée : ${moyennePonderee}/20
-    </td>
-    <td style="text-align:right;">
-      Décision du jury : ${decision}
-    </td>
-  </tr>
-</table>
-
-<!-- BAS DE PAGE -->
-<div class="bas">
-  <div class="legende">
-    [UE = Unité d'Enseignement] et [ECU = Élément Constitutif d'Unité d'Enseignement] (Moyenne semestrielle pondérée = Somme(moyenne UE * crédit UE)/Somme crédits UE)<br>
-    (Crédits capitalisés - Semestre ${demande.semestre || 1})<br>
-    ]16,20]=>A+ / 16=>A / [15,16[=>A- / ]14=>B+ / [13,14[=>B- / ]12,13[=>C+ / 12=>C / [11,12[=>C- / [10,11[=>D+ / [05,10[=>D / ]00,05[=>E / 00=>N/A<br>
-    Si nombre de Zéro &gt; 5 =&gt; N (Abandon)
-  </div>
-
-  <div class="date-lieu">Abomey-Calavi, le ${dateDoc}</div>
-
-  <div class="signatures">
-    <div class="sig-col">
-      <div class="sig-titre">Le Directeur-Adjoint,</div>
-      <div class="sig-sous">Chargé des affaires académiques</div>
-      <div class="sig-zone">${daStampHtml}</div>
-      <div class="name-line">${institution.directeurAdjointNom || 'Professeur Gaston EDAH'}</div>
+  <!-- ═══ HEADER ═══ -->
+  <div class="header">
+    ${logoUACSrc}
+    <div class="header-center">
+      <div class="univ-name">Université d'Abomey-Calavi</div>
+      <div class="ifri-name">${institutionNom || "Institut de Formation et de Recherche en Informatique"}</div>
+      <hr class="header-sep">
+      <div class="header-addr">BP: 526 COTONOU — TÉL : (+229) 55-028-070</div>
+      <div class="header-web">Site web : https://www.ifri-uac.bj — Courriel : contact@ifri.uac.bj</div>
     </div>
-    <div class="sig-col" style="text-align:right;">
-      <div class="sig-titre" style="text-align:center;">Le Directeur,</div>
-      <div class="sig-sous" style="text-align:center;">&nbsp;</div>
-      <div class="sig-zone">${dirStampHtml}</div>
-      <div class="name-line" style="float:right;">
-        ${institution.directeurNom || 'Professeur Eugène C. EZIN'}
+    ${logoInstSrc}
+  </div>
+
+  <!-- ═══ RÉFÉRENCE DOCUMENT ═══ -->
+  <div class="doc-number-line">
+    <span style="font-style:italic;">N°</span>
+    <span class="doc-ref">&nbsp;${reference}&nbsp;</span>
+  </div>
+
+  <!-- ═══ BLOC ÉTUDIANT ═══ -->
+  <div class="student-block">
+    <div class="qr-box">${qrSrc}</div>
+
+    <div class="info-table">
+      <div class="info-row">
+        <span class="info-lbl">Année académique</span>
+        <span class="info-sep">:</span>
+        <span class="info-val">${anneeAcademique}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-lbl">Domaine</span>
+        <span class="info-sep">:</span>
+        <span class="info-val">Sciences et Technologies</span>
+      </div>
+      <div class="info-row">
+        <span class="info-lbl">Grade</span>
+        <span class="info-sep">:</span>
+        <span class="info-val">Licence</span>
+      </div>
+      <div class="info-row">
+        <span class="info-lbl">Mention</span>
+        <span class="info-sep">:</span>
+        <span class="info-val">Informatique</span>
+      </div>
+      <div class="info-row">
+        <span class="info-lbl">Spécialité</span>
+        <span class="info-sep">:</span>
+        <span class="info-val">${etudiantFiliere || "—"}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-lbl">Nom et Prénoms</span>
+        <span class="info-sep">:</span>
+        <span class="info-val bold">${etudiantNom} ${etudiantPrenom}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-lbl">Sexe</span>
+        <span class="info-sep">:</span>
+        <span class="info-val">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-lbl">Date et lieu de naissance</span>
+        <span class="info-sep">:</span>
+        <span class="info-val">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-lbl">Numéro matricule</span>
+        <span class="info-sep">:</span>
+        <span class="info-val">${etudiantMatricule || "—"}</span>
       </div>
     </div>
-  </div>
-</div>
 
+    <div class="photo-box">Photo<br>étudiant</div>
+  </div>
+
+  <!-- ═══ TITRE ═══ -->
+  <div class="releve-title">Relevé de notes du ${semestreLabel} semestre</div>
+
+  <!-- ═══ TABLEAU ═══ -->
+  <table class="notes">
+    <thead>
+      <tr>
+        <th style="width:11%">Code UE</th>
+        <th style="width:37%">Intitulé de l'UE/ECU</th>
+        <th style="width:7%">Crédit</th>
+        <th style="width:12%">Moy. UE/ECU</th>
+        <th style="width:6%">Cote</th>
+        <th style="width:27%">Résultat</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tableRows}
+    </tbody>
+  </table>
+
+  <!-- ═══ RÉSUMÉ ═══ -->
+  <div class="summary-bar">
+    <div class="sum-item">
+      <span class="sum-label">Crédits capitalisés</span>
+      <span class="sum-val">${creditsCapitalises.toFixed(2)} %</span>
+    </div>
+    <div class="sum-item">
+      <span class="sum-label">Moyenne semestrielle pondérée</span>
+      <span class="sum-val">${moyenneSemestrielle.toFixed(2)} / 20</span>
+    </div>
+    <div class="sum-item">
+      <span class="sum-label">Décision du jury</span>
+      <span class="sum-val">${decision}</span>
+    </div>
+  </div>
+
+  <!-- ═══ LÉGENDE ═══ -->
+  <div class="legend">
+    (UE = Unité d'Enseignement) et (ECU = Élément Constitutif d'Unité d'Enseignement)
+    (Moyenne semestrielle pondérée = Somme(moyenne UE × crédit UE) / Somme crédits UE)
+    (Crédits capitalisés — Semestre ${semestre})<br>
+    |16,20|⇒A+ / 16⇒A / |15,16|⇒A− / |14⇒B+ / |13,14|⇒B− / |12,13|⇒C+ / 12⇒C / |11,12|⇒C− / |10,11|⇒D+ / |05,10|⇒D / |00,05|⇒F / 00⇒N/A — Si nombre de 0 > 5 ⇒ N (Abandon)
+  </div>
+
+  <!-- ═══ DATE ═══ -->
+  <div class="date-line">
+    Abomey-Calavi, le&nbsp;<span class="date-val">${dateGeneration}</span>
+  </div>
+
+  <!-- ═══ SIGNATURES ═══ -->
+  <div class="signatures">
+    <div class="sig-block">
+      <div class="sig-title">Le Directeur-Adjoint,</div>
+      <div class="sig-subtitle">${directeurAdjointTitre || "Chargé des affaires académiques"}</div>
+      <div class="sig-zone">${tamponDASrc}</div>
+      <div class="sig-name">${directeurAdjointNom || "Le Directeur Adjoint"}</div>
+    </div>
+    <div class="sig-block">
+      <div class="sig-title">Le Directeur,</div>
+      <div class="sig-subtitle">&nbsp;</div>
+      <div class="sig-zone">${tamponDIRSrc}</div>
+      <div class="sig-name">${directeurNom || "Le Directeur"}</div>
+    </div>
+  </div>
+
+</div>
 </body>
 </html>`;
-};
+}
 
-// ═══════════════════════════════════════
-// EXPORTS
-// ═══════════════════════════════════════
-exports.generateDocument = async (demande, etudiant, notes, reference, institution, qrPayload) => {
-  const outputPath = path.join('uploads', `${reference}.pdf`);
-  const config = getConfigInstitution(institution);
-  const ues = genererUEs(notes, config.sigle);
+// ─────────────────────────────────────────────
+// FONCTION PRINCIPALE
+// ─────────────────────────────────────────────
 
-  // ✅ QR en base64 depuis qrPayload
-  const qrDataUrl = qrPayload
-    ? await QRCode.toDataURL(qrPayload, { width: 200, margin: 1 })
-    : null;
+/**
+ * Génère un PDF de relevé de notes ou d'attestation.
+ *
+ * @param {Object} demande     - Objet Demande depuis Prisma (avec .semestre injecté)
+ * @param {Object} etudiant    - Objet Utilisateur depuis Prisma
+ * @param {null}   notesData   - Réservé pour future intégration BD des notes (null pour l'instant)
+ * @param {string} reference   - Référence unique du document (ex: ETD-2026-IFRI-S1-XXXXX)
+ * @param {Object} institution - Objet Institution depuis Prisma
+ * @param {string} qrData      - URL encodée dans le QR code
+ * @returns {Promise<string>}  - Chemin absolu du PDF généré
+ */
+exports.generateDocument = async (
+  demande,
+  etudiant,
+  notesData,
+  reference,
+  institution,
+  qrData
+) => {
+  // ── 1. Préparer les assets (en parallèle) ──
+  const [logoUACBase64, logoInstitutionBase64, tamponDABase64, tamponDIRBase64, qrBase64] =
+    await Promise.all([
+      Promise.resolve(getLogoUAC()),
+      Promise.resolve(getLogoInstitution(institution)),
+      Promise.resolve(getTamponDA(institution)),
+      Promise.resolve(getTamponDIR(institution)),
+      generateQRDataURL(qrData),
+    ]);
 
-  const logoDataUrl = getLogoDataUrl(institution);
-  const html = buildHTML(config, etudiant, demande, ues, institution, reference, qrDataUrl, logoDataUrl);
+  // ── 2. Infos étudiant ──
+  const etudiantNom = (etudiant?.nom || "").toUpperCase();
+  const etudiantPrenom = etudiant?.prenom || "";
+  const etudiantMatricule = etudiant?.numeroEtudiant || "";
+  const etudiantFiliere = etudiant?.filiere || "";
+  const etudiantNiveau = etudiant?.niveau || "";
 
-  const browser = await puppeteer.launch({
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  // ── 3. Infos institution ──
+  const institutionNom = institution?.nom || "";
+  const institutionSigle = institution?.sigle || "IFRI";
+  const directeurNom = institution?.directeurNom || "";
+  const directeurTitre = institution?.directeurTitre || "";
+  const directeurAdjointNom = institution?.directeurAdjointNom || "";
+  const directeurAdjointTitre = institution?.directeurAdjointTitre || "";
+
+  // ── 4. Semestre et année académique ──
+  const semestre = demande?.semestre || (demande?.semestres?.[0]) || 1;
+  const now = new Date();
+  const annee = now.getFullYear();
+  const anneeAcademique = `${annee - 1}-${annee}`;
+  const dateGeneration = now.toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   });
-  const page = await browser.newPage();
-  await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 60000 });
-  await page.pdf({ path: outputPath, format: 'A4', printBackground: true, timeout: 60000 });
-  await browser.close();
 
-  return outputPath;
-};
+  // ── 5. Générer les notes (aléatoires pour l'instant) ──
+  const notes = generateRandomNotes(semestre);
 
-exports.apposSignature = async (pdfPath, signaturePath, position) => {
-  if (!signaturePath || !fs.existsSync(signaturePath)) return;
-  const pdfBytes = fs.readFileSync(pdfPath);
-  const pdfDoc = await PDFDocument.load(pdfBytes);
-  const page = pdfDoc.getPages()[0];
-  const sigBytes = fs.readFileSync(signaturePath);
-  const sigImg = await pdfDoc.embedPng(sigBytes);
-  const x = position === 'directeur' ? 380 : 100;
-  page.drawImage(sigImg, { x, y: 80, width: 120, height: 60 });
-  fs.writeFileSync(pdfPath, await pdfDoc.save());
+  // ── 6. Construire le HTML ──
+  const html = buildHtml({
+    logoUACBase64,
+    logoInstitutionBase64,
+    institutionNom,
+    institutionSigle,
+    directeurNom,
+    directeurTitre,
+    directeurAdjointNom,
+    directeurAdjointTitre,
+    tamponDABase64,
+    tamponDIRBase64,
+    etudiantNom,
+    etudiantPrenom,
+    etudiantMatricule,
+    etudiantFiliere,
+    etudiantNiveau,
+    reference,
+    semestre,
+    anneeAcademique,
+    notes,
+    qrBase64,
+    dateGeneration,
+  });
+
+  // ── 7. Lancer Puppeteer ──
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+    ],
+  });
+
+  try {
+    const page = await browser.newPage();
+
+    // Injecter le HTML directement (les images sont en base64, pas besoin de serveur)
+    await page.setContent(html, { waitUntil: "networkidle0" });
+
+    // Chemin de sortie
+    const fileName = `${reference}.pdf`;
+    const outputPath = path.join(OUTPUT_DIR, fileName);
+
+    await page.pdf({
+      path: outputPath,
+      format: "A4",
+      printBackground: true, // ← CRUCIAL pour le fond rose
+      margin: { top: 0, right: 0, bottom: 0, left: 0 },
+    });
+
+    return outputPath;
+  } finally {
+    await browser.close();
+  }
 };
