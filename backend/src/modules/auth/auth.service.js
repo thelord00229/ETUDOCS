@@ -7,24 +7,22 @@ const emailService = require("../../services/email.service");
 
 const normalize = (v) => String(v || "").trim().toUpperCase();
 
-// ✅ En DEV tu peux désactiver la vérif email
-// .env : REQUIRE_EMAIL_VERIFICATION=false
 const REQUIRE_EMAIL_VERIFICATION =
   String(process.env.REQUIRE_EMAIL_VERIFICATION ?? "true").toLowerCase() !== "false";
 
+// ✅ CORRECTION : service ajouté dans le payload JWT
 const genToken = (user) =>
   jwt.sign(
-    { id: user.id, role: user.role, institutionId: user.institutionId },
+    {
+      id: user.id,
+      role: user.role,
+      institutionId: user.institutionId,
+      service: user.service ?? null, // ✅ permet au backend de filtrer par service
+    },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
   );
 
-/**
- * Accepte soit:
- * - institutionId = UUID réel
- * - institutionId = "IFRI" / "EPAC" / etc (sigle)
- * - institutionSigle (si tu préfères envoyer ça)
- */
 async function resolveInstitutionId({ institutionId, institutionSigle }) {
   const raw = (institutionId ?? institutionSigle ?? "").toString().trim();
   if (!raw) return null;
@@ -62,10 +60,9 @@ exports.register = async ({
   numeroEtudiant,
   institutionId,
   institutionSigle,
-  filiere,   // ✅ ajouter
+  filiere,
   niveau,
 }) => {
-  // validations minimales
   if (!nom || !prenom || !email || !password) {
     const err = new Error("Champs requis: nom, prenom, email, password.");
     err.statusCode = 400;
@@ -105,7 +102,6 @@ exports.register = async ({
 
   const hash = await bcrypt.hash(password, 12);
 
-  // ✅ si la vérif est désactivée → auto activation
   const tokenVerification = REQUIRE_EMAIL_VERIFICATION
     ? crypto.randomBytes(32).toString("hex")
     : null;
@@ -118,10 +114,9 @@ exports.register = async ({
       password: hash,
       role: "ETUDIANT",
       numeroEtudiant: numeroEtudiant ? String(numeroEtudiant).trim() : null,
-      filiere: filiere ? String(filiere).trim() : null,   // ✅ ajouter
+      filiere: filiere ? String(filiere).trim() : null,
       niveau: niveau ? String(niveau).trim() : null,
       institutionId: resolvedInstitutionId,
-
       tokenVerification,
       emailVerifie: REQUIRE_EMAIL_VERIFICATION ? false : true,
       actif: REQUIRE_EMAIL_VERIFICATION ? false : true,
@@ -129,13 +124,11 @@ exports.register = async ({
     select: { id: true, email: true, tokenVerification: true },
   });
 
-  // ✅ On tente l’email uniquement si requis (et sans bloquer l'inscription si SMTP down)
   if (REQUIRE_EMAIL_VERIFICATION) {
     try {
       await emailService.sendVerificationEmail(created.email, created.tokenVerification);
     } catch (e) {
       console.log("[EMAIL SKIPPED]", e.message);
-      // Important: on ne bloque pas la création du compte
     }
   }
 
@@ -156,14 +149,12 @@ exports.login = async ({ email, password }) => {
     throw err;
   }
 
-  // ✅ Ne bloquer que si la vérification est requise
   if (REQUIRE_EMAIL_VERIFICATION && !user.emailVerifie) {
     const err = new Error("Email non vérifié");
     err.statusCode = 403;
     throw err;
   }
 
-  // ✅ Si vérif désactivée, on ne bloque pas sur actif non plus
   if (REQUIRE_EMAIL_VERIFICATION && !user.actif) {
     const err = new Error("Compte désactivé");
     err.statusCode = 403;
