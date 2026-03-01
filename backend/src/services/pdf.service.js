@@ -888,3 +888,577 @@ exports.generateDocument = async (
     await browser.close();
   }
 };
+
+// ─────────────────────────────────────────────
+// TEMPLATE HTML — ATTESTATION D'INSCRIPTION
+// ─────────────────────────────────────────────
+
+/**
+ * Construit le HTML de l'attestation d'inscription UAC.
+ * Toutes les données étudiant sont dynamiques.
+ */
+function buildAttestationInscriptionHtml({
+                                           logoUACBase64,
+                                           etudiantNom,
+                                           etudiantPrenom,
+                                           etudiantDateNaissance,
+                                           etudiantLieuNaissance,
+                                           etudiantMatricule,
+                                           etudiantFiliere,
+                                           etudiantSemestres,
+                                           institutionNom,
+                                           institutionSigle,
+                                           anneeAcademique,
+                                           dateGeneration,
+                                           qrBase64,
+                                         }) {
+  // ── Construire les sources images ──
+  const logoSrc = logoUACBase64
+      ? `<img src="${logoUACBase64}" style="width:86px;height:86px;object-fit:contain;" alt="UAC"/>`
+      : buildLogoSVG("top-arc-L", "bot-arc-L");
+
+  const logoSrc2 = logoUACBase64
+      ? `<img src="${logoUACBase64}" style="width:86px;height:86px;object-fit:contain;" alt="UAC"/>`
+      : buildLogoSVG("top-arc-R", "bot-arc-R");
+
+  const qrSrc = qrBase64
+      ? `<img src="${qrBase64}" style="width:95px;height:95px;" alt="QR Code"/>`
+      : buildQRPlaceholder();
+
+  // ── Nom complet étudiant ──
+  const nomComplet = `${(etudiantNom || "").toUpperCase()} ${etudiantPrenom || ""}`.trim();
+
+  // ── Date de naissance formatée ──
+  const dateNaissanceFormatee = etudiantDateNaissance
+      ? new Date(etudiantDateNaissance).toLocaleDateString("fr-FR", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+      : "—";
+
+  // ── Lieu de naissance ──
+  const lieuNaissance = etudiantLieuNaissance || "—";
+
+  // ── Semestres libellé (ex: "Semestres 3 et 4") ──
+  const semestresLabel = buildSemestresLabel(etudiantSemestres);
+
+  // ── Filière / formation ──
+  const filiere = etudiantFiliere || "Informatique";
+
+  // ── Institution ──
+  const institutionLabel = institutionNom
+      ? `${institutionNom}${institutionSigle ? ` (${institutionSigle})` : ""}`
+      : "INSTITUT DE FORMATION ET DE RECHERCHE EN INFORMATIQUE (IFRI)";
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 210mm;
+    font-family: 'Times New Roman', Times, serif;
+    color: #111;
+    font-size: 10.5pt;
+    background: #ffffff;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    background: #ffffff;
+    padding: 12mm 18mm 20mm 18mm;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ── Filigranes ── */
+  .wm-word {
+    position: absolute;
+    font-family: 'Times New Roman', serif;
+    font-size: 68px;
+    font-style: italic;
+    font-weight: bold;
+    color: rgba(150, 190, 220, 0.11);
+    transform: rotate(-30deg);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .wm-shape {
+    position: absolute;
+    opacity: 0.05;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── En-tête ── */
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+    margin-bottom: 4px;
+  }
+  .logo-box {
+    width: 86px;
+    height: 86px;
+    flex-shrink: 0;
+  }
+  .header-center {
+    text-align: center;
+    flex: 1;
+    padding: 0 10px;
+  }
+  .univ-name {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11.5pt;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    margin-bottom: 3px;
+  }
+  .univ-sub {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11pt;
+    line-height: 1.55;
+  }
+
+  hr.sep {
+    border: none;
+    border-top: 1.2px solid #111;
+    margin: 10px 0 0 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Titre ── */
+  .doc-title {
+    text-align: center;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13pt;
+    font-weight: 800;
+    color: #1a7a2e;
+    letter-spacing: 0.3px;
+    margin: 18px 0 26px 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Corps ── */
+  .body-text {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 11.5pt;
+    line-height: 1.9;
+    color: #000;
+    text-align: justify;
+    position: relative;
+    z-index: 1;
+  }
+  .body-text p {
+    margin-bottom: 22px;
+  }
+  .body-text p.full-line {
+    text-align: justify;
+    text-align-last: justify;
+  }
+
+  /* ── Signature ── */
+  .sig-section {
+    position: relative;
+    z-index: 1;
+    margin-top: 8px;
+  }
+  .sig-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    width: 100%;
+  }
+  .qr-area {
+    width: 95px;
+    flex-shrink: 0;
+  }
+  .stamp-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .date-line {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 11.5pt;
+    text-align: center;
+    margin-bottom: 10px;
+    color: #000;
+    white-space: nowrap;
+  }
+  .prof-name {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    font-weight: bold;
+    margin-top: 5px;
+    text-align: center;
+  }
+
+  /* ── Tampon ── */
+  .stamp-img {
+    width: 110px;
+    height: 110px;
+    object-fit: contain;
+  }
+  .stamp-placeholder {
+    width: 110px;
+    height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── Pied de page ── */
+  .footer {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    border-top: 1.2px solid #111;
+    padding: 5px 18mm;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 7.5pt;
+    color: #111;
+    text-align: center;
+    background: white;
+    z-index: 2;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Filigranes -->
+  <span class="wm-word" style="top:60px;  left:-30px;">Agitat</span>
+  <span class="wm-word" style="top:280px; left:200px;">Molem</span>
+  <span class="wm-word" style="top:480px; left:-20px;">Mens</span>
+  <span class="wm-word" style="top:680px; left:150px;">Agitat</span>
+
+  <!-- Formes décoratives fond -->
+  <svg class="wm-shape" style="top:50px;right:20px;width:90px;" viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
+    <rect x="10" y="10" width="80" height="110" rx="4" fill="none" stroke="#3a7fc1" stroke-width="5"/>
+    <line x1="25" y1="10" x2="25" y2="120" stroke="#3a7fc1" stroke-width="4"/>
+    <line x1="30" y1="30" x2="80" y2="30" stroke="#3a7fc1" stroke-width="3"/>
+    <line x1="30" y1="50" x2="80" y2="50" stroke="#3a7fc1" stroke-width="3"/>
+    <line x1="30" y1="70" x2="80" y2="70" stroke="#3a7fc1" stroke-width="3"/>
+  </svg>
+  <svg class="wm-shape" style="top:400px;right:15px;width:80px;" viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
+    <rect x="10" y="5" width="75" height="95" rx="3" fill="none" stroke="#3a7fc1" stroke-width="5"/>
+    <line x1="25" y1="30" x2="72" y2="30" stroke="#3a7fc1" stroke-width="3"/>
+    <line x1="25" y1="50" x2="72" y2="50" stroke="#3a7fc1" stroke-width="3"/>
+    <line x1="25" y1="70" x2="55" y2="70" stroke="#3a7fc1" stroke-width="3"/>
+  </svg>
+  <svg class="wm-shape" style="top:180px;left:5px;width:70px;transform:rotate(-15deg);" viewBox="0 0 40 140" xmlns="http://www.w3.org/2000/svg">
+    <rect x="10" y="20" width="20" height="100" rx="2" fill="#3a7fc1"/>
+    <polygon points="10,120 30,120 20,140" fill="#3a7fc1"/>
+    <rect x="8" y="14" width="24" height="10" rx="2" fill="#3a7fc1"/>
+  </svg>
+
+  <!-- ══ EN-TÊTE ══ -->
+  <div class="header-row">
+    <div class="logo-box">${logoSrc}</div>
+    <div class="header-center">
+      <div class="univ-name">UNIVERSITE D'ABOMEY CALAVI</div>
+      <div class="univ-sub">Vice-Rectorat<br>Chargé des affaires académiques</div>
+    </div>
+    <div class="logo-box">${logoSrc2}</div>
+  </div>
+
+  <hr class="sep">
+
+  <div class="doc-title">ATTESTATION D'INSCRIPTION</div>
+
+  <!-- ══ CORPS ══ -->
+  <div class="body-text">
+
+    <p class="full-line">
+      Le Vice-Recteur chargé des Affaires Académiques (VR-AA) de l'Université
+      d'Abomey-Calavi (UAC)
+    </p>
+
+    <p>
+      Atteste que le nommé <strong>${nomComplet}</strong> , né(e) le
+      <strong>${dateNaissanceFormatee}</strong> à <strong>${lieuNaissance}</strong>,
+      est inscrit(e) à l'Université d'Abomey-Calavi (UAC) sous le numéro matricule
+      <strong>${etudiantMatricule || "—"}</strong> dans l'entité&nbsp;:
+      <strong>${institutionLabel}</strong>, en
+      <strong>${filiere}, ${semestresLabel}</strong> au titre de l'année
+      académique&nbsp;: <strong>${anneeAcademique}</strong>.
+    </p>
+
+    <p class="full-line">
+      Cette attestation a été délivrée à l'interessé(e) pour servir et valoir ce que
+      de droit.
+    </p>
+
+  </div>
+
+  <!-- ══ SIGNATURE ══ -->
+  <div class="sig-section">
+    <div class="sig-row">
+
+      <!-- QR Code — GAUCHE -->
+      <div class="qr-area">${qrSrc}</div>
+
+      <!-- Tampon + Date + Professeur — DROITE -->
+      <div class="stamp-area">
+        <div class="date-line">Fait à Abomey-Calavi le ${dateGeneration}</div>
+        ${buildStampSVG()}
+        <div class="prof-name">Professeur Tahirou DJARA</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ PIED DE PAGE ══ -->
+  <div class="footer">
+    01 BP 526 Cotonou, Bénin &nbsp;/&nbsp; Tél : 01 98 34 04 04 &nbsp;/&nbsp;
+    e-mail : vraa.uac@uac.bj &nbsp;/&nbsp; site web : www.uac.bj
+  </div>
+
+</div>
+</body>
+</html>`;
+}
+
+// ── Helpers HTML internes ──
+
+/** Génère le SVG du logo UAC (fallback si pas d'image) */
+function buildLogoSVG(topArcId, botArcId) {
+  return `<svg width="86" height="86" viewBox="0 0 86 86" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="43" cy="43" r="41" fill="white" stroke="#7a1515" stroke-width="2.5"/>
+    <circle cx="43" cy="43" r="35" fill="none" stroke="#7a1515" stroke-width="1"/>
+    <path id="${topArcId}" d="M 8,43 A 35,35 0 0,1 78,43" fill="none"/>
+    <text font-size="5.2" font-family="Arial" font-weight="bold" fill="#1a1a1a">
+      <textPath href="#${topArcId}" startOffset="3%">UNIVERSITE D'ABOMEY-CALAVI</textPath>
+    </text>
+    <path id="${botArcId}" d="M 12,50 A 34,34 0 0,0 74,50" fill="none"/>
+    <text font-size="5" font-family="Arial" fill="#1a1a1a">
+      <textPath href="#${botArcId}" startOffset="18%">BÉNIN</textPath>
+    </text>
+    <ellipse cx="43" cy="14" rx="5" ry="9" fill="#d44000"/>
+    <ellipse cx="43" cy="16" rx="3.5" ry="6.5" fill="#e87c00"/>
+    <ellipse cx="43" cy="18" rx="2" ry="4" fill="#f5c518"/>
+    <rect x="40.5" y="22" width="5" height="12" rx="1.5" fill="#6b3a1f"/>
+    <rect x="39" y="33" width="8" height="2.5" rx="1" fill="#6b3a1f"/>
+    <text x="12" y="47" font-size="7" fill="#d4a017">★</text>
+    <text x="67" y="47" font-size="7" fill="#d4a017">★</text>
+    <path d="M29,38 L43,33 L57,38 L57,57 Q43,65 29,57 Z"
+          fill="rgba(26,80,130,0.06)" stroke="#1a5082" stroke-width="1.3"/>
+    <text x="43" y="54" text-anchor="middle" font-size="8.5"
+          font-weight="bold" font-family="Arial" fill="#1a5082">UAC</text>
+  </svg>`;
+}
+
+/** Génère le SVG du tampon RECTORAT (fallback si pas d'image) */
+function buildStampSVG() {
+  return `<svg width="110" height="110" viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="65" cy="65" r="60" fill="none" stroke="#b03030" stroke-width="2.8"/>
+    <circle cx="65" cy="65" r="53" fill="none" stroke="#b03030" stroke-width="1.5"/>
+    <text x="59" y="13" font-size="10" fill="#b03030">★</text>
+    <text x="59" y="122" font-size="10" fill="#b03030">★</text>
+    <path id="s-top-att" d="M 10,65 A 55,55 0 0,1 120,65" fill="none"/>
+    <text font-size="8" font-family="Arial" font-weight="bold" fill="#b03030">
+      <textPath href="#s-top-att" startOffset="2%">Université d'Abomey - Calavi</textPath>
+    </text>
+    <path id="s-bot-att" d="M 16,75 A 51,51 0 0,0 114,75" fill="none"/>
+    <text font-size="8" font-family="Arial" font-weight="bold" fill="#b03030">
+      <textPath href="#s-bot-att" startOffset="22%">RECTORAT</textPath>
+    </text>
+    <circle cx="65" cy="62" r="24" fill="rgba(176,48,48,0.05)" stroke="#b03030" stroke-width="0.8"/>
+    <rect x="61" y="48" width="8" height="18" rx="2" fill="#b03030" opacity="0.7"/>
+    <ellipse cx="65" cy="45" rx="5" ry="8" fill="#b03030" opacity="0.8"/>
+    <ellipse cx="65" cy="43" rx="3" ry="5" fill="#d06000" opacity="0.9"/>
+    <text x="65" y="76" text-anchor="middle" font-size="8.5" font-family="Arial" fill="#b03030">Le 1er Vice</text>
+    <text x="65" y="87" text-anchor="middle" font-size="8.5" font-family="Arial" fill="#b03030">Recteur</text>
+    <path d="M 78,95 Q 88,88 100,91 Q 107,93 104,98 Q 100,103 90,99 Q 83,96 85,101"
+          fill="none" stroke="#b03030" stroke-width="2" stroke-linecap="round"/>
+    <path d="M 82,101 Q 92,97 103,100"
+          fill="none" stroke="#b03030" stroke-width="1.3" stroke-linecap="round"/>
+  </svg>`;
+}
+
+/** Génère le placeholder QR si pas d'image */
+function buildQRPlaceholder() {
+  return `<svg width="95" height="95" viewBox="0 0 95 95" xmlns="http://www.w3.org/2000/svg">
+    <rect width="95" height="95" fill="white"/>
+    <rect x="4" y="4" width="28" height="28" fill="black"/>
+    <rect x="7" y="7" width="22" height="22" fill="white"/>
+    <rect x="10" y="10" width="16" height="16" fill="black"/>
+    <rect x="63" y="4" width="28" height="28" fill="black"/>
+    <rect x="66" y="7" width="22" height="22" fill="white"/>
+    <rect x="69" y="10" width="16" height="16" fill="black"/>
+    <rect x="4" y="63" width="28" height="28" fill="black"/>
+    <rect x="7" y="66" width="22" height="22" fill="white"/>
+    <rect x="10" y="69" width="16" height="16" fill="black"/>
+    <rect x="36" y="10" width="4" height="4" fill="black"/>
+    <rect x="44" y="10" width="4" height="4" fill="black"/>
+    <rect x="52" y="10" width="4" height="4" fill="black"/>
+    <rect x="60" y="10" width="4" height="4" fill="black"/>
+    <rect x="10" y="36" width="4" height="4" fill="black"/>
+    <rect x="10" y="44" width="4" height="4" fill="black"/>
+    <rect x="10" y="52" width="4" height="4" fill="black"/>
+    <rect x="10" y="60" width="4" height="4" fill="black"/>
+    <rect x="36" y="4" width="4" height="4" fill="black"/>
+    <rect x="48" y="4" width="4" height="4" fill="black"/>
+    <rect x="36" y="18" width="8" height="4" fill="black"/>
+    <rect x="52" y="18" width="8" height="4" fill="black"/>
+    <rect x="36" y="26" width="4" height="4" fill="black"/>
+    <rect x="48" y="26" width="8" height="4" fill="black"/>
+    <rect x="18" y="36" width="8" height="4" fill="black"/>
+    <rect x="36" y="36" width="8" height="4" fill="black"/>
+    <rect x="52" y="36" width="8" height="4" fill="black"/>
+    <rect x="68" y="36" width="8" height="4" fill="black"/>
+    <rect x="84" y="36" width="4" height="4" fill="black"/>
+    <rect x="36" y="44" width="8" height="4" fill="black"/>
+    <rect x="52" y="44" width="8" height="4" fill="black"/>
+    <rect x="68" y="44" width="8" height="4" fill="black"/>
+    <rect x="84" y="44" width="4" height="4" fill="black"/>
+    <rect x="36" y="52" width="4" height="4" fill="black"/>
+    <rect x="48" y="52" width="8" height="4" fill="black"/>
+    <rect x="68" y="52" width="4" height="4" fill="black"/>
+    <rect x="80" y="52" width="8" height="4" fill="black"/>
+    <rect x="36" y="60" width="8" height="4" fill="black"/>
+    <rect x="52" y="60" width="8" height="4" fill="black"/>
+    <rect x="68" y="60" width="8" height="4" fill="black"/>
+    <rect x="36" y="68" width="8" height="4" fill="black"/>
+    <rect x="52" y="68" width="4" height="4" fill="black"/>
+    <rect x="68" y="68" width="8" height="4" fill="black"/>
+    <rect x="84" y="68" width="4" height="4" fill="black"/>
+    <rect x="36" y="76" width="8" height="4" fill="black"/>
+    <rect x="52" y="76" width="4" height="4" fill="black"/>
+    <rect x="68" y="76" width="8" height="4" fill="black"/>
+    <rect x="36" y="84" width="4" height="4" fill="black"/>
+    <rect x="48" y="84" width="4" height="4" fill="black"/>
+    <rect x="60" y="84" width="8" height="4" fill="black"/>
+  </svg>`;
+}
+
+/**
+ * Construit le libellé des semestres à partir du tableau.
+ * Ex: [3, 4] → "Semestres 3 et 4"
+ *     [1]    → "Semestre 1"
+ */
+function buildSemestresLabel(semestres) {
+  if (!semestres || semestres.length === 0) return "Semestres 3 et 4";
+  if (semestres.length === 1) return `Semestre ${semestres[0]}`;
+  const last = semestres[semestres.length - 1];
+  const others = semestres.slice(0, -1).join(", ");
+  return `Semestres ${others} et ${last}`;
+}
+
+// ─────────────────────────────────────────────
+// FONCTION EXPORTÉE — ATTESTATION D'INSCRIPTION
+// ─────────────────────────────────────────────
+
+/**
+ * Génère un PDF d'attestation d'inscription UAC.
+ *
+ * @param {Object} demande     - Objet Demande depuis Prisma
+ * @param {Object} etudiant    - Objet Utilisateur depuis Prisma
+ * @param {string} reference   - Référence unique du document (ex: ETD-2026-IFRI-ATT-XXXXX)
+ * @param {Object} institution - Objet Institution depuis Prisma
+ * @param {string} qrData      - URL encodée dans le QR code
+ * @returns {Promise<string>}  - Chemin absolu du PDF généré
+ *
+ * @example
+ * const pdfPath = await pdfService.generateAttestationInscription(
+ *   demande, etudiant, reference, institution, qrData
+ * );
+ */
+exports.generateAttestationInscription = async (
+    demande,
+    etudiant,
+    reference,
+    institution,
+    qrData
+) => {
+  // ── 1. Assets en parallèle ──
+  const [logoUACBase64, qrBase64] = await Promise.all([
+    Promise.resolve(getLogoUAC()),
+    generateQRDataURL(qrData),
+  ]);
+
+  // ── 2. Infos étudiant ──
+  const etudiantNom            = etudiant?.nom        || "";
+  const etudiantPrenom         = etudiant?.prenom      || "";
+  const etudiantDateNaissance  = etudiant?.dateNaissance || null;
+  const etudiantLieuNaissance  = etudiant?.lieuNaissance || null;
+  const etudiantMatricule      = etudiant?.numeroEtudiant || etudiant?.matricule || "";
+  const etudiantFiliere        = etudiant?.filiere     || demande?.filiere || "Licence en Génie Logiciel";
+
+  // Semestres depuis la demande (tableau ou valeur unique)
+  const etudiantSemestres = demande?.semestres
+      ? (Array.isArray(demande.semestres) ? demande.semestres : [demande.semestres])
+      : demande?.semestre
+          ? [demande.semestre]
+          : [3, 4];
+
+  // ── 3. Infos institution ──
+  const institutionNom   = institution?.nom   || "INSTITUT DE FORMATION ET DE RECHERCHE EN INFORMATIQUE";
+  const institutionSigle = institution?.sigle || "IFRI";
+
+  // ── 4. Dates ──
+  const now = new Date();
+  const annee = now.getFullYear();
+  const anneeAcademique = `${annee - 1}-${annee}`;
+  const dateGeneration = now.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  // ── 5. Construire le HTML ──
+  const html = buildAttestationInscriptionHtml({
+    logoUACBase64,
+    etudiantNom,
+    etudiantPrenom,
+    etudiantDateNaissance,
+    etudiantLieuNaissance,
+    etudiantMatricule,
+    etudiantFiliere,
+    etudiantSemestres,
+    institutionNom,
+    institutionSigle,
+    anneeAcademique,
+    dateGeneration,
+    qrBase64,
+  });
+
+  // ── 6. Lancer Puppeteer ──
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+    ],
+  });
+
+  try {
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "networkidle0" });
+
+    const fileName   = `${reference}.pdf`;
+    const outputPath = path.join(OUTPUT_DIR, fileName);
+
+    await page.pdf({
+      path: outputPath,
+      format: "A4",
+      printBackground: true,
+      margin: { top: 0, right: 0, bottom: 0, left: 0 },
+    });
+
+    return outputPath;
+  } finally {
+    await browser.close();
+  }
+};
