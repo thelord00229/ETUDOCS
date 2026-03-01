@@ -75,7 +75,7 @@ exports.soumettre = async (utilisateurId, institutionId, body, files) => {
           typePiece: normalizeField(f.fieldname),
           nom: f.originalname,
           url: f.path,
-          statut: "SOUMISE", // ✅ conforme enum Prisma
+          statut: "SOUMISE",
         })),
       },
       historique: {
@@ -102,11 +102,13 @@ exports.getDemandes = async (user) => {
   } else if (role === "SECRETAIRE_GENERAL") {
     where = { institutionId, statut: "TRANSMISE_SECRETAIRE_ADJOINT" };
   } else if (role === "CHEF_DIVISION") {
-    // ✅ Chef division DOIT avoir un service (EXAMENS/SCOLARITE)
     const chefService = normalizeService(service);
 
+    // ✅ CORRECTION : si service non configuré → bloque (sécurité)
+    // si service configuré → filtre strict sur serviceCible
+    // => Le chef EXAMENS ne voit que les RELEVE_NOTES
+    // => Le chef SCOLARITE ne voit que les ATTESTATION_INSCRIPTION
     if (!chefService) {
-      // Si tu veux être strict : empêche un Chef sans service de voir quoi que ce soit
       where = { id: "__NOPE__" };
     } else {
       where = {
@@ -120,7 +122,6 @@ exports.getDemandes = async (user) => {
   } else if (role === "DIRECTEUR") {
     where = { institutionId, statut: "ATTENTE_SIGNATURE_DIRECTEUR" };
   } else if (role === "SUPER_ADMIN") {
-    // SuperAdmin : soit toutes les institutions, soit filtré si tu veux
     where = institutionId ? { institutionId } : {};
   } else {
     where = { institutionId };
@@ -157,14 +158,12 @@ exports.getById = async (demandeId, user) => {
     throw err;
   }
 
-  // Étudiant ne voit que ses demandes
   if (user.role === "ETUDIANT" && demande.utilisateurId !== user.id) {
     const err = new Error("Accès refusé");
     err.statusCode = 403;
     throw err;
   }
 
-  // Agents : même institution
   if (user.role !== "ETUDIANT" && user.role !== "SUPER_ADMIN") {
     if (demande.institutionId !== user.institutionId) {
       const err = new Error("Accès refusé");
@@ -195,21 +194,18 @@ exports.avancer = async (
     throw err;
   }
 
-  // Sécurité institution
   if (role !== "SUPER_ADMIN" && demande.institutionId !== institutionId) {
     const err = new Error("Accès refusé");
     err.statusCode = 403;
     throw err;
   }
 
-  // Étudiant : seulement sa demande
   if (role === "ETUDIANT" && demande.utilisateurId !== actorId) {
     const err = new Error("Accès refusé");
     err.statusCode = 403;
     throw err;
   }
 
-  // 🔒 Vérification stricte (rôle + action + statut)
   try {
     assertPermission({ role, statutActuel: demande.statut, action });
   } catch (e) {
@@ -218,9 +214,7 @@ exports.avancer = async (
     throw err;
   }
 
-  // 🔒 Règles métier spécifiques
   if (action === "GENERER_DOCUMENT") {
-    // Toutes les pièces doivent être validées
     const invalid = demande.pieces.some((p) => p.statut !== "VALIDEE");
     if (invalid) {
       const err = new Error("Toutes les pièces doivent être validées avant génération.");
@@ -229,16 +223,13 @@ exports.avancer = async (
     }
   }
 
-  // Calcul prochain statut (strict)
   const prochainStatut = getNextStatut({
     role,
     statutActuel: demande.statut,
     action,
   });
 
-  // Transaction : génération doc + update statut + historique
   const updated = await prisma.$transaction(async (tx) => {
-    // 📄 Génération document si demandé
     if (action === "GENERER_DOCUMENT") {
       const { v4: uuidv4 } = require("uuid");
       const pdfService = require("../../services/pdf.service");
@@ -256,7 +247,6 @@ exports.avancer = async (
       const sigle = institution?.sigle || "UAC";
       const baseUrl = process.env.APP_URL || "http://localhost:5000";
 
-      // Attestation / autres docs
       if (demande.typeDocument !== "RELEVE_NOTES") {
         const reference = `ETD-${annee}-${sigle}-${String(demande.id)
           .substring(0, 5)
@@ -283,7 +273,6 @@ exports.avancer = async (
           },
         });
       } else {
-        // Relevé de notes (1 ou plusieurs semestres)
         const semestres = demande.semestres?.length ? demande.semestres : [1];
 
         for (const semestre of semestres) {
@@ -315,7 +304,6 @@ exports.avancer = async (
       }
     }
 
-    // 🔁 Update statut + historique
     const up = await tx.demande.update({
       where: { id: demandeId },
       data: {
@@ -333,7 +321,6 @@ exports.avancer = async (
     return up;
   });
 
-  // ✉️ Email (hors transaction)
   try {
     await emailService.sendStatutChange(
       demande.utilisateur.email,
@@ -341,8 +328,7 @@ exports.avancer = async (
       prochainStatut
     );
   } catch (e) {
-    // On ne bloque pas le workflow si email échoue
-    // (mais tu peux logger si tu as un logger)
+    // Email non bloquant
   }
 
   return updated;
@@ -380,14 +366,12 @@ exports.validerPiece = async (
     throw err;
   }
 
-  // Stade attendu : Chef de Division
   if (piece.demande.statut !== "TRANSMISE_SECRETAIRE_GENERAL") {
     const err = new Error("La demande n'est pas au stade Chef de Division.");
     err.statusCode = 400;
     throw err;
   }
 
-  // Vérif service (EXAMEN vs EXAMENS)
   const cible = normalizeService(piece.demande.serviceCible);
   const acteur = normalizeService(service);
 
@@ -397,7 +381,6 @@ exports.validerPiece = async (
     throw err;
   }
 
-  // Normalise statut pièce
   const st = normalizeField(statut);
   const allowed = new Set(["VALIDEE", "REJETEE"]);
   if (!allowed.has(st)) {
@@ -419,10 +402,14 @@ exports.validerPiece = async (
 
 exports.getStatsChefDivision = async (user) => {
   const { institutionId, service } = user;
+  const chefService = normalizeService(service);
 
+  // ✅ CORRECTION : même logique de filtrage que getDemandes
+  // Si service configuré → filtre strict sur serviceCible
+  // Si service non configuré → stats sur toute l'institution (cas dégradé)
   const baseFilter = {
     institutionId,
-    ...(service ? { serviceCible: normalizeService(service) } : {}),
+    ...(chefService ? { serviceCible: chefService } : {}),
   };
 
   const [aTraiter, rejetees, documentGenere, attenteDirecteur, disponibles] =
