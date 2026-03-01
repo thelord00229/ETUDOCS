@@ -1,6 +1,8 @@
-import SALayout from "../components/SALayout.jsx";
-import SAToggle from "../components/SAToggle.jsx";
-import SAInstBadge from "../components/SAInstBadge.jsx";
+import { useState, useEffect } from "react";
+import SALayout from "../../components/DashboardAdmin/SALayout.jsx";
+import SAToggle from "../../components/DashboardAdmin/SAToggle.jsx";
+import SAInstBadge from "../../components/DashboardAdmin/SAInstBadge.jsx";
+import { getInstitutions } from "../../services/admin.service"; // à créer si besoi
 
 const css = `
   .inst-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
@@ -47,6 +49,23 @@ const INSTITUTIONS = [
 ];
 
 export default function SAInstitutions() {
+    const [institutions, setInstitutions] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchInstitutions = async () => {
+            try {
+                const res = await getInstitutions();
+                setInstitutions(res.data);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchInstitutions();
+    }, []);
+
     return (
         <SALayout>
             <style>{css}</style>
@@ -56,48 +75,52 @@ export default function SAInstitutions() {
                 <p className="sa-page-sub">Configurez et gérez les institutions partenaires</p>
             </div>
 
-            <div className="inst-grid">
-                {INSTITUTIONS.map(inst => (
-                    <div className="inst-card" key={inst.code}>
-                        <div className="inst-card__head">
-                            <SAInstBadge code={inst.code} size="lg" />
-                            <SAToggle defaultOn={true} label="Actif" />
-                        </div>
-                        <div>
-                            <div className="inst-card__name">{inst.nom}</div>
-                            <div className="inst-card__desc">{inst.desc}</div>
-                        </div>
-                        <div className="inst-card__stats">
-                            <div>
-                                <div className="inst-stat-val">{inst.agents}</div>
-                                <div className="inst-stat-lbl">Agents</div>
+            {loading ? (
+                <div>Chargement...</div>
+            ) : (
+                <div className="inst-grid">
+                    {institutions.map(inst => (
+                        <div className="inst-card" key={inst.id}>
+                            <div className="inst-card__head">
+                                <SAInstBadge code={inst.sigle || inst.nom.slice(0,2)} size="lg" />
+                                <SAToggle defaultOn={true} label="Actif" />
                             </div>
                             <div>
-                                <div className="inst-stat-val">{inst.docs}</div>
-                                <div className="inst-stat-lbl">Documents</div>
+                                <div className="inst-card__name">{inst.nom}</div>
+                                <div className="inst-card__desc">{inst.description || "Aucune description"}</div>
                             </div>
+                            <div className="inst-card__stats">
+                                <div>
+                                    <div className="inst-stat-val">{inst._count?.utilisateurs || 0}</div>
+                                    <div className="inst-stat-lbl">Agents</div>
+                                </div>
+                                <div>
+                                    <div className="inst-stat-val">{inst._count?.demandes || 0}</div>
+                                    <div className="inst-stat-lbl">Documents</div>
+                                </div>
+                            </div>
+                            <button className="btn-params">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="3"/>
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+                                </svg>
+                                Paramètres
+                            </button>
                         </div>
-                        <button className="btn-params">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="12" cy="12" r="3"/>
-                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
-                            </svg>
-                            Paramètres
-                        </button>
-                    </div>
-                ))}
+                    ))}
 
-                <div className="add-inst-card">
-                    <div className="add-inst-card__icon">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
-                        </svg>
+                    <div className="add-inst-card">
+                        <div className="add-inst-card__icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
+                            </svg>
+                        </div>
+                        <div className="add-inst-card__title">Ajouter une institution</div>
+                        <div className="add-inst-card__sub">Connectez une nouvelle institution à EtuDocs</div>
+                        <button className="btn-add-inst">Ajouter une institution</button>
                     </div>
-                    <div className="add-inst-card__title">Ajouter une institution</div>
-                    <div className="add-inst-card__sub">Connectez une nouvelle institution à EtuDocs</div>
-                    <button className="btn-add-inst">Ajouter une institution</button>
                 </div>
-            </div>
+            )}
         </SALayout>
     );
 }

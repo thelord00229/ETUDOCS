@@ -2,7 +2,6 @@ const prisma = require('../../config/prisma');
 const asyncHandler = require('../../utils/asyncHandler');
 
 exports.me = asyncHandler(async (req, res) => {
-  // req.user vient du token (auth.middleware)
   const user = await prisma.utilisateur.findUnique({
     where: { id: req.user.id },
     select: {
@@ -13,9 +12,14 @@ exports.me = asyncHandler(async (req, res) => {
       role: true,
       service: true,
       numeroEtudiant: true,
-      institutionId: true,
+      filiere: true,
+      niveau: true,
       actif: true,
-      emailVerifie: true
+      emailVerifie: true,
+      createdAt: true,
+      institution: {
+        select: { id: true, nom: true, sigle: true }
+      }
     }
   });
 

@@ -1,198 +1,87 @@
-# 📄 EtuDocs
+# 🚀 Digital Minds – HACKBYIFRI 2026
 
-> Plateforme web de digitalisation du processus de demande, de traitement et de délivrance des documents administratifs universitaires à l'UAC.
+Projet réalisé dans le cadre du hackathon **HACKBYIFRI 2026**.
 
----
+## 📌 Description
 
-## 🎯 Contexte & Problème
+Digital Minds est une application visant à [explique ici l'objectif de ton projet : gestion de documents, plateforme éducative, workflow administratif, etc.].
 
-À l’Université d’Abomey-Calavi (UAC), l’obtention d’un document administratif (attestation, relevé de notes, etc.) repose encore sur un processus physique :
-
-- Déplacements multiples
-- Dépôt de dossier papier
-- Absence de suivi en temps réel
-- Délais longs (1 à 2 semaines)
-- Aucune notification
-
-**EtuDocs** digitalise entièrement ce processus en respectant le workflow administratif réel.
+L'objectif est de proposer une solution innovante, efficace et accessible pour améliorer [problème que tu résous].
 
 ---
 
-## ✨ Fonctionnalités (MVP)
+## ⚙️ Technologies utilisées
 
-### 🎓 Côté Étudiant
-- Création de compte avec numéro étudiant
+### Frontend
+- React / Next.js (à adapter)
+- Tailwind CSS / CSS
+
+### Backend
+- Node.js / Express
+- JWT (authentification)
+
+### Base de données
+- MongoDB / MySQL / PostgreSQL
+
+---
+
+## 🔐 Fonctionnalités principales
+
 - Authentification sécurisée (JWT)
-- Soumission de demande en 3 étapes :
-  1. Choix du type de document
-  2. Upload des pièces justificatives
-  3. Confirmation
-- Suivi en temps réel du statut
-- Timeline détaillée des étapes de validation
-- Téléchargement du document (limité à 3 fois)
-- QR code d’authenticité
-- Notifications email automatiques
+- Gestion des utilisateurs (admin, étudiant, etc.)
+- Workflow multi-niveaux
+- Upload et gestion de documents
+- Tableau de bord interactif
 
 ---
 
-### 🏛 Workflow administratif (6 niveaux)
+## 📂 Structure du projet
+├── backend/
+├── frontend/
+├── DEMO/
+├── README.md
 
-1. Secrétaire adjoint
-2. Secrétaire général
-3. Chef de division (Examens / Scolarité)
-4. Directeur adjoint
-5. Directeur
-6. Notification à l’étudiant
-
-Chaque action est tracée via un historique complet (`WorkflowHistory`).
 
 ---
 
-### 📄 Documents disponibles (MVP uniquement)
+## 🚀 Installation
 
-- ✅ Attestation d’inscription
-- ✅ Relevé de notes (par semestre)
-
-Les autres documents seront ajoutés en V2.
-
----
-
-### 🔎 Vérification d’authenticité
-
-- Référence unique générée par document
-- QR code intégré dans le PDF
-- Page publique `/verify/:reference`
-- Vérification sans connexion
-
----
-
-## 👥 Rôles utilisateurs
-
-| Rôle | Description |
-|------|------------|
-| ETUDIANT | Soumet et suit ses demandes |
-| SECRETAIRE_ADJOINT | Vérifie complétude du dossier |
-| SECRETAIRE_GENERAL | Transmet vers le bon service |
-| CHEF_DIVISION | Valide les pièces et génère le document |
-| DIRECTEUR_ADJOINT | Signe le document |
-| DIRECTEUR | Signature finale |
-| SUPER_ADMIN | Configure institutions et comptes |
-
----
-
-## 🏗️ Architecture Technique
-
-| Couche | Technologie |
-|--------|-------------|
-| Frontend | Next.js + Tailwind CSS |
-| Backend | Node.js + Express |
-| ORM | Prisma |
-| Base de données | PostgreSQL |
-| Authentification | JWT |
-| Génération PDF | Puppeteer |
-| QR Code | qrcode |
-| Emails | Nodemailer + Brevo |
-| Déploiement | Vercel (frontend) + Railway (backend & DB) |
-
-Architecture 3 couches :
-
-Client → API REST → PostgreSQL + Services (PDF, Email, QR)
-
----
-
-## 🗄️ Base de données
-
-La base est gérée via **Prisma ORM**.
-
-Les principales entités :
-
-- Institution
-- Utilisateur
-- Demande
-- PieceJustificative
-- WorkflowHistory
-- Document
-- PieceRequise
-
-Les migrations sont versionnées dans `backend/prisma/migrations`.
-
-⚠️ La base PostgreSQL n’est pas versionnée.  
-Chaque développeur recrée sa base localement via Prisma.
-
----
-
-## 🚀 Installation & Lancement
-
-### Prérequis
-
-- Node.js >= 18
-- PostgreSQL installé localement
-- npm
-
----
-
-### 1️⃣ Cloner le projet
-
+### 1. Cloner le projet
 ```bash
 git clone https://github.com/thelord00229/Digital_Minds_HACKBYIFRI_2026.git
 cd Digital_Minds_HACKBYIFRI_2026
-
-2️⃣ Configuration Backend
-Bash
-Copier le code
+2. Backend
 cd backend
 npm install
-Créer un fichier .env :
-Env
-Copier le code
-DATABASE_URL="postgresql://postgres:motdepasse@localhost:5432/etudocs"
-JWT_SECRET=change_me
-Créer la base PostgreSQL :
-SQL
-Copier le code
-CREATE DATABASE etudocs;
-Appliquer les migrations :
-Bash
-Copier le code
-npx prisma migrate dev
-Lancer le serveur :
-Bash
-Copier le code
-npm run dev
-3️⃣ Configuration Frontend
-Bash
-Copier le code
+npm start
+3. Frontend
 cd frontend
 npm install
 npm run dev
-Application disponible sur :
-Copier le code
+```
+Variables d'environnement
 
-http://localhost:3000
-🌍 Institutions supportées (MVP)
-IFRI
-EPAC
-FSS
-Architecture extensible pour d’autres universités.
-⚠️ Limites actuelles (MVP)
-Paiement non intégré (upload de quittance)
-Signature scannée (non cryptographique)
-Pas encore d’OCR
-Pas encore d’application mobile
-📁 Structure du projet
-Copier le code
+Créer un fichier .env dans le backend :
 
-Digital_Minds_HACKBYIFRI_2026/
-│
-├── frontend/
-├── backend/
-│   ├── prisma/
-│   │   ├── schema.prisma
-│   │   └── migrations/
-│   ├── src/
-│   └── package.json
-│
-└── README.md
+PORT=5000
+JWT_SECRET=your_secret_key
+JWT_EXPIRES_IN=1d
+DATABASE_URL=your_database_url
 
-📜 Licence
-MIT
+🎥 Démo
+
+⚠️ Les fichiers vidéo ne sont pas stockés dans le dépôt (limite GitHub).
+
+👉 Voir la démo ici : https://drive.google.com/file/d/1md17weRwRdN1TdPC9YJ4HnRohjU7n3G9/view?usp=drive_link
+
+📌 Améliorations futures
+
+Ajout de notifications en temps réel
+
+Optimisation UI/UX
+
+Déploiement cloud
+
+📄 Licence
+
+Projet réalisé dans un cadre académique / hackathon.

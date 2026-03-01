@@ -194,6 +194,12 @@ const INSTITUTIONS = [
   { value: "FSS",  label: "FSS - Faculté des Sciences de la Santé" },
 ];
 
+const FILIERES = {
+  IFRI: ["Génie Logiciel (GL)", "Intelligence Artificielle (IA)", "Sécurité Informatique (SI)", "Systèmes Embarqués et Internet des Objets (SE-IoT)", "Internet et Multimédia (IM)"],
+  EPAC: ["Génie Civil (GC)", "Génie Électrique (GE)", "Génie Informatique et Télécommunication (GIT)", "Génie Mécanique et Énergétique (GME)", "Génie Chimique - Procédés (GC-P)", "Maintenance Biomédicale et Hospitalière (MBH)", "Génie Biomédical (GBM)", "Machinisme Agricole (MA)"],
+  FSS:  ["Médecine", "Pharmacie", "Kinésithérapie", "Nutrition et diététique", "Assistance sociale"],
+};
+
 const CheckIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
        stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -220,16 +226,6 @@ const DocIcon = () => (
   </svg>
 );
 
-const splitNomComplet = (nomComplet) => {
-  const clean = String(nomComplet || "").trim().replace(/\s+/g, " ");
-  if (!clean) return { prenom: "", nom: "" };
-  const parts = clean.split(" ");
-  if (parts.length === 1) return { prenom: parts[0], nom: parts[0] };
-  const nom = parts[parts.length - 1];
-  const prenom = parts.slice(0, -1).join(" ");
-  return { prenom, nom };
-};
-
 export default function Register() {
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -240,7 +236,8 @@ export default function Register() {
 
   // Étape 1
   const [numEtudiant, setNumEtudiant] = useState("");
-  const [nomComplet, setNomComplet] = useState("");
+  const [prenom, setPrenom] = useState("");
+  const [nom, setNom] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -250,23 +247,11 @@ export default function Register() {
   const [filiere, setFiliere] = useState("");
   const [niveau, setNiveau] = useState("");
 
+  const filieresDisponibles = useMemo(() => FILIERES[institution] || [], [institution]);
+
   const passwordMismatch = useMemo(() => {
     return confirm.length > 0 && password !== confirm;
   }, [password, confirm]);
-
-  const splitNomComplet = (full) => {
-    const parts = String(full || "")
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
-
-    if (parts.length === 0) return { prenom: "", nom: "" };
-    if (parts.length === 1) return { prenom: parts[0], nom: parts[0] };
-
-    const nom = parts[parts.length - 1];
-    const prenom = parts.slice(0, -1).join(" ");
-    return { prenom, nom };
-  };
 
   const goStep2 = (e) => {
     e.preventDefault();
@@ -274,10 +259,11 @@ export default function Register() {
     setOkMsg("");
 
     const ne = String(numEtudiant).trim();
-    const nc = String(nomComplet).trim();
+    const pr = String(prenom).trim();
+    const nm = String(nom).trim();
     const em = String(email).trim();
 
-    if (!ne || !nc || !em) {
+    if (!ne || !pr || !nm || !em) {
       setErrorMsg("Veuillez remplir tous les champs obligatoires.");
       return;
     }
@@ -319,27 +305,15 @@ export default function Register() {
       return;
     }
 
-    const { prenom, nom } = splitNomComplet(nomComplet);
-
-    // ✅ Payload robuste :
-    // - Si ton backend attend institutionId (UUID) -> il faut envoyer l’UUID.
-    // - Si ton backend résout IFRI/EPAC/FSS -> tu peux envoyer le sigle.
-    // Ici on envoie les 2 clés pour éviter les soucis côté backend.
     const payload = {
       numeroEtudiant: String(numEtudiant).trim(),
-      prenom,
-      nom,
+      prenom: String(prenom).trim(),
+      nom: String(nom).trim(),
       email: String(email).trim().toLowerCase(),
       password,
-
-      // institution sélectionnée (sigle)
-      institution: institution,
+      institution,
       institutionSigle: institution,
-
-      // si ton backend résout le sigle -> OK
-      // si ton backend exige UUID -> remplace "institution" par le vrai id
       institutionId: institution,
-
       filiere: String(filiere).trim(),
       niveau,
     };
@@ -445,16 +419,31 @@ export default function Register() {
               <span className="hint">Votre numéro d'identification étudiant</span>
             </div>
 
-            <div className="field">
-              <label>Nom complet *</label>
-              <input
-                type="text"
-                placeholder="Prénom(s) NOM"
-                value={nomComplet}
-                onChange={(e) => setNomComplet(e.target.value)}
-                required
-                disabled={loading}
-              />
+            {/* ✅ CHANGEMENT : Nom complet -> Prénom(s) + Nom */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="field">
+                <label>Prénom(s) *</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Jean Michel"
+                  value={prenom}
+                  onChange={(e) => setPrenom(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="field">
+                <label>Nom *</label>
+                <input
+                  type="text"
+                  placeholder="Ex: DUPONT"
+                  value={nom}
+                  onChange={(e) => setNom(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
             </div>
 
             <div className="field">
@@ -522,7 +511,10 @@ export default function Register() {
               <div className="select-wrap">
                 <select
                   value={institution}
-                  onChange={(e) => setInstitution(e.target.value)}
+                  onChange={(e) => {
+                    setInstitution(e.target.value);
+                    setFiliere(""); // ✅ reset filière
+                  }}
                   required
                   disabled={loading}
                 >
@@ -538,16 +530,28 @@ export default function Register() {
               </div>
             </div>
 
+            {/* ✅ CHANGEMENT : Filière input -> select dynamique */}
             <div className="field">
               <label>Filière *</label>
-              <input
-                type="text"
-                placeholder="Ex: Génie Logiciel"
-                value={filiere}
-                onChange={(e) => setFiliere(e.target.value)}
-                required
-                disabled={loading}
-              />
+              <div className="select-wrap">
+                <select
+                  value={filiere}
+                  onChange={(e) => setFiliere(e.target.value)}
+                  required
+                  disabled={loading || !institution}
+                >
+                  <option value="" disabled>
+                    {institution
+                      ? "Sélectionnez votre filière"
+                      : "Choisissez d'abord une institution"}
+                  </option>
+                  {filieresDisponibles.map((f) => (
+                    <option key={f} value={f}>
+                      {f}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="field">

@@ -96,3 +96,16 @@ exports.getStatistiques = async (institutionId) => {
     }))
   };
 };
+
+exports.getInstitutions = async () => {
+  return prisma.institution.findMany({
+    include: {
+      _count: {
+        select: {
+          utilisateurs: { where: { role: { not: 'ETUDIANT' } } },
+          demandes: true,
+        },
+      },
+    },
+  });
+};

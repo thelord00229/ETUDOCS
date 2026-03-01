@@ -16,7 +16,7 @@ const genToken = (user) =>
   jwt.sign(
     { id: user.id, role: user.role, institutionId: user.institutionId },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN }
+    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
   );
 
 /**
@@ -62,6 +62,8 @@ exports.register = async ({
   numeroEtudiant,
   institutionId,
   institutionSigle,
+  filiere,   // ✅ ajouter
+  niveau,
 }) => {
   // validations minimales
   if (!nom || !prenom || !email || !password) {
@@ -116,7 +118,8 @@ exports.register = async ({
       password: hash,
       role: "ETUDIANT",
       numeroEtudiant: numeroEtudiant ? String(numeroEtudiant).trim() : null,
-
+      filiere: filiere ? String(filiere).trim() : null,   // ✅ ajouter
+      niveau: niveau ? String(niveau).trim() : null,
       institutionId: resolvedInstitutionId,
 
       tokenVerification,

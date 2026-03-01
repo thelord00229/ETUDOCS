@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum Service {
@@ -102,6 +101,9 @@ model Utilisateur {
   tokenVerification  String?
   tokenResetPassword String?
   tokenResetExpiry   DateTime?
+
+  filiere  String?
+  niveau   String?
 }
 
 model Demande {

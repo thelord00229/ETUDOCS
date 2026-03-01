@@ -311,11 +311,9 @@ export default function DashboardSG() {
     try {
       const data = await getDemandes();
       const list = Array.isArray(data) ? data : (data?.demandes ?? []);
-      // Filtrer pour ne voir que les demandes à transmettre
+      // ✅ Fix 1 : bon statut
       const demandesATransmettre = list.filter(d => 
-        d.statut === "SOUMISE" || 
-        d.statut === "EN_ATTENTE_RECEPTION" ||
-        d.statut === "TRANSMISE_AU_SECRETAIRE_ADJOINT"
+        d.statut === "TRANSMISE_SECRETAIRE_ADJOINT"
       );
       setDemandes(demandesATransmettre);
     } catch (e) {
@@ -349,7 +347,8 @@ export default function DashboardSG() {
     if (!demande?.id) return;
     setBusyId(demande.id);
     try {
-      await avancerDemande(demande.id, "TRANSMETTRE_AU_CHEF_DIVISION");
+      // ✅ Fix 2 : bonne action
+      await avancerDemande(demande.id, "TRANSMETTRE");
       await charger();
     } catch (e) {
       console.error(e);
