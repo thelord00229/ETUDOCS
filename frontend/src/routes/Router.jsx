@@ -15,6 +15,10 @@ import DashboardDI from "../pages/DashboardDI/DashboardDI.jsx";
 import DashboardSG from "../pages/DashboardSG/DashboardSG.jsx";
 import DashboardCE from "../pages/DashboardCE/DashboardCE.jsx";
 import ChefDivisionExamens from "../pages/DashboardCE/DashboardCE.jsx";
+import SADashboard from "../pages/DashboardAdmin/SADashboard.jsx";
+import SAInstitutions from "../pages/DashboardAdmin/SAInstitutions.jsx";
+import SAAgents from "../pages/DashboardAdmin/SAAgents.jsx";
+import SAAcademique from "../pages/DashboardAdmin/SAAcadémique.jsx";
 
 
 const Router = () => {
@@ -34,7 +38,7 @@ const Router = () => {
                 <Route path="/dashboarddi" element={<DashboardDI />} />
                 <Route path="/dashboardsg" element={<DashboardSG />} />
                 <Route path="/dashboardce" element={<ChefDivisionExamens/>} />
-                <Route path="/superadmin"              element={<SADashboard />} />
+                <Route path="/superadmin"              element={<SADashboard/>} />
                 <Route path="/superadmin/institutions" element={<SAInstitutions />} />
                 <Route path="/superadmin/agents"       element={<SAAgents />} />
                 <Route path="/superadmin/academique"   element={<SAAcademique />} />

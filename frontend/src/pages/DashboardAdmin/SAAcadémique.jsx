@@ -1,5 +1,5 @@
 import { useState } from "react";
-import SALayout from "../components/SALayout.jsx";
+import SALayout from "../../components/DashboardAdmin/SALayout.jsx";
 
 const css = `
   .da-filter-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 22px 24px; }
