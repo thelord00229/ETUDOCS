@@ -1,3 +1,4 @@
+// backend/src/modules/auth/auth.service.js
 require("dotenv").config();
 const prisma = require("../../config/prisma");
 const bcrypt = require("bcryptjs");
@@ -10,14 +11,14 @@ const normalize = (v) => String(v || "").trim().toUpperCase();
 const REQUIRE_EMAIL_VERIFICATION =
   String(process.env.REQUIRE_EMAIL_VERIFICATION ?? "true").toLowerCase() !== "false";
 
-// ✅ CORRECTION : service ajouté dans le payload JWT
+// ✅ Token JWT
 const genToken = (user) =>
   jwt.sign(
     {
       id: user.id,
       role: user.role,
       institutionId: user.institutionId,
-      service: user.service ?? null, // ✅ permet au backend de filtrer par service
+      service: user.service ?? null,
     },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
@@ -142,7 +143,15 @@ exports.register = async ({
 exports.login = async ({ email, password }) => {
   const cleanEmail = String(email || "").trim().toLowerCase();
 
-  const user = await prisma.utilisateur.findUnique({ where: { email: cleanEmail } });
+  const user = await prisma.utilisateur.findUnique({
+    where: { email: cleanEmail },
+    include: {
+      institution: {
+        select: { id: true, nom: true, sigle: true, logoUrl: true },
+      },
+    },
+  });
+
   if (!user) {
     const err = new Error("Email ou mot de passe incorrect");
     err.statusCode = 401;
@@ -169,6 +178,8 @@ exports.login = async ({ email, password }) => {
   }
 
   const token = genToken(user);
+
+  // ✅ On renvoie ce dont le front a besoin (profil + header)
   return {
     token,
     user: {
@@ -179,6 +190,10 @@ exports.login = async ({ email, password }) => {
       role: user.role,
       service: user.service,
       institutionId: user.institutionId,
+      numeroEtudiant: user.numeroEtudiant,
+      filiere: user.filiere,
+      niveau: user.niveau,
+      institution: user.institution,
     },
   };
 };

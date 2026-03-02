@@ -1,5 +1,6 @@
 // src/pages/Register/Register.jsx
 import { useMemo, useState } from "react";
+import logo from "../assets/logo.png";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
@@ -41,13 +42,24 @@ const css = `
 
   /* BRAND */
   .brand {
-    display: flex; align-items: center; gap: 12px;
-    font-family:'Sora',sans-serif; font-weight:700; font-size:1.5rem;
-    color:var(--navy); text-decoration:none; margin-bottom:32px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-decoration: none;
+    margin-bottom: 32px;
   }
-  .brand__icon {
-    width:48px; height:48px; border-radius:12px; background:var(--navy);
-    display:flex; align-items:center; justify-content:center;
+  .brand__logo {
+    width: 62px;
+    height: 62px;
+    object-fit: contain;
+    border-radius: 16px;
+  }
+  .brand__name {
+    font-family: 'Sora', sans-serif;
+    font-weight: 800;
+    font-size: 1.9rem;
+    color: var(--navy);
+    letter-spacing: -0.5px;
   }
 
   /* STEPPER */
@@ -355,10 +367,8 @@ export default function Register() {
 
       {/* Brand */}
       <a href="/" className="brand">
-        <div className="brand__icon">
-          <DocIcon />
-        </div>
-        EtuDocs
+        <img src={logo} alt="EtuDocs logo" className="brand__logo" />
+        <span className="brand__name">EtuDocs</span>
       </a>
 
       {/* Stepper */}

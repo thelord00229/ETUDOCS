@@ -1,15 +1,11 @@
-import { 
-  getDemandes, 
-  getDemandeById, 
+import { useEffect, useMemo, useState } from "react";
+import {
+  getDemandes,
+  getDemandeById,
   avancerDemande,
   getChefDivisionStats,
-  downloadPieceBlob,
-  validerPiece
+  validerPiece,
 } from "../../services/api";
-
-import { useEffect, useState } from "react";
-
-
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
@@ -298,10 +294,13 @@ const styles = `
   .modal-btn { flex: 1; padding: 12px; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; }
   .modal-btn.confirm-gen { background: var(--success); color: white; }
   .modal-btn.confirm-gen:hover { background: #059669; }
+  .modal-btn.confirm-gen:disabled { opacity: 0.6; cursor: not-allowed; }
   .modal-btn.confirm-rej { background: var(--danger); color: white; }
   .modal-btn.confirm-rej:hover { background: #dc2626; }
+  .modal-btn.confirm-rej:disabled { opacity: 0.6; cursor: not-allowed; }
   .modal-btn.cancel { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
   .modal-btn.cancel:hover { border-color: var(--navy); }
+  .modal-btn.cancel:disabled { opacity: 0.6; cursor: not-allowed; }
 
   /* ── SUCCESS STATE ── */
   .success-card { background: white; border-radius: 20px; border: 2px solid #6ee7b7; padding: 40px; text-align: center; }
@@ -323,103 +322,262 @@ const styles = `
 
 // ── SVG Icons ──────────────────────────────────────────────
 const GridIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-        <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
-    </svg>
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="3" width="7" height="7" />
+    <rect x="14" y="3" width="7" height="7" />
+    <rect x="3" y="14" width="7" height="7" />
+    <rect x="14" y="14" width="7" height="7" />
+  </svg>
 );
+
 const LogoutIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-        <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-    </svg>
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <polyline points="16 17 21 12 16 7" />
+    <line x1="21" y1="12" x2="9" y2="12" />
+  </svg>
 );
+
 const BellIcon = () => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-    </svg>
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+  </svg>
 );
+
 const SearchIcon = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-    </svg>
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="11" cy="11" r="8" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
 );
+
 const FileIcon = () => (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-        <polyline points="10 9 9 9 8 9"/>
-    </svg>
+  <svg
+    width="26"
+    height="26"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <polyline points="10 9 9 9 8 9" />
+  </svg>
 );
+
 const CheckIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="20 6 9 17 4 12"/>
-    </svg>
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
 );
+
 const XIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-    </svg>
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
 );
+
 const ClipboardCheckIcon = () => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
-        <rect x="9" y="3" width="6" height="4" rx="2"/>
-        <path d="m9 12 2 2 4-4"/>
-    </svg>
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+    <rect x="9" y="3" width="6" height="4" rx="2" />
+    <path d="m9 12 2 2 4-4" />
+  </svg>
 );
+
 const ClockIcon = () => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10"/>
-        <polyline points="12 6 12 12 16 14"/>
-    </svg>
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
 );
+
 const CheckCircleIcon = () => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-        <polyline points="22 4 12 14.01 9 11.01"/>
-    </svg>
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
+  </svg>
 );
+
 const AlertCircleIcon = () => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="8" x2="12" y2="12"/>
-        <line x1="12" y1="16" x2="12.01" y2="16"/>
-    </svg>
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
 );
+
 const SparkleIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
-    </svg>
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
+  </svg>
 );
+
 const EyeIcon = () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-        <circle cx="12" cy="12" r="3"/>
-    </svg>
+  <svg
+    width="15"
+    height="15"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
 );
+
 const ArrowLeftIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-    </svg>
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="19" y1="12" x2="5" y2="12" />
+    <polyline points="12 19 5 12 12 5" />
+  </svg>
 );
-
-
-
 
 const statutBadge = (s) => {
-    if (s === "process") return <span className="badge purple">En traitement</span>;
-    if (s === "done")    return <span className="badge green">Document généré</span>;
-    if (s === "refused") return <span className="badge red">Rejetée</span>;
-    return <span className="badge gray">En attente</span>;
+  if (s === "process") return <span className="badge purple">En traitement</span>;
+  if (s === "done") return <span className="badge green">Document généré</span>;
+  if (s === "refused") return <span className="badge red">Rejetée</span>;
+  return <span className="badge gray">En attente</span>;
 };
 
 // ── PIECE STATE initial ─────────────────────────────────────
 const defaultPieces = [
-    { id: "cip",      name: "Carte d'Identification Personnelle (CIP)", num: "Pièce 1/2", status: null, comment: "" },
-    { id: "quittance", name: "Quittance de paiement",                   num: "Pièce 2/2", status: null, comment: "" },
+  {
+    id: "cip",
+    name: "Carte d'Identification Personnelle (CIP)",
+    num: "Pièce 1/2",
+    status: null,
+    comment: "",
+    fileName: "",
+    url: "",
+  },
+  {
+    id: "quittance",
+    name: "Quittance de paiement",
+    num: "Pièce 2/2",
+    status: null,
+    comment: "",
+    fileName: "",
+    url: "",
+  },
 ];
 
 // ── COMPOSANT PRINCIPAL ────────────────────────────────────
@@ -435,8 +593,17 @@ export default function ChefDivisionExamens() {
   const [generatedRef, setGeneratedRef] = useState("");
   const [pieceBusy, setPieceBusy] = useState(null); // id pièce en cours
   const [preview, setPreview] = useState(null); // { url, name }
+  const [genBusy, setGenBusy] = useState(false);
 
   const [demandes, setDemandes] = useState([]);
+
+  // 🔥 STATE STATS
+  const [stats, setStats] = useState({
+    aTraiter: 0,
+    enTraitement: 0,
+    generes: 0,
+    rejetees: 0,
+  });
 
   useEffect(() => {
     chargerDemandes();
@@ -446,21 +613,13 @@ export default function ChefDivisionExamens() {
   const chargerDemandes = async () => {
     try {
       const data = await getDemandes();
-      const list = Array.isArray(data) ? data : (data?.demandes ?? []);
+      const list = Array.isArray(data) ? data : data?.demandes ?? [];
       setDemandes(list);
     } catch (e) {
       console.error(e);
       setDemandes([]);
     }
   };
-
-  // 🔥 STATE STATS
-  const [stats, setStats] = useState({
-    aTraiter: 0,
-    enTraitement: 0,
-    generes: 0,
-    rejetees: 0
-  });
 
   // 🔥 Charger les stats depuis le backend
   const chargerStats = async () => {
@@ -469,321 +628,463 @@ export default function ChefDivisionExamens() {
       setStats(data ?? { aTraiter: 0, enTraitement: 0, generes: 0, rejetees: 0 });
     } catch (e) {
       console.error(e);
+      setStats({ aTraiter: 0, enTraitement: 0, generes: 0, rejetees: 0 });
     }
   };
 
   const openTraitement = async (d) => {
-        try {
-            const full = await getDemandeById(d.id);
-            setSelected(full);
+    try {
+      const full = await getDemandeById(d.id);
+      setSelected(full);
 
-            setPieces(
-            (full.pieces || []).map((p) => ({
-                id: p.id,
-                name: p.typePiece,         // ex: CIP
-                fileName: p.nom,           // nom original
-                url: p.url,                // ex: uploads\xxxx.pdf ou uploads/xxxx.pdf
-                status:
-                p.statut === "VALIDEE" ? "valid" :
-                p.statut === "REJETEE" ? "reject" :
-                null,
-                comment: p.commentaire || ""
-            }))
-            );
+      const mapped = (full?.pieces || []).map((p, idx) => ({
+        id: p.id,
+        name: p.typePiece, // ex: CIP
+        fileName: p.nom, // nom original
+        url: p.url, // uploads\xxxx.pdf ou uploads/xxxx.pdf
+        num: `Pièce ${idx + 1}/${(full?.pieces || []).length || 1}`,
+        status: p.statut === "VALIDEE" ? "valid" : p.statut === "REJETEE" ? "reject" : null,
+        comment: p.commentaire || "",
+      }));
 
-            setView("traitement");
-        } catch (e) {
-            console.error(e);
-        }
-    };
+      setPieces(mapped.length ? mapped : defaultPieces);
+      setGlobalComment(full?.commentaireChefDivision || "");
+      setMotif("");
+      setMotifError("");
+      setModal(null);
+      setPreview(null);
+
+      setView("traitement");
+    } catch (e) {
+      console.error(e);
+      alert("Impossible d’ouvrir le dossier (API getDemandeById).");
+    }
+  };
 
   // ✅ Preview (Consulter)
-    const API_BASE = "http://localhost:5000";
+  const API_BASE =
+    (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE) ||
+    (typeof process !== "undefined" && process.env?.REACT_APP_API_BASE) ||
+    "http://localhost:5000";
 
-    const openPreview = (piece) => {
+  const openPreview = (piece) => {
     const raw = piece?.url || "";
-        if (!raw) {
-            alert("Fichier introuvable (url vide).");
-            return;
+    if (!raw) {
+      alert("Fichier introuvable (url vide).");
+      return;
     }
 
-    const safe = raw.replaceAll("\\", "/"); // windows -> URL
+    const safe = String(raw).replace(/\\/g, "/");
     const fullUrl = `${API_BASE}/${safe.startsWith("/") ? safe.slice(1) : safe}`;
 
     setPreview({
-        url: fullUrl,
-        name: piece.fileName || piece.name || "Document"
+      url: encodeURI(fullUrl),
+      name: piece.fileName || piece.name || "Document",
     });
-    };
+  };
 
-    const closePreview = () => setPreview(null);
+  const closePreview = () => setPreview(null);
+
+  const setPieceComment = (id, comment) => {
+    setPieces((prev) => prev.map((p) => (p.id === id ? { ...p, comment } : p)));
+  };
 
   const setPieceStatus = async (id, status) => {
-    // 🔥 Si rejet => commentaire obligatoire (sinon ça fait comme "rien ne marche")
-    if (status === "reject") {
-      const c = pieces.find(p => p.id === id)?.comment || "";
-      if (c.trim().length < 5) {
-        alert("Motif obligatoire (au moins 5 caractères) pour rejeter une pièce.");
-        return;
-      }
+    // commentaire récupéré AVANT les setState (évite “stale state”)
+    const current = pieces.find((p) => p.id === id);
+    const comment = (current?.comment || "").trim();
+
+    // 🔥 Si rejet => commentaire obligatoire
+    if (status === "reject" && comment.length < 5) {
+      alert("Motif obligatoire (au moins 5 caractères) pour rejeter une pièce.");
+      return;
     }
 
-    // ✅ Update UI immédiat (le bouton reste actif direct)
-    setPieces(prev => prev.map(p => (p.id === id ? { ...p, status } : p)));
+    // ✅ Update UI immédiat
+    setPieces((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
     setPieceBusy(id);
 
     try {
-      await validerPiece(
-        id,
-        status === "valid" ? "VALIDEE" : "REJETEE",
-        pieces.find(p => p.id === id)?.comment || ""
-      );
+      await validerPiece(id, status === "valid" ? "VALIDEE" : "REJETEE", comment);
     } catch (e) {
       console.error(e);
       // ❌ Revert si erreur API
-      setPieces(prev => prev.map(p => (p.id === id ? { ...p, status: null } : p)));
+      setPieces((prev) => prev.map((p) => (p.id === id ? { ...p, status: null } : p)));
       alert("Échec validation. Vérifie l’API / endpoint.");
     } finally {
       setPieceBusy(null);
     }
   };
 
-  const setPieceComment = (id, comment) => {
-    setPieces(prev => prev.map(p => p.id === id ? { ...p, comment } : p));
-  };
-
-  const allValidated = pieces.every(p => p.status === "valid");
-  const anyRejected = pieces.some(p => p.status === "reject");
-  const allDecided = pieces.every(p => p.status !== null);
+  const allValidated = useMemo(() => pieces.every((p) => p.status === "valid"), [pieces]);
+  const anyRejected = useMemo(() => pieces.some((p) => p.status === "reject"), [pieces]);
+  const allDecided = useMemo(() => pieces.every((p) => p.status !== null), [pieces]);
 
   const handleGenerate = async () => {
+    if (!selected?.id) return;
+
     try {
+      setGenBusy(true);
       await avancerDemande(selected.id, "GENERER_DOCUMENT");
-      await chargerDemandes();
+      await Promise.all([chargerDemandes(), chargerStats()]);
       setModal(null);
       setView("dashboard");
     } catch (e) {
-      alert(e.message);
+      console.error(e);
+      alert(e?.message || "Erreur lors de la génération");
+    } finally {
+      setGenBusy(false);
     }
   };
 
   const handleReject = async () => {
+    if (!selected?.id) return;
+
     if (motif.trim().length < 20) {
       setMotifError("Le motif doit contenir au moins 20 caractères.");
       return;
     }
 
     try {
+      setGenBusy(true);
       await avancerDemande(selected.id, "REJETER", motif);
-      await chargerDemandes();
+      await Promise.all([chargerDemandes(), chargerStats()]);
       setModal(null);
       setView("dashboard");
     } catch (e) {
-      alert(e.message);
+      console.error(e);
+      alert(e?.message || "Erreur lors du rejet");
+    } finally {
+      setGenBusy(false);
     }
   };
 
-  // ── DASHBOARD ─────────────────────────────────────────────
-  if (view === "dashboard") return (
-    <>
-      <style>{styles}</style>
-      <div className="layout">
-        <Sidebar />
-        <main className="main">
-          <Topbar title="Chef de Division des Examens — IFRI" name="Serge DOSSOU" initials="SD" />
-          <div className="content">
-            <div className="page-header">
-              <div>
-                <h1 className="page-title">Tableau de bord — Division des Examens</h1>
-                <p className="page-subtitle">Vérifiez et validez les dossiers de relevés de notes.</p>
-              </div>
-              <button className="actualiser-btn" onClick={() => { chargerDemandes(); chargerStats(); }}>Actualiser</button>
-            </div>
+  const logout = () => {
+    try {
+      localStorage.removeItem("etudocs_token");
+      localStorage.removeItem("token");
+      localStorage.removeItem("etudocs_user");
+    } catch {}
+    window.location.href = "/login";
+  };
 
-            {/* Stats */}
-            <div className="stats-grid">
-              {[
-                { icon: <ClockIcon />, cls: "pending", val: stats.aTraiter, label: "À traiter" },
-                { icon: <ClipboardCheckIcon />, cls: "process", val: stats.enTraitement, label: "En traitement" },
-                { icon: <CheckCircleIcon />, cls: "done", val: stats.generes, label: "Générés (mois)" },
-                { icon: <AlertCircleIcon />, cls: "refused", val: stats.rejetees, label: "Rejetées" },
-              ].map(s => (
-                <div className="stat-card" key={s.label}>
-                  <div className={`stat-icon ${s.cls}`}>{s.icon}</div>
-                  <div>
-                    <div className="stat-value">{s.val}</div>
-                    <div className="stat-label">{s.label}</div>
+  // ── DASHBOARD ─────────────────────────────────────────────
+  if (view === "dashboard")
+    return (
+      <>
+        <style>{styles}</style>
+        <div className="layout">
+          <Sidebar onLogout={logout} />
+          <main className="main">
+            <Topbar title="Chef de Division des Examens — IFRI" name="Serge DOSSOU" initials="SD" />
+            <div className="content">
+              <div className="page-header">
+                <div>
+                  <h1 className="page-title">Tableau de bord — Division des Examens</h1>
+                  <p className="page-subtitle">Vérifiez et validez les dossiers de relevés de notes.</p>
+                </div>
+                <button
+                  className="actualiser-btn"
+                  onClick={() => {
+                    chargerDemandes();
+                    chargerStats();
+                  }}
+                >
+                  Actualiser
+                </button>
+              </div>
+
+              {/* Stats */}
+              <div className="stats-grid">
+                {[
+                  { icon: <ClockIcon />, cls: "pending", val: stats.aTraiter, label: "À traiter" },
+                  { icon: <ClipboardCheckIcon />, cls: "process", val: stats.enTraitement, label: "En traitement" },
+                  { icon: <CheckCircleIcon />, cls: "done", val: stats.generes, label: "Générés (mois)" },
+                  { icon: <AlertCircleIcon />, cls: "refused", val: stats.rejetees, label: "Rejetées" },
+                ].map((s) => (
+                  <div className="stat-card" key={s.label}>
+                    <div className={`stat-icon ${s.cls}`}>{s.icon}</div>
+                    <div>
+                      <div className="stat-value">{s.val}</div>
+                      <div className="stat-label">{s.label}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Table */}
+              <div className="table-card">
+                <div className="table-header">
+                  <div className="table-title">
+                    Demandes en attente de traitement
+                    <span className="badge-count">{demandes.length}</span>
+                  </div>
+                  <div className="search-box">
+                    <span className="search-icon-wrap">
+                      <SearchIcon />
+                    </span>
+                    <input
+                      className="search-input"
+                      placeholder="Rechercher..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
-
-            {/* Table */}
-            <div className="table-card">
-              <div className="table-header">
-                <div className="table-title">
-                  Demandes en attente de traitement
-                  <span className="badge-count">{demandes.length}</span>
-                </div>
-                <div className="search-box">
-                  <span className="search-icon-wrap"><SearchIcon /></span>
-                  <input className="search-input" placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} />
-                </div>
-              </div>
-              <div className="table-divider" />
-              <div className="table-wrapper">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Référence</th>
-                      <th>Étudiant</th>
-                      <th>Document</th>
-                      <th>Date soumission</th>
-                      <th>Délai écoulé</th>
-                      <th>Statut</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {demandes.filter(d => {
-                      const etu = ((d?.etudiant ?? "") + "").toLowerCase();
-                      const ref = (d?.ref ?? "") + "";
-                      const q = (search ?? "").toLowerCase();
-                      return !search || etu.includes(q) || ref.includes(search);
-                    }).map(d => (
-                      <tr key={d.id ?? d.ref}>
-                        <td><span className="td-ref">{d.ref}</span></td>
-                        <td>
-                          <div className="td-student">{d.etudiant}</div>
-                          <div className="td-sub">N° {d.num} — {d.filiere}</div>
-                        </td>
-                        <td style={{ fontSize: 13 }}>{d.type}</td>
-                        <td style={{ fontSize: 13, color: "var(--text-muted)" }}>
-                          {d.date || (d.createdAt ? new Date(d.createdAt).toLocaleDateString() : "-")}
-                        </td>
-                        <td><span className={`td-delay ${d.urgent ? "urgent" : "ok"}`}>{d.delai} {d.urgent && "⚠"}</span></td>
-                        <td>{statutBadge(d.statut)}</td>
-                        <td>
-                          <button className="btn-action primary" onClick={() => openTraitement(d)}>
-                            <EyeIcon /> Traiter le dossier
-                          </button>
-                        </td>
+                <div className="table-divider" />
+                <div className="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Référence</th>
+                        <th>Étudiant</th>
+                        <th>Document</th>
+                        <th>Date soumission</th>
+                        <th>Délai écoulé</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {demandes
+                        .filter((d) => {
+                          const q = (search ?? "").trim().toLowerCase();
+                          if (!q) return true;
+
+                          const etu = String(d?.etudiant ?? "").toLowerCase();
+                          const ref = String(d?.ref ?? "").toLowerCase();
+                          const fil = String(d?.filiere ?? "").toLowerCase();
+                          const num = String(d?.num ?? "").toLowerCase();
+
+                          return etu.includes(q) || ref.includes(q) || fil.includes(q) || num.includes(q);
+                        })
+                        .map((d) => (
+                          <tr key={d.id ?? d.ref}>
+                            <td>
+                              <span className="td-ref">{d.ref}</span>
+                            </td>
+                            <td>
+                              <div className="td-student">{d.etudiant}</div>
+                              <div className="td-sub">
+                                N° {d.num} — {d.filiere}
+                              </div>
+                            </td>
+                            <td style={{ fontSize: 13 }}>{d.type}</td>
+                            <td style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                              {d.date || (d.createdAt ? new Date(d.createdAt).toLocaleDateString() : "-")}
+                            </td>
+                            <td>
+                              <span className={`td-delay ${d.urgent ? "urgent" : "ok"}`}>
+                                {d.delai} {d.urgent && "⚠"}
+                              </span>
+                            </td>
+                            <td>{statutBadge(d.statut)}</td>
+                            <td>
+                              <button className="btn-action primary" onClick={() => openTraitement(d)}>
+                                <EyeIcon /> Traiter le dossier
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-
-          </div>
-        </main>
-      </div>
-    </>
-  );
+          </main>
+        </div>
+      </>
+    );
 
   // ── SUCCESS STATE ──────────────────────────────────────────
-  if (view === "success") return (
-    <>
-      <style>{styles}</style>
-      <div className="layout">
-        <Sidebar />
-        <main className="main">
-          <Topbar title="Chef de Division des Examens — IFRI" name="Serge DOSSOU" initials="SD" />
-          <div className="content" style={{ maxWidth: 640, margin: "60px auto" }}>
-            <div className="success-card">
-              <div className="success-icon">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </div>
-              <div className="success-title">Document généré avec succès !</div>
-              <div className="success-sub">Le relevé de notes a été généré automatiquement depuis les données académiques de l'étudiant.</div>
-              <div className="success-ref-box">
-                <div className="success-ref-label">Référence générée</div>
-                <div className="success-ref">{generatedRef}</div>
-              </div>
-              <div className="success-note">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
-                </svg>
-                Le Directeur Adjoint a été notifié pour approbation.
-              </div>
-              <div className="success-actions">
-                <button className="btn-action outline" style={{ padding: "10px 24px", fontSize: 14 }} onClick={() => setView("dashboard")}>
-                  <ArrowLeftIcon /> Retour au tableau de bord
-                </button>
-                <button className="btn-action primary" style={{ padding: "10px 24px", fontSize: 14 }}>
-                  <EyeIcon /> Aperçu du document
-                </button>
+  if (view === "success")
+    return (
+      <>
+        <style>{styles}</style>
+        <div className="layout">
+          <Sidebar onLogout={logout} />
+          <main className="main">
+            <Topbar title="Chef de Division des Examens — IFRI" name="Serge DOSSOU" initials="SD" />
+            <div className="content" style={{ maxWidth: 640, margin: "60px auto" }}>
+              <div className="success-card">
+                <div className="success-icon">
+                  <svg
+                    width="36"
+                    height="36"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#10b981"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+                <div className="success-title">Document généré avec succès !</div>
+                <div className="success-sub">
+                  Le relevé de notes a été généré automatiquement depuis les données académiques de l'étudiant.
+                </div>
+                <div className="success-ref-box">
+                  <div className="success-ref-label">Référence générée</div>
+                  <div className="success-ref">{generatedRef}</div>
+                </div>
+                <div className="success-note">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#10b981"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  Le Directeur Adjoint a été notifié pour approbation.
+                </div>
+                <div className="success-actions">
+                  <button
+                    className="btn-action outline"
+                    style={{ padding: "10px 24px", fontSize: 14 }}
+                    onClick={() => setView("dashboard")}
+                  >
+                    <ArrowLeftIcon /> Retour au tableau de bord
+                  </button>
+                  <button className="btn-action primary" style={{ padding: "10px 24px", fontSize: 14 }}>
+                    <EyeIcon /> Aperçu du document
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </main>
-      </div>
-    </>
-  );
+          </main>
+        </div>
+      </>
+    );
 
   // ── TRAITEMENT ─────────────────────────────────────────────
   return (
     <>
       <style>{styles}</style>
       <div className="layout">
-        <Sidebar />
+        <Sidebar onLogout={logout} />
         <main className="main">
           <Topbar title="Chef de Division des Examens — IFRI" name="Serge DOSSOU" initials="SD" />
           <div className="content">
-
             {/* Back + header */}
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
-              <button className="btn-action outline" onClick={() => setView("dashboard")} style={{ padding: "8px 14px" }}>
+              <button
+                className="btn-action outline"
+                onClick={() => {
+                  setView("dashboard");
+                  setSelected(null);
+                  setPieces(defaultPieces);
+                  setModal(null);
+                  setPreview(null);
+                }}
+                style={{ padding: "8px 14px" }}
+              >
                 <ArrowLeftIcon /> Retour
               </button>
               <div>
-                <h1 className="page-title" style={{ fontSize: 22 }}>Traitement du dossier</h1>
-                <span className="td-ref" style={{ fontSize: 13 }}>{selected?.ref}</span>
+                <h1 className="page-title" style={{ fontSize: 22 }}>
+                  Traitement du dossier
+                </h1>
+                <span className="td-ref" style={{ fontSize: 13 }}>
+                  {selected?.ref}
+                </span>
               </div>
             </div>
 
             <div className="traitement-layout">
-
               {/* ── PANNEAU GAUCHE — Infos étudiant ── */}
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div className="panel">
-                  <div className="panel-header"><div className="panel-title">Informations étudiant</div></div>
+                  <div className="panel-header">
+                    <div className="panel-title">Informations étudiant</div>
+                  </div>
                   <div className="panel-body">
-                    <div className="info-row"><div className="info-label">Nom complet</div><div className="info-value">{selected?.etudiant}</div></div>
-                    <div className="info-row"><div className="info-label">N° Étudiant</div><div className="info-value">{selected?.num}</div></div>
-                    <div className="info-row"><div className="info-label">Filière / Niveau</div><div className="info-value">{selected?.filiere}</div></div>
-                    <div className="info-row"><div className="info-label">Institution</div><div className="info-value">IFRI — UAC</div></div>
+                    <div className="info-row">
+                      <div className="info-label">Nom complet</div>
+                      <div className="info-value">{selected?.etudiant}</div>
+                    </div>
+                    <div className="info-row">
+                      <div className="info-label">N° Étudiant</div>
+                      <div className="info-value">{selected?.num}</div>
+                    </div>
+                    <div className="info-row">
+                      <div className="info-label">Filière / Niveau</div>
+                      <div className="info-value">{selected?.filiere}</div>
+                    </div>
+                    <div className="info-row">
+                      <div className="info-label">Institution</div>
+                      <div className="info-value">IFRI — UAC</div>
+                    </div>
                     <div className="divider-h" />
-                    <div className="info-row"><div className="info-label">Type de document</div>
+                    <div className="info-row">
+                      <div className="info-label">Type de document</div>
                       <div className="doc-type-pill">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                        </svg>
                         Relevé de notes
                       </div>
                     </div>
                     <div className="info-row">
                       <div className="info-label">Semestre</div>
                       <div className="sem-pills">
-                        <span className={`sem-pill ${((selected?.type ?? "") + "").includes("S2") ? "inactive" : "active"}`}>Semestre 1</span>
-                        <span className={`sem-pill ${((selected?.type ?? "") + "").includes("S2") ? "active" : "inactive"}`}>Semestre 2</span>
+                        <span
+                          className={`sem-pill ${
+                            String(selected?.type ?? "").includes("S2") ? "inactive" : "active"
+                          }`}
+                        >
+                          Semestre 1
+                        </span>
+                        <span
+                          className={`sem-pill ${
+                            String(selected?.type ?? "").includes("S2") ? "active" : "inactive"
+                          }`}
+                        >
+                          Semestre 2
+                        </span>
                       </div>
                     </div>
                     <div className="divider-h" />
-                    <div className="info-row"><div className="info-label">Date de soumission</div><div className="info-value">{selected?.date}</div></div>
-                    <div className="info-row"><div className="info-label">Référence</div><div className="info-value mono">{selected?.ref}</div></div>
+                    <div className="info-row">
+                      <div className="info-label">Date de soumission</div>
+                      <div className="info-value">{selected?.date}</div>
+                    </div>
+                    <div className="info-row">
+                      <div className="info-label">Référence</div>
+                      <div className="info-value mono">{selected?.ref}</div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Timeline */}
+                {/* Timeline (actuellement statique, mais propre) */}
                 <div className="panel">
-                  <div className="panel-header"><div className="panel-title">Parcours de la demande</div></div>
+                  <div className="panel-header">
+                    <div className="panel-title">Parcours de la demande</div>
+                  </div>
                   <div className="panel-body">
                     <div className="timeline">
                       {[
-                        { label: "Soumise par l'étudiant", time: "10/01 à 08h14", st: "done" },
-                        { label: "Reçue — Secrétaire Adjoint", time: "10/01 à 09h02", st: "done" },
-                        { label: "Transmise — Secrétaire Général", time: "10/01 à 10h30", st: "done" },
+                        { label: "Soumise par l'étudiant", time: "—", st: "done" },
+                        { label: "Reçue — Secrétaire Adjoint", time: "—", st: "done" },
+                        { label: "Transmise — Secrétaire Général", time: "—", st: "done" },
                         { label: "En traitement — Chef de Division", time: "En cours", st: "active" },
                         { label: "En attente de signature — Dir. Adj.", time: "—", st: "todo" },
                         { label: "Signature finale — Directeur", time: "—", st: "todo" },
@@ -807,8 +1108,12 @@ export default function ChefDivisionExamens() {
               {/* ── CENTRE — Visionneuse pièces ── */}
               <div>
                 <div style={{ marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: "var(--navy)" }}>Vérification des pièces justificatives</div>
-                  <span className="badge blue">{pieces.filter(p => p.status === "valid").length}/{pieces.length} pièces validées</span>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: "var(--navy)" }}>
+                    Vérification des pièces justificatives
+                  </div>
+                  <span className="badge blue">
+                    {pieces.filter((p) => p.status === "valid").length}/{pieces.length} pièces validées
+                  </span>
                 </div>
 
                 {pieces.map((piece) => (
@@ -819,8 +1124,16 @@ export default function ChefDivisionExamens() {
                         {piece.name}
                         <span className="piece-num">{piece.num || ""}</span>
                       </div>
-                      {piece.status === "valid" && <span className="badge green"><CheckIcon /> Validée</span>}
-                      {piece.status === "reject" && <span className="badge red"><XIcon /> Rejetée</span>}
+                      {piece.status === "valid" && (
+                        <span className="badge green">
+                          <CheckIcon /> Validée
+                        </span>
+                      )}
+                      {piece.status === "reject" && (
+                        <span className="badge red">
+                          <XIcon /> Rejetée
+                        </span>
+                      )}
                       {piece.status === null && <span className="badge gray">En attente de décision</span>}
                     </div>
 
@@ -862,11 +1175,13 @@ export default function ChefDivisionExamens() {
                       <textarea
                         className="piece-comment-area"
                         rows={2}
-                        placeholder={piece.status === "reject"
-                          ? "Motif du rejet de cette pièce (obligatoire)..."
-                          : "Commentaire optionnel sur cette pièce..."}
-                        value={piece.comment}
-                        onChange={e => setPieceComment(piece.id, e.target.value)}
+                        placeholder={
+                          piece.status === "reject"
+                            ? "Motif du rejet de cette pièce (obligatoire)..."
+                            : "Commentaire optionnel sur cette pièce..."
+                        }
+                        value={piece.comment || ""}
+                        onChange={(e) => setPieceComment(piece.id, e.target.value)}
                       />
                     </div>
                   </div>
@@ -879,7 +1194,10 @@ export default function ChefDivisionExamens() {
                 )}
 
                 {anyRejected && !allValidated && (
-                  <div className="info-box" style={{ background: "#fef2f2", color: "#991b1b", border: "1px solid #fca5a5", marginTop: 8 }}>
+                  <div
+                    className="info-box"
+                    style={{ background: "#fef2f2", color: "#991b1b", border: "1px solid #fca5a5", marginTop: 8 }}
+                  >
                     <strong>⚠ Une ou plusieurs pièces ont été rejetées.</strong> Vous devrez rejeter la demande avec un motif explicatif.
                   </div>
                 )}
@@ -888,21 +1206,39 @@ export default function ChefDivisionExamens() {
               {/* ── PANNEAU DROIT — Checklist + Actions ── */}
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div className="panel">
-                  <div className="panel-header"><div className="panel-title">Récapitulatif de validation</div></div>
+                  <div className="panel-header">
+                    <div className="panel-title">Récapitulatif de validation</div>
+                  </div>
                   <div className="panel-body">
                     <div className="checklist">
-                      {pieces.map(p => (
+                      {pieces.map((p) => (
                         <div
                           key={p.id}
-                          className={`check-item ${p.status === "valid" ? "valid-state" : p.status === "reject" ? "reject-state" : "pending-state"}`}
-                        >
-                          <div className="check-name">{p.id === "cip" ? "CIP" : "Quittance"}</div>
-                          <div className={`check-status ${p.status === "valid" ? "v" : p.status === "reject" ? "r" : "p"}`}>
-                            {p.status === "valid"
-                              ? <><CheckIcon /> Validée</>
+                          className={`check-item ${
+                            p.status === "valid"
+                              ? "valid-state"
                               : p.status === "reject"
-                                ? <><XIcon /> Rejetée</>
-                                : "— En attente"}
+                              ? "reject-state"
+                              : "pending-state"
+                          }`}
+                        >
+                          <div className="check-name">{p.name || (p.id === "cip" ? "CIP" : "Quittance")}</div>
+                          <div
+                            className={`check-status ${
+                              p.status === "valid" ? "v" : p.status === "reject" ? "r" : "p"
+                            }`}
+                          >
+                            {p.status === "valid" ? (
+                              <>
+                                <CheckIcon /> Validée
+                              </>
+                            ) : p.status === "reject" ? (
+                              <>
+                                <XIcon /> Rejetée
+                              </>
+                            ) : (
+                              "— En attente"
+                            )}
                           </div>
                         </div>
                       ))}
@@ -915,13 +1251,15 @@ export default function ChefDivisionExamens() {
                       rows={3}
                       placeholder="Commentaire général sur ce dossier (optionnel)..."
                       value={globalComment}
-                      onChange={e => setGlobalComment(e.target.value)}
+                      onChange={(e) => setGlobalComment(e.target.value)}
                     />
                   </div>
                 </div>
 
                 <div className="panel">
-                  <div className="panel-header"><div className="panel-title">Actions disponibles</div></div>
+                  <div className="panel-header">
+                    <div className="panel-title">Actions disponibles</div>
+                  </div>
                   <div className="panel-body">
                     <button className="btn-main generate" disabled={!allValidated} onClick={() => setModal("generate")}>
                       <SparkleIcon /> Valider et générer le document
@@ -929,8 +1267,13 @@ export default function ChefDivisionExamens() {
 
                     <button
                       className="btn-main reject-all"
-                      style={{ opacity: (!allDecided || !anyRejected) ? 0.4 : 1, cursor: (!allDecided || !anyRejected) ? "not-allowed" : "pointer" }}
-                      onClick={() => { if (allDecided && anyRejected) setModal("reject"); }}
+                      style={{
+                        opacity: !allDecided || !anyRejected ? 0.4 : 1,
+                        cursor: !allDecided || !anyRejected ? "not-allowed" : "pointer",
+                      }}
+                      onClick={() => {
+                        if (allDecided && anyRejected) setModal("reject");
+                      }}
                     >
                       <XIcon /> Rejeter la demande
                     </button>
@@ -948,7 +1291,6 @@ export default function ChefDivisionExamens() {
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
         </main>
@@ -962,12 +1304,20 @@ export default function ChefDivisionExamens() {
               <SparkleIcon /> Confirmer la génération
             </div>
             <div className="modal-body">
-              Vous allez déclencher la génération automatique du relevé de notes pour <strong>{selected?.etudiant}</strong> (<span className="modal-ref">{selected?.ref}</span>).<br /><br />
-              Le système va automatiquement récupérer les données académiques (notes, UE, crédits, résultats) et les injecter dans le template officiel de l'IFRI. <strong>Cette action est irréversible.</strong>
+              Vous allez déclencher la génération automatique du relevé de notes pour{" "}
+              <strong>{selected?.etudiant}</strong> (<span className="modal-ref">{selected?.ref}</span>).
+              <br />
+              <br />
+              Le système va automatiquement récupérer les données académiques (notes, UE, crédits, résultats) et les injecter
+              dans le template officiel de l'IFRI. <strong>Cette action est irréversible.</strong>
             </div>
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => setModal(null)}>Annuler</button>
-              <button className="modal-btn confirm-gen" onClick={handleGenerate}>✓ Confirmer la génération</button>
+              <button className="modal-btn cancel" onClick={() => setModal(null)} disabled={genBusy}>
+                Annuler
+              </button>
+              <button className="modal-btn confirm-gen" onClick={handleGenerate} disabled={genBusy}>
+                {genBusy ? "Génération en cours..." : "✓ Confirmer la génération"}
+              </button>
             </div>
           </div>
         </div>
@@ -981,22 +1331,41 @@ export default function ChefDivisionExamens() {
               <XIcon /> Rejeter la demande
             </div>
             <div className="modal-body">
-              Vous allez rejeter la demande <span className="modal-ref">{selected?.ref}</span> de <strong>{selected?.etudiant}</strong>.<br />
+              Vous allez rejeter la demande <span className="modal-ref">{selected?.ref}</span> de{" "}
+              <strong>{selected?.etudiant}</strong>.
+              <br />
               L'étudiant sera notifié par email avec le motif de rejet.
             </div>
-            <div className="comment-global-label">Motif de rejet <span style={{ color: "var(--danger)" }}>*</span></div>
+            <div className="comment-global-label">
+              Motif de rejet <span style={{ color: "var(--danger)" }}>*</span>
+            </div>
             <textarea
               className="motif-input"
               rows={4}
               placeholder="Expliquez précisément la raison du rejet (minimum 20 caractères)..."
               value={motif}
-              onChange={e => { setMotif(e.target.value); setMotifError(""); }}
+              onChange={(e) => {
+                setMotif(e.target.value);
+                setMotifError("");
+              }}
             />
             <div className="motif-count">{motif.length} / 20 caractères minimum</div>
             {motifError && <div className="motif-error">{motifError}</div>}
             <div className="modal-actions" style={{ marginTop: 20 }}>
-              <button className="modal-btn cancel" onClick={() => { setModal(null); setMotif(""); setMotifError(""); }}>Annuler</button>
-              <button className="modal-btn confirm-rej" onClick={handleReject}>✗ Confirmer le rejet</button>
+              <button
+                className="modal-btn cancel"
+                onClick={() => {
+                  setModal(null);
+                  setMotif("");
+                  setMotifError("");
+                }}
+                disabled={genBusy}
+              >
+                Annuler
+              </button>
+              <button className="modal-btn confirm-rej" onClick={handleReject} disabled={genBusy}>
+                {genBusy ? "Traitement..." : "✗ Confirmer le rejet"}
+              </button>
             </div>
           </div>
         </div>
@@ -1014,12 +1383,21 @@ export default function ChefDivisionExamens() {
               <EyeIcon /> {preview.name}
             </div>
 
-            <div style={{ height: "calc(85vh - 90px)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
+            <div
+              style={{
+                height: "calc(85vh - 90px)",
+                border: "1px solid var(--border)",
+                borderRadius: 12,
+                overflow: "hidden",
+              }}
+            >
               <iframe title="preview" src={preview.url} style={{ width: "100%", height: "100%", border: "none" }} />
             </div>
 
             <div className="modal-actions" style={{ marginTop: 14 }}>
-              <button className="modal-btn cancel" onClick={closePreview}>Fermer</button>
+              <button className="modal-btn cancel" onClick={closePreview}>
+                Fermer
+              </button>
             </div>
           </div>
         </div>
@@ -1029,43 +1407,47 @@ export default function ChefDivisionExamens() {
 }
 
 // ── Composants partagés ────────────────────────────────────
-function Sidebar() {
-    return (
-        <aside className="sidebar">
-            <div className="sidebar-logo">
-                <div className="logo-text">EtuDocs <span>Agent</span></div>
-            </div>
-            <nav className="sidebar-nav">
-                <button className="nav-item active">
-                    <span className="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>
-                    Tableau de bord
-                </button>
-            </nav>
-            <div className="sidebar-footer">
-                <button className="logout-btn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                    Déconnexion
-                </button>
-            </div>
-        </aside>
-    );
+function Sidebar({ onLogout }) {
+  return (
+    <aside className="sidebar">
+      <div className="sidebar-logo">
+        <div className="logo-text">
+          EtuDocs <span>Agent</span>
+        </div>
+      </div>
+      <nav className="sidebar-nav">
+        <button className="nav-item active" type="button">
+          <span className="nav-icon">
+            <GridIcon />
+          </span>
+          Tableau de bord
+        </button>
+      </nav>
+      <div className="sidebar-footer">
+        <button className="logout-btn" type="button" onClick={onLogout}>
+          <LogoutIcon />
+          Déconnexion
+        </button>
+      </div>
+    </aside>
+  );
 }
 
 function Topbar({ title, name, initials }) {
-    return (
-        <header className="topbar">
-            <div className="breadcrumb">{title}</div>
-            <div className="topbar-right">
-                <button className="notif-btn">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                    <span className="notif-dot" />
-                </button>
-                <div className="user-info">
-                    <div className="user-name">{name}</div>
-                    <div className="user-org">IFRI</div>
-                </div>
-                <div className="avatar">{initials}</div>
-            </div>
-        </header>
-    );
+  return (
+    <header className="topbar">
+      <div className="breadcrumb">{title}</div>
+      <div className="topbar-right">
+        <button className="notif-btn" type="button" aria-label="Notifications">
+          <BellIcon />
+          <span className="notif-dot" />
+        </button>
+        <div className="user-info">
+          <div className="user-name">{name}</div>
+          <div className="user-org">IFRI</div>
+        </div>
+        <div className="avatar">{initials}</div>
+      </div>
+    </header>
+  );
 }

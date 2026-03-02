@@ -206,8 +206,7 @@ export const downloadDocument = async (reference, filename) => {
   window.URL.revokeObjectURL(url);
 };
 
-// ⛔ Je déconseille la suppression auto (ça fait “perte de document”)
-// Mais je laisse l'API si tu en as besoin côté admin.
+
 export const deleteDocument = async (reference) =>
   apiRequest(`/api/documents/${reference}`, { method: "DELETE" });
 

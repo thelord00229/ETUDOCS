@@ -101,10 +101,7 @@ exports.getDemandes = async (user) => {
   } else if (role === "CHEF_DIVISION") {
     const chefService = normalizeService(service);
 
-    // ✅ CORRECTION : si service non configuré → bloque (sécurité)
-    // si service configuré → filtre strict sur serviceCible
-    // => Le chef EXAMENS ne voit que les RELEVE_NOTES
-    // => Le chef SCOLARITE ne voit que les ATTESTATION_INSCRIPTION
+    // ✅ SÉCURITÉ : si service non configuré → aucune donnée
     if (!chefService) {
       where = { id: "__NOPE__" };
     } else {
@@ -172,6 +169,109 @@ exports.getById = async (demandeId, user) => {
   return demande;
 };
 
+/**
+ * Génère les documents (PDF + QR) HORS transaction, puis écrit en DB dans une transaction courte.
+ * => évite "Transaction already closed" (timeout 5s).
+ */
+async function generateDocumentsOutsideTransaction({ demande, institutionId }) {
+  const { v4: uuidv4 } = require("uuid");
+  const pdfService = require("../../services/pdf.service");
+  const qrcodeService = require("../../services/qrcode.service");
+
+  // On lit hors tx (pas de tx interactive) => aucune limite 5s
+  const [institution, etudiant] = await Promise.all([
+    prisma.institution.findUnique({ where: { id: institutionId } }),
+    prisma.utilisateur.findUnique({ where: { id: demande.utilisateurId } }),
+  ]);
+
+  if (!institution) {
+    const err = new Error("Institution introuvable pour la génération.");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (!etudiant) {
+    const err = new Error("Étudiant introuvable pour la génération.");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const annee = new Date().getFullYear();
+  const sigle = institution?.sigle || "UAC";
+  const baseUrl = process.env.APP_URL || "http://localhost:5000";
+
+  const results = [];
+
+  // ✅ ATTESTATION D'INSCRIPTION → template dédié
+  if (demande.typeDocument === "ATTESTATION_INSCRIPTION") {
+    const reference = `ETD-${annee}-${sigle}-ATT-${String(demande.id)
+      .substring(0, 5)
+      .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
+    const qrData = `${baseUrl}/verify/${reference}`;
+
+    const pdfPath = await pdfService.generateAttestationInscription(
+      demande,
+      etudiant,
+      reference,
+      institution,
+      qrData
+    );
+
+    // QR (si ton service écrit un fichier ou autre)
+    await qrcodeService.generate(qrData, reference);
+
+    results.push({ reference, qrPayload: qrData, urlPdf: pdfPath });
+    return results;
+  }
+
+  // ✅ RELEVÉ DE NOTES → un PDF par semestre
+  if (demande.typeDocument === "RELEVE_NOTES") {
+    const semestres = demande.semestres?.length ? demande.semestres : [1];
+
+    for (const semestre of semestres) {
+      const reference = `ETD-${annee}-${sigle}-S${semestre}-${String(demande.id)
+        .substring(0, 5)
+        .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
+      const qrData = `${baseUrl}/verify/${reference}`;
+
+      const pdfPath = await pdfService.generateDocument(
+        { ...demande, semestre },
+        etudiant,
+        null,
+        reference,
+        institution,
+        qrData
+      );
+
+      await qrcodeService.generate(qrData, reference);
+
+      results.push({ reference, qrPayload: qrData, urlPdf: pdfPath });
+    }
+
+    return results;
+  }
+
+  // ✅ Autres types → template générique
+  const reference = `ETD-${annee}-${sigle}-${String(demande.id)
+    .substring(0, 5)
+    .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
+  const qrData = `${baseUrl}/verify/${reference}`;
+
+  const pdfPath = await pdfService.generateDocument(
+    demande,
+    etudiant,
+    null,
+    reference,
+    institution,
+    qrData
+  );
+
+  await qrcodeService.generate(qrData, reference);
+
+  results.push({ reference, qrPayload: qrData, urlPdf: pdfPath });
+  return results;
+}
+
 exports.avancer = async (demandeId, action, actorId, role, institutionId, commentaire) => {
   const demande = await prisma.demande.findUnique({
     where: { id: demandeId },
@@ -204,6 +304,58 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
     throw err;
   }
 
+  // 🔒 SÉCURITÉ : SA -> SG
+  if (
+    role === "SECRETAIRE_ADJOINT" &&
+    demande.statut === "SOUMISE" &&
+    action === "TRANSMETTRE"
+  ) {
+    const sg = await prisma.utilisateur.findFirst({
+      where: {
+        role: "SECRETAIRE_GENERAL",
+        institutionId: demande.institutionId,
+        actif: true,
+      },
+      select: { id: true },
+    });
+
+    if (!sg) {
+      const err = new Error(
+        "Impossible de transmettre : aucun Secrétaire général actif n'est configuré pour cette institution."
+      );
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+
+  // 🔒 SÉCURITÉ : SG -> Chef ciblé (EXAMENS/SCOLARITE)
+  if (
+    role === "SECRETAIRE_GENERAL" &&
+    demande.statut === "TRANSMISE_SECRETAIRE_ADJOINT" &&
+    action === "TRANSMETTRE"
+  ) {
+    const cible = normalizeService(demande.serviceCible);
+
+    const chef = await prisma.utilisateur.findFirst({
+      where: {
+        role: "CHEF_DIVISION",
+        institutionId: demande.institutionId,
+        actif: true,
+        service: cible,
+      },
+      select: { id: true, nom: true, prenom: true, service: true, actif: true },
+    });
+
+    if (!chef) {
+      const err = new Error(
+        `Impossible de transmettre : aucun Chef de division ${cible} actif n'est configuré pour cette institution.`
+      );
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+
+  // Contrôle pièces avant génération
   if (action === "GENERER_DOCUMENT") {
     const invalid = demande.pieces.some((p) => p.statut !== "VALIDEE");
     if (invalid) {
@@ -219,112 +371,36 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
     action,
   });
 
+  // ✅ 1) Génération HORS transaction (Puppeteer/QR peuvent prendre > 5s)
+  let generatedDocs = null;
+  if (action === "GENERER_DOCUMENT") {
+    generatedDocs = await generateDocumentsOutsideTransaction({ demande, institutionId });
+  }
+
+  // ✅ 2) Transaction DB courte : create Document(s) + update statut + historique
   const updated = await prisma.$transaction(async (tx) => {
-    if (action === "GENERER_DOCUMENT") {
-      const { v4: uuidv4 } = require("uuid");
-      const pdfService = require("../../services/pdf.service");
-      const qrcodeService = require("../../services/qrcode.service");
+    if (action === "GENERER_DOCUMENT" && Array.isArray(generatedDocs) && generatedDocs.length) {
+      // (Optionnel) Empêcher double génération si documents existent déjà
+      // Tu peux commenter si tu veux autoriser plusieurs générations.
+      const existingCount = await tx.document.count({ where: { demandeId: demande.id } });
+      if (existingCount > 0) {
+        const err = new Error("Documents déjà générés pour cette demande.");
+        err.statusCode = 400;
+        throw err;
+      }
 
-      const institution = await tx.institution.findUnique({
-        where: { id: institutionId },
-      });
-
-      const etudiant = await tx.utilisateur.findUnique({
-        where: { id: demande.utilisateurId },
-      });
-
-      const annee = new Date().getFullYear();
-      const sigle = institution?.sigle || "UAC";
-      const baseUrl = process.env.APP_URL || "http://localhost:5000";
-
-      // ✅ ATTESTATION D'INSCRIPTION → template dédié
-      if (demande.typeDocument === "ATTESTATION_INSCRIPTION") {
-        const reference = `ETD-${annee}-${sigle}-ATT-${String(demande.id)
-          .substring(0, 5)
-          .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
-        const qrData = `${baseUrl}/verify/${reference}`;
-
-        const pdfPath = await pdfService.generateAttestationInscription(
-          demande,
-          etudiant,
-          reference,
-          institution,
-          qrData
-        );
-
-        await qrcodeService.generate(qrData, reference);
-
+      for (const d of generatedDocs) {
         await tx.document.create({
           data: {
-            reference,
-            qrPayload: qrData,
-            urlPdf: pdfPath,
-            demandeId: demande.id,
-          },
-        });
-
-        // ✅ RELEVÉ DE NOTES → un PDF par semestre
-      } else if (demande.typeDocument === "RELEVE_NOTES") {
-        const semestres = demande.semestres?.length ? demande.semestres : [1];
-
-        for (const semestre of semestres) {
-          const reference = `ETD-${annee}-${sigle}-S${semestre}-${String(demande.id)
-            .substring(0, 5)
-            .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
-          const qrData = `${baseUrl}/verify/${reference}`;
-
-          const pdfPath = await pdfService.generateDocument(
-            { ...demande, semestre },
-            etudiant,
-            null,
-            reference,
-            institution,
-            qrData
-          );
-
-          await qrcodeService.generate(qrData, reference);
-
-          await tx.document.create({
-            data: {
-              reference,
-              qrPayload: qrData,
-              urlPdf: pdfPath,
-              demandeId: demande.id,
-            },
-          });
-        }
-
-        // ✅ Autres types → template générique
-      } else {
-        const reference = `ETD-${annee}-${sigle}-${String(demande.id)
-          .substring(0, 5)
-          .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
-        const qrData = `${baseUrl}/verify/${reference}`;
-
-        const pdfPath = await pdfService.generateDocument(
-          demande,
-          etudiant,
-          null,
-          reference,
-          institution,
-          qrData
-        );
-
-        await qrcodeService.generate(qrData, reference);
-
-        await tx.document.create({
-          data: {
-            reference,
-            qrPayload: qrData,
-            urlPdf: pdfPath,
+            reference: d.reference,
+            qrPayload: d.qrPayload,
+            urlPdf: d.urlPdf,
             demandeId: demande.id,
           },
         });
       }
     }
 
-    // ✅✅✅ PATCH EXACT OPTION A :
-    // deliveredAt doit être fixé exactement quand on passe à DISPONIBLE
     const dataUpdate = {
       statut: prochainStatut,
       historique: {
@@ -423,12 +499,20 @@ exports.getStatsChefDivision = async (user) => {
   const { institutionId, service } = user;
   const chefService = normalizeService(service);
 
-  // ✅ CORRECTION : même logique de filtrage que getDemandes
-  // Si service configuré → filtre strict sur serviceCible
-  // Si service non configuré → stats sur toute l'institution (cas dégradé)
+  // 🔒 SÉCURITÉ : si le chef n’a pas de service configuré
+  if (!chefService) {
+    return {
+      aTraiter: 0,
+      documentGenere: 0,
+      attenteDirecteur: 0,
+      disponibles: 0,
+      rejetees: 0,
+    };
+  }
+
   const baseFilter = {
     institutionId,
-    ...(chefService ? { serviceCible: chefService } : {}),
+    serviceCible: chefService,
   };
 
   const [aTraiter, rejetees, documentGenere, attenteDirecteur, disponibles] =

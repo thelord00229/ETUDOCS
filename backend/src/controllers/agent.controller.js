@@ -31,21 +31,36 @@ exports.getAgents = async (req, res) => {
    Crée un compte agent avec mot de passe par défaut.
 ───────────────────────────────────────────── */
 exports.createAgent = async (req, res) => {
-  const { nom, prenom, email, role, institutionId } = req.body;
+  const { nom, prenom, email, role, institutionId, service } = req.body;
 
   if (!nom || !prenom || !email || !role) {
-    return res.status(400).json({ message: "Champs obligatoires manquants (nom, prenom, email, role)" });
+    return res.status(400).json({
+      message: "Champs obligatoires manquants (nom, prenom, email, role)"
+    });
   }
 
   if (role === "SUPER_ADMIN") {
-    return res.status(403).json({ message: "Impossible de créer un compte SUPER_ADMIN via cette route" });
+    return res.status(403).json({
+      message: "Impossible de créer un SUPER_ADMIN ici"
+    });
+  }
+
+  // 🔥 Validation spéciale Chef Division
+  if (role === "CHEF_DIVISION" && !service) {
+    return res.status(400).json({
+      message: "Le service est obligatoire pour un Chef de division"
+    });
   }
 
   try {
-    // Vérifier doublon email
-    const existing = await prisma.utilisateur.findUnique({ where: { email } });
+    const existing = await prisma.utilisateur.findUnique({
+      where: { email }
+    });
+
     if (existing) {
-      return res.status(409).json({ message: "Un compte avec cet email existe déjà" });
+      return res.status(409).json({
+        message: "Un compte avec cet email existe déjà"
+      });
     }
 
     const hashedPassword = await bcrypt.hash(DEFAULT_PASSWORD, 10);
@@ -58,18 +73,25 @@ exports.createAgent = async (req, res) => {
         role,
         password: hashedPassword,
         actif: true,
-        ...(institutionId ? { institutionId } : {}),
+        institutionId: institutionId || null,
+        service: role === "CHEF_DIVISION" ? service : null,
       },
-      include: { institution: { select: { id: true, nom: true, sigle: true } } },
+      include: {
+        institution: {
+          select: { id: true, nom: true, sigle: true }
+        }
+      }
     });
 
-    // Envoi du mail de bienvenue avec les identifiants
     await sendWelcomeMail(agent, DEFAULT_PASSWORD);
 
     return res.status(201).json(agent);
+
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ message: "Erreur lors de la création du compte" });
+    return res.status(500).json({
+      message: "Erreur lors de la création du compte"
+    });
   }
 };
 

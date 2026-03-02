@@ -240,13 +240,30 @@ function ModalMail({ agent, onClose, onSend, loading }) {
 /* ─── Modal Ajouter un agent ─── */
 function ModalAddAgent({ onClose, onSubmit, loading }) {
   const [form, setForm] = useState({
-    nom: "", prenom: "", email: "", role: "", institutionId: "",
+    nom: "",
+    prenom: "",
+    email: "",
+    role: "",
+    institutionId: "",
+    service: "", // 👈 AJOUT
   });
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k, v) => {
+    setForm(f => ({
+      ...f,
+      [k]: v,
+      ...(k === "role" && v !== "CHEF_DIVISION" ? { service: "" } : {}),
+    }));
+  };
 
   const handleSubmit = () => {
     if (!form.nom || !form.prenom || !form.email || !form.role) return;
+
+    if (form.role === "CHEF_DIVISION" && !form.service) {
+      alert("Veuillez sélectionner le service du Chef de division");
+      return;
+    }
+
     onSubmit(form);
   };
 
@@ -255,43 +272,60 @@ function ModalAddAgent({ onClose, onSubmit, loading }) {
       <div className="modal-box" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
         <p className="modal-title">Ajouter un agent</p>
         <p className="modal-sub">
-          Le compte sera créé avec le mot de passe par défaut{" "}
-          <strong>Password123!</strong> que l'agent pourra modifier depuis son dashboard.
+          Mot de passe par défaut <strong>Password123!</strong>
         </p>
 
         <div className="form-grid">
           <div className="form-field">
             <label className="form-label">Prénom *</label>
-            <input className="form-input" placeholder="Prénom" value={form.prenom} onChange={e => set("prenom", e.target.value)} />
+            <input className="form-input" value={form.prenom} onChange={e => set("prenom", e.target.value)} />
           </div>
+
           <div className="form-field">
             <label className="form-label">Nom *</label>
-            <input className="form-input" placeholder="Nom" value={form.nom} onChange={e => set("nom", e.target.value)} />
+            <input className="form-input" value={form.nom} onChange={e => set("nom", e.target.value)} />
           </div>
+
           <div className="form-field full">
             <label className="form-label">Email *</label>
-            <input className="form-input" type="email" placeholder="exemple@institution.bj" value={form.email} onChange={e => set("email", e.target.value)} />
+            <input type="email" className="form-input" value={form.email} onChange={e => set("email", e.target.value)} />
           </div>
+
           <div className="form-field">
             <label className="form-label">Rôle *</label>
             <select className="form-select" value={form.role} onChange={e => set("role", e.target.value)}>
               <option value="">-- Choisir --</option>
-              {ROLES.map(r => <option key={r} value={r}>{r.replace(/_/g, " ")}</option>)}
+              {ROLES.map(r => (
+                <option key={r} value={r}>{r.replace(/_/g, " ")}</option>
+              ))}
             </select>
           </div>
+
           <div className="form-field">
             <label className="form-label">Institution</label>
-            <input className="form-input" placeholder="IFRI, EPAC, FSS…" value={form.institutionId} onChange={e => set("institutionId", e.target.value)} />
+            <input className="form-input" value={form.institutionId} onChange={e => set("institutionId", e.target.value)} />
           </div>
+
+          {/* 👇 SERVICE UNIQUEMENT POUR CHEF_DIVISION */}
+          {form.role === "CHEF_DIVISION" && (
+            <div className="form-field full">
+              <label className="form-label">Service *</label>
+              <select
+                className="form-select"
+                value={form.service}
+                onChange={e => set("service", e.target.value)}
+              >
+                <option value="">-- Choisir --</option>
+                <option value="EXAMENS">EXAMENS</option>
+                <option value="SCOLARITE">SCOLARITE</option>
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose} disabled={loading}>Annuler</button>
-          <button
-            className="btn-primary"
-            onClick={handleSubmit}
-            disabled={loading || !form.nom || !form.prenom || !form.email || !form.role}
-          >
+          <button className="btn-primary" onClick={handleSubmit} disabled={loading}>
             {loading ? "Création…" : "Créer le compte"}
           </button>
         </div>

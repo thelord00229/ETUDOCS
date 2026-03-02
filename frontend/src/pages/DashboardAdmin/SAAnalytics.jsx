@@ -96,6 +96,7 @@ const css = `
     border-radius: 16px;
     padding: 18px;
     box-shadow: 0 1px 0 rgba(15,23,42,.03);
+    height: 100%;
   }
   .sa-ana-kpi-top {
     display:flex; align-items:center; justify-content:space-between; gap:10px;
@@ -178,9 +179,9 @@ const css = `
   /* layout main */
   .sa-ana-main {
     display:grid;
-    grid-template-columns: 1fr 360px;
+    grid-template-columns: 1fr 340px;
     gap: 16px;
-    align-items: start;
+    align-items: stretch;
     margin-bottom: 16px;
   }
 
@@ -196,11 +197,18 @@ const css = `
     font-size: .88rem;
   }
 
+  .radar-card{
+    display:flex;
+    flex-direction:column;
+    height:100%;
+  }
+
   /* Heatmap table */
   .hm {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0 10px;
+    flex:1;
   }
   .hm th {
     text-align: left;
@@ -223,24 +231,25 @@ const css = `
     color: #0f172a;
   }
   .hm-cell {
-    border-radius: 12px;
+    border-radius: 10px;
     border: 1px solid #e2e8f0;
-    padding: 10px 12px;
-    min-width: 92px;
+    padding: 7px 10px;
+    min-width: 80px;
     position: relative;
-  }
+ }
   .hm-cell .v {
     font-family: 'Sora', sans-serif;
     font-weight: 900;
     color: #0f172a;
     display:flex; align-items:baseline; gap:6px;
+    font-size: .95rem;
   }
   .hm-cell .v small { color: #64748b; font-weight: 700; font-size: .8rem; }
   .hm-cell .p {
-    margin-top: 6px;
-    font-size: .78rem;
+    margin-top: 4px;
+    font-size: .75rem;
     color: #64748b;
-  }
+ }
   .hm-eff { background: rgba(22,163,74,.08); border-color: rgba(22,163,74,.18); }
   .hm-mod { background: rgba(245,158,11,.10); border-color: rgba(245,158,11,.22); }
   .hm-risk { background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.20); }
@@ -864,78 +873,84 @@ export default function SAAnalytics() {
 
       {/* Main: heatmap + right insights */}
       <div className="sa-ana-main">
-        <div className="sa-ana-card">
-          <h3 className="sa-ana-section-title">Radar des goulots</h3>
-          <p className="sa-ana-section-sub">Par étape (P90 = délai maximum “habituel”)</p>
+        <div className="sa-ana-card radar-card">
+            <h3 className="sa-ana-section-title">Radar des goulots</h3>
+            <p className="sa-ana-section-sub">
+                Temps maximum habituel observé par étape
+            </p>
 
-          <table className="hm" aria-label="Heatmap performance workflow">
-            <thead>
-              <tr>
-                <th>Institution</th>
-                {data.steps.map((s) => (
-                  <th key={s}>{s}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.institutions.map((ins) => (
-                <tr key={ins}>
-                  <td>
-                    <div className="inst">
-                      <span
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 10,
-                          border: "1px solid #e2e8f0",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          background: "#f8fafc",
-                          color: "#1d4ed8",
-                          fontWeight: 900,
-                        }}
-                      >
-                        {ins.slice(0, 2)}
-                      </span>
-                      {ins}
-                    </div>
-                  </td>
-
-                  {data.steps.map((s) => {
-                    const cell = data.heatmap[ins][s];
-                    return (
-                      <td key={s}>
-                        <div
-                          className={hmClass(cell.p90)}
-                          title={`${ins} ${s} — délai max habituel (P90) ${fmtH(cell.p90)} — ${cell.pending} en attente`}
-                        >
-                          <div className="v">
-                            {fmtH(cell.p90)} <small>Délai maximum habituel (P90)</small>
-                          </div>
-                          <div className="p">{cell.pending} en attente</div>
+            <div className="radar-content">
+                <table className="hm" aria-label="Heatmap performance workflow">
+                <thead>
+                    <tr>
+                    <th>Institution</th>
+                    {data.steps.map((s) => (
+                        <th key={s}>{s}</th>
+                    ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {data.institutions.map((ins) => (
+                    <tr key={ins}>
+                        <td>
+                        <div className="inst">
+                            <span
+                            style={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: 8,
+                                border: "1px solid #e2e8f0",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                background: "#f8fafc",
+                                color: "#1d4ed8",
+                                fontWeight: 900,
+                                fontSize: ".8rem"
+                            }}
+                            >
+                            {ins.slice(0, 2)}
+                            </span>
+                            {ins}
                         </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                        </td>
 
-          <div className="hm-legend" aria-label="Légende heatmap">
-            <span>
-              <i className="dot dot-eff" /> Rapide (&lt; 6h)
-            </span>
-            <span>
-              <i className="dot dot-mod" /> Moyen (6–12h)
-            </span>
-            <span>
-              <i className="dot dot-risk" /> Lent (&gt; 12h)
-            </span>
-          </div>
+                        {data.steps.map((s) => {
+                        const cell = data.heatmap[ins][s];
+                        return (
+                            <td key={s}>
+                            <div
+                                className={hmClass(cell.p90)}
+                                title={`${ins} ${s} — ${fmtH(cell.p90)} — ${cell.pending} en attente`}
+                            >
+                                <div className="v">
+                                {fmtH(cell.p90)}
+                                </div>
+                                <div className="p">
+                                {cell.pending} en attente
+                                </div>
+                            </div>
+                            </td>
+                        );
+                        })}
+                    </tr>
+                    ))}
+                </tbody>
+                </table>
+
+                <div className="hm-legend" aria-label="Légende heatmap">
+                <span>
+                    <i className="dot dot-eff" /> Traitement rapide (&lt; 6h)
+                </span>
+                <span>
+                    <i className="dot dot-mod" /> Traitement modéré (6–12h)
+                </span>
+                <span>
+                    <i className="dot dot-risk" /> Traitement lent (&gt; 12h)
+                </span>
+                </div>
+            </div>
         </div>
-
         <div className="sa-ana-card">
           <div className="ins-title">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

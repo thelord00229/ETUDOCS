@@ -1,3 +1,4 @@
+// frontend/src/components/DashboardEtudiant/DashboardLayout.jsx
 import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar.jsx";
 import TopBar from "./Topbar.jsx";
@@ -20,14 +21,19 @@ function getUser() {
   try {
     const raw = localStorage.getItem("etudocs_user") || sessionStorage.getItem("etudocs_user");
     return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
+  } catch {
+    return {};
+  }
 }
 
 const NOTIF_KEY = "etudocs_notifs_dismissed";
 
 function getDismissed() {
-  try { return JSON.parse(localStorage.getItem(NOTIF_KEY) || "[]"); }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(NOTIF_KEY) || "[]");
+  } catch {
+    return [];
+  }
 }
 
 function saveDismissed(ids) {
@@ -36,13 +42,16 @@ function saveDismissed(ids) {
 
 export default function DashboardLayout({ children }) {
   const user = getUser();
-  const prenom    = user.prenom || "";
-  const nom       = user.nom    || "";
-  const fullName  = `${prenom} ${nom}`.trim() || "Étudiant";
-  const matricule = user.matricule || user.email || "";
-  const filiere   = user.filiere || user.institution?.sigle || "IFRI";
-  const meta      = [matricule, filiere].filter(Boolean).join(" • ");
-  const initials  = `${prenom[0] || ""}${nom[0] || ""}`.toUpperCase() || "EU";
+  const prenom = user.prenom || "";
+  const nom = user.nom || "";
+  const fullName = `${prenom} ${nom}`.trim() || "Étudiant";
+
+  // ✅ source fiable
+  const email = user.email || "";
+  const initials = `${prenom[0] || ""}${nom[0] || ""}`.toUpperCase() || "EU";
+
+  // ✅ IMPORTANT : tu voulais plus afficher la filière à côté de l'email
+  const meta = email;
 
   const [notifications, setNotifications] = useState([]);
 
@@ -56,29 +65,33 @@ export default function DashboardLayout({ children }) {
 
         // ✅ Uniquement les demandes DISPONIBLES
         const notifs = demandes
-          .filter(d => d.statut === "DISPONIBLE")
-          .map(d => ({
+          .filter((d) => d.statut === "DISPONIBLE")
+          .map((d) => ({
             id: `${d.id}-DISPONIBLE`,
-            message: `✅ Votre ${labelType(d.typeDocument)} est prêt. Rendez-vous dans "Mes documents" pour le télécharger.`,
+            message: `✅ Votre ${labelType(
+              d.typeDocument
+            )} est prêt. Rendez-vous dans "Mes documents" pour le télécharger.`,
             createdAt: d.updatedAt || d.createdAt,
           }))
-          .filter(n => !dismissed.includes(n.id))
+          .filter((n) => !dismissed.includes(n.id))
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
         setNotifications(notifs);
-      } catch { /* silencieux */ }
+      } catch {
+        /* silencieux */
+      }
     };
     load();
   }, []);
 
   const handleDelete = (id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
     const dismissed = getDismissed();
     if (!dismissed.includes(id)) saveDismissed([...dismissed, id]);
   };
 
   const handleClearAll = () => {
-    const ids = notifications.map(n => n.id);
+    const ids = notifications.map((n) => n.id);
     saveDismissed([...new Set([...getDismissed(), ...ids])]);
     setNotifications([]);
   };

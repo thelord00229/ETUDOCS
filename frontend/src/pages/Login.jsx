@@ -1,4 +1,5 @@
 import { useState } from "react";
+import logo from "../assets/logo.png";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
@@ -37,14 +38,24 @@ const css = `
 
   /* LOGO */
   .brand {
-    display: flex; align-items: center; gap: 12px;
-    font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.5rem;
-    color: var(--navy); text-decoration: none; margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-decoration: none;
+    margin-bottom: 40px;
   }
-  .brand__icon {
-    width: 52px; height: 52px; border-radius: 14px;
-    background: var(--navy);
-    display: flex; align-items: center; justify-content: center;
+  .brand__logo {
+    width: 62px;
+    height: 62px;
+    object-fit: contain;
+    border-radius: 16px;
+  }
+  .brand__name {
+    font-family: 'Sora', sans-serif;
+    font-weight: 800;
+    font-size: 1.9rem;
+    color: var(--navy);
+    letter-spacing: -0.5px;
   }
 
   /* CARD */
@@ -170,7 +181,6 @@ export default function Login() {
   const [institution, setInstitution] = useState("IFRI");
   const [showPass, setShowPass] = useState(false);
 
-  // champs contrôlés
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -185,30 +195,23 @@ export default function Login() {
 
   const routeForUser = (user) => {
     const role = user?.role;
-
     if (role === "ETUDIANT") return "/dashboardEtu";
     if (role === "SUPER_ADMIN") return "/superadmin";
     if (role === "SECRETAIRE_ADJOINT") return "/dashboardsa";
     if (role === "SECRETAIRE_GENERAL") return "/dashboardsg";
-
     if (role === "CHEF_DIVISION") {
-      const service = user?.service; // "EXAMENS" ou "SCOLARITE"
+      const service = user?.service;
       if (service === "SCOLARITE") return "/dashboardsc";
-      return "/dashboardce"; // EXAMENS par défaut
+      return "/dashboardce";
     }
-
     if (role === "DIRECTEUR_ADJOINT") return "/dashboardda";
     if (role === "DIRECTEUR") return "/dashboarddi";
-
-    // fallback
     return "/dashboardsa";
   };
 
   const isRoleAllowedForTab = (role) => {
     if (isEtudiant) return role === "ETUDIANT";
     if (isAdmin) return role === "SUPER_ADMIN";
-
-    // onglet "Agent" = tous les rôles non-étudiants non-superadmin
     if (isAgent)
       return [
         "SECRETAIRE_ADJOINT",
@@ -217,19 +220,16 @@ export default function Login() {
         "DIRECTEUR_ADJOINT",
         "DIRECTEUR",
       ].includes(role);
-
     return true;
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-
     if (!email || !password) {
       setError("Veuillez renseigner l'email et le mot de passe.");
       return;
     }
-
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/api/auth/login`, {
@@ -237,34 +237,23 @@ export default function Login() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-
       const data = await res.json().catch(() => ({}));
-
       if (!res.ok) {
         setError(data?.message || "Connexion impossible");
         return;
       }
-
-      // ✅ IMPORTANT: toujours nettoyer avant d’écrire
       localStorage.removeItem("etudocs_token");
       localStorage.removeItem("etudocs_user");
-
       localStorage.setItem("etudocs_token", data.token);
       localStorage.setItem("etudocs_user", JSON.stringify(data.user));
-
-      // debug utile
       console.log("[LOGIN OK]", { role: data.user?.role, user: data.user });
-
       const role = data.user?.role;
-
-      // ✅ bloque si onglet choisi != rôle réel
       if (!isRoleAllowedForTab(role)) {
         setError(
           `Vous êtes connecté en tant que ${role}, mais vous êtes sur le mauvais onglet.`
         );
         return;
       }
-
       const target = routeForUser(data.user);
       window.location.href = target;
     } catch (err) {
@@ -279,42 +268,23 @@ export default function Login() {
       <style>{css}</style>
 
       {/* Logo */}
+      
       <a href="/" className="brand">
-        <div className="brand__icon">
-          <svg
-            width="26"
-            height="26"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="white"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-          </svg>
-        </div>
-        EtuDocs
+        <img src={logo} alt="EtuDocs logo" className="brand__logo" />
+        <span className="brand__name">EtuDocs</span>
       </a>
 
       <div className="card">
         <h1 className="card__title">Connexion</h1>
         <p className="card__sub">Accédez à votre espace personnel</p>
 
-        {/* Tabs */}
         <div className="tabs">
           {TABS.map((t, i) => (
             <button
               key={t}
               type="button"
               className={`tab${active === i ? " active" : ""}`}
-              onClick={() => {
-                setActive(i);
-                setError("");
-              }}
+              onClick={() => { setActive(i); setError(""); }}
             >
               {t}
             </button>
@@ -322,7 +292,6 @@ export default function Login() {
         </div>
 
         <form className="form" key={active} onSubmit={handleLogin}>
-          {/* Institution — visible Étudiant + Agent (UI only) */}
           {(isEtudiant || isAgent) && (
             <div className="field">
               <label>Institution</label>
@@ -346,9 +315,7 @@ export default function Login() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder={
-                isEtudiant ? "etudiant@test.com" : "votre.email@example.com"
-              }
+              placeholder={isEtudiant ? "etudiant@test.com" : "votre.email@example.com"}
               disabled={loading}
             />
           </div>
@@ -356,9 +323,7 @@ export default function Login() {
           <div className="field">
             <div className="field__row">
               <label>Mot de passe</label>
-              <a href="#" className="forgot">
-                Mot de passe oublié ?
-              </a>
+              <a href="#" className="forgot">Mot de passe oublié ?</a>
             </div>
             <input
               type={showPass ? "text" : "password"}
@@ -386,9 +351,7 @@ export default function Login() {
         )}
       </div>
 
-      <a href="/" className="back">
-        ← Retour à l'accueil
-      </a>
+      <a href="/" className="back">← Retour à l'accueil</a>
     </div>
   );
 }

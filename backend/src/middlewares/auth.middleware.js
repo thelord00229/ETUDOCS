@@ -34,13 +34,19 @@ module.exports = async (req, res, next) => {
     // ── Vérification en base : le compte est-il encore actif ? ──
     const user = await prisma.utilisateur.findUnique({
       where: { id: payload.id },
-      select: { id: true, role: true, actif: true },
+      select: {
+        id: true,
+        role: true,
+        actif: true,
+        institutionId: true,
+        service: true,
+        email: true,
+        nom: true,
+        prenom: true,
+      },
     });
 
-    if (!user) {
-      return res.status(401).json({ message: "Compte introuvable" });
-    }
-
+    if (!user) return res.status(401).json({ message: "Compte introuvable" });
     if (!user.actif) {
       return res.status(403).json({ message: "Votre compte a été désactivé. Contactez l'administrateur." });
     }
@@ -48,7 +54,15 @@ module.exports = async (req, res, next) => {
     // Normalisation
     payload.role = String(payload.role).trim().toUpperCase();
 
-    req.user = payload;
+    req.user = {
+      id: user.id,
+      role: String(user.role || "").trim().toUpperCase(),
+      institutionId: user.institutionId,
+      service: user.service, // EXAMENS / SCOLARITE pour CHEF_DIVISION
+      email: user.email,
+      nom: user.nom,
+      prenom: user.prenom,
+    };
     return next();
   } catch (e) {
     return res.status(401).json({ message: "Token invalide ou expiré" });
