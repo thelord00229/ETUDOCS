@@ -115,6 +115,7 @@ model Demande {
   statut    StatutDemande @default(SOUMISE)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+  deliveredAt DateTime?
 
   utilisateurId String
   utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id])

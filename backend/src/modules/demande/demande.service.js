@@ -1,10 +1,7 @@
 // src/modules/demande/demande.service.js
 
 const prisma = require("../../config/prisma");
-const {
-  assertPermission,
-  getNextStatut,
-} = require("../../utils/workflow");
+const { assertPermission, getNextStatut } = require("../../utils/workflow");
 const emailService = require("../../services/email.service");
 
 const normalizeField = (v) => String(v || "").trim().toUpperCase();
@@ -175,14 +172,7 @@ exports.getById = async (demandeId, user) => {
   return demande;
 };
 
-exports.avancer = async (
-  demandeId,
-  action,
-  actorId,
-  role,
-  institutionId,
-  commentaire
-) => {
+exports.avancer = async (demandeId, action, actorId, role, institutionId, commentaire) => {
   const demande = await prisma.demande.findUnique({
     where: { id: demandeId },
     include: { utilisateur: true, pieces: true },
@@ -247,16 +237,16 @@ exports.avancer = async (
       const sigle = institution?.sigle || "UAC";
       const baseUrl = process.env.APP_URL || "http://localhost:5000";
 
-      if (demande.typeDocument !== "RELEVE_NOTES") {
-        const reference = `ETD-${annee}-${sigle}-${String(demande.id)
+      // ✅ ATTESTATION D'INSCRIPTION → template dédié
+      if (demande.typeDocument === "ATTESTATION_INSCRIPTION") {
+        const reference = `ETD-${annee}-${sigle}-ATT-${String(demande.id)
           .substring(0, 5)
           .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
         const qrData = `${baseUrl}/verify/${reference}`;
 
-        const pdfPath = await pdfService.generateDocument(
+        const pdfPath = await pdfService.generateAttestationInscription(
           demande,
           etudiant,
-          null,
           reference,
           institution,
           qrData
@@ -272,7 +262,9 @@ exports.avancer = async (
             demandeId: demande.id,
           },
         });
-      } else {
+
+        // ✅ RELEVÉ DE NOTES → un PDF par semestre
+      } else if (demande.typeDocument === "RELEVE_NOTES") {
         const semestres = demande.semestres?.length ? demande.semestres : [1];
 
         for (const semestre of semestres) {
@@ -301,21 +293,56 @@ exports.avancer = async (
             },
           });
         }
+
+        // ✅ Autres types → template générique
+      } else {
+        const reference = `ETD-${annee}-${sigle}-${String(demande.id)
+          .substring(0, 5)
+          .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
+        const qrData = `${baseUrl}/verify/${reference}`;
+
+        const pdfPath = await pdfService.generateDocument(
+          demande,
+          etudiant,
+          null,
+          reference,
+          institution,
+          qrData
+        );
+
+        await qrcodeService.generate(qrData, reference);
+
+        await tx.document.create({
+          data: {
+            reference,
+            qrPayload: qrData,
+            urlPdf: pdfPath,
+            demandeId: demande.id,
+          },
+        });
       }
+    }
+
+    // ✅✅✅ PATCH EXACT OPTION A :
+    // deliveredAt doit être fixé exactement quand on passe à DISPONIBLE
+    const dataUpdate = {
+      statut: prochainStatut,
+      historique: {
+        create: {
+          statut: prochainStatut,
+          commentaire: commentaire || action,
+          actorId,
+        },
+      },
+    };
+
+    if (prochainStatut === "DISPONIBLE") {
+      dataUpdate.deliveredAt = new Date();
     }
 
     const up = await tx.demande.update({
       where: { id: demandeId },
-      data: {
-        statut: prochainStatut,
-        historique: {
-          create: {
-            statut: prochainStatut,
-            commentaire: commentaire || action,
-            actorId,
-          },
-        },
-      },
+      data: dataUpdate,
     });
 
     return up;
@@ -334,15 +361,7 @@ exports.avancer = async (
   return updated;
 };
 
-exports.validerPiece = async (
-  pieceId,
-  statut,
-  commentaire,
-  actorId,
-  role,
-  institutionId,
-  service
-) => {
+exports.validerPiece = async (pieceId, statut, commentaire, actorId, role, institutionId, service) => {
   if (role !== "CHEF_DIVISION") {
     const err = new Error("Seul le Chef de Division peut valider une pièce.");
     err.statusCode = 403;

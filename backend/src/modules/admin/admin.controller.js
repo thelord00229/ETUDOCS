@@ -1,10 +1,19 @@
-const adminService = require('./admin.service');
-const asyncHandler = require('../../utils/asyncHandler');
+const adminService = require("./admin.service");
+const asyncHandler = require("../../utils/asyncHandler");
+
+exports.getSlaEvolution = asyncHandler(async (req, res) => {
+  const days = Math.min(parseInt(req.query.days || "20", 10), 60);
+  const institutionCode = req.query.institution || "ALL"; // ex: IFRI/EPAC/FSS/ALL
+  const docType = req.query.docType || "ALL"; // ex: ATTESTATION_INSCRIPTION/RELEVE_NOTES/ALL
+
+  const data = await adminService.getSlaEvolution({ days, institutionCode, docType });
+  res.json({ ok: true, ...data });
+});
 
 exports.creerAgent = asyncHandler(async (req, res) => {
   const result = await adminService.creerAgent({
     ...req.body,
-    institutionId: req.body.institutionId || req.user.institutionId
+    institutionId: req.body.institutionId || req.user.institutionId,
   });
   res.status(201).json(result);
 });

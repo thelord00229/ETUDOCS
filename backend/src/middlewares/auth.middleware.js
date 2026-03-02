@@ -1,20 +1,20 @@
 // src/middlewares/auth.middleware.js
 
 const jwt = require("jsonwebtoken");
+const { PrismaClient } = require("@prisma/client"); // adapter selon votre ORM
+const prisma = new PrismaClient();
 
 function getBearerToken(req) {
   const header = req.headers.authorization;
-  if (!header) return null;
-  if (!header.startsWith("Bearer ")) return null;
+  if (!header || !header.startsWith("Bearer ")) return null;
   const token = header.slice("Bearer ".length).trim();
   return token || null;
 }
 
-module.exports = (req, res, next) => {
+module.exports = async (req, res, next) => {
   const secret = process.env.JWT_SECRET;
 
   if (!secret) {
-    // Erreur serveur: config manquante
     return res.status(500).json({ message: "Configuration serveur invalide" });
   }
 
@@ -27,12 +27,25 @@ module.exports = (req, res, next) => {
   try {
     const payload = jwt.verify(token, secret);
 
-    // Sécurité minimale : payload doit contenir id + role
     if (!payload || !payload.id || !payload.role) {
       return res.status(401).json({ message: "Token invalide ou expiré" });
     }
 
-    // Normalisation légère
+    // ── Vérification en base : le compte est-il encore actif ? ──
+    const user = await prisma.utilisateur.findUnique({
+      where: { id: payload.id },
+      select: { id: true, role: true, actif: true },
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: "Compte introuvable" });
+    }
+
+    if (!user.actif) {
+      return res.status(403).json({ message: "Votre compte a été désactivé. Contactez l'administrateur." });
+    }
+
+    // Normalisation
     payload.role = String(payload.role).trim().toUpperCase();
 
     req.user = payload;

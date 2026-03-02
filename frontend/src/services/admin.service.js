@@ -6,11 +6,19 @@ export const getAgents = (institutionId) => {
 };
 
 export const createAgent = (agentData) => {
-  return api.post('/api/admin/agents', agentData);
+  return api.post('/api/agents', agentData);
 };
 
 export const toggleAgentActif = (userId) => {
-  return api.patch(`/api/admin/agents/${userId}/toggle`);
+  return api.patch(`/api/agents/${userId}/toggle`);
+};
+
+export const deleteAgent = (id) => {
+  return api.delete(`/api/agents/${id}`);
+};
+
+export const sendMailToAgent = (id, payload) => {
+  return api.post(`/api/agents/${id}/email`, payload);
 };
 
 // Gestion des institutions
@@ -19,8 +27,7 @@ export const updateInstitution = (institutionId, data) => {
 };
 
 export const getInstitutions = () => {
-  // Si pas de route dédiée, on peut récupérer depuis /institutions (à créer)
-  return api.get('/api/institutions'); // à implémenter côté backend si nécessaire
+  return api.get('/api/institutions');
 };
 
 // Statistiques
@@ -28,7 +35,7 @@ export const getStatistiques = (institutionId) => {
   return api.get('/api/admin/statistiques', { params: { institutionId } });
 };
 
-// Import Excel (à adapter selon le backend)
+// Import Excel
 export const importNotes = (formData) => {
   return api.post('/api/admin/import-notes', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
