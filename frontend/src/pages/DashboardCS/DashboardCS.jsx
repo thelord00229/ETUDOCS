@@ -168,11 +168,26 @@ const css = `
   .info-val { font-size:.88rem; font-weight:600; color:var(--navy); }
   .info-val.mono { font-family:monospace; font-size:.8rem; color:var(--blue); }
 
+  .info-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 3px; }
+  .info-value { font-size: 14px; font-weight: 600; color: var(--text); }
+  .info-value.mono { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--accent-blue); }
+
   .doc-pill {
     display:inline-flex; align-items:center; gap:6px;
     background:#f0fdf4; color:var(--green);
     padding:5px 10px; border-radius:7px; font-size:.82rem; font-weight:600; margin-top:3px;
   }
+
+  .doc-type-pill {
+    display:inline-flex; align-items:center; gap:6px;
+    background:#eff6ff; color:#1e4db7;
+    padding:5px 10px; border-radius:7px; font-size:.82rem; font-weight:600; margin-top:3px;
+  }
+  .sem-pills { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .sem-pill { padding:5px 12px; border-radius:6px; font-size:.82rem; font-weight:600; }
+  .sem-pill.active { background:var(--navy); color:#fff; }
+  .sem-pill.inactive { background:var(--bg); color:var(--muted); border:1px solid var(--border); }
+  .divider-h { height:1px; background:var(--border); margin:14px 0; }
 
   .divider { height:1px; background:var(--border); margin:14px 0; }
 
@@ -977,60 +992,71 @@ export default function DashboardCS() {
                   <div className="panel-title">Informations étudiant</div>
                 </div>
                 <div className="panel-body">
-                  <div className="info-row">
-                    <div className="info-lbl">Nom complet</div>
-                    <div className="info-val">{nom}</div>
-                  </div>
-                  <div className="info-row">
-                    <div className="info-lbl">Matricule</div>
-                    <div className="info-val">{selected?.utilisateur?.numeroEtudiant || "—"}</div>
-                  </div>
-                  <div className="info-row">
-                    <div className="info-lbl">Email</div>
-                    <div className="info-val">{selected?.utilisateur?.email || "—"}</div>
-                  </div>
-                  <div className="divider" />
-                  <div className="info-row">
-                    <div className="info-lbl">Type de document</div>
-                    <div className="doc-pill">
-                      <FileTextIcon /> Attestation d'inscription
+                    <div className="info-row">
+                        <div className="info-label">Nom complet</div>
+                        <div className="info-value">
+                        {selected?.utilisateur
+                            ? `${selected.utilisateur.nom || ""} ${selected.utilisateur.prenom || ""}`.trim() || "—"
+                            : "—"}
+                        </div>
                     </div>
-                  </div>
-                  <div className="info-row">
-                    <div className="info-lbl">Date soumission</div>
-                    <div className="info-val">{formatDate(selected?.createdAt)}</div>
-                  </div>
+                    <div className="info-row">
+                        <div className="info-label">N° Étudiant</div>
+                        <div className="info-value">{selected?.utilisateur?.numeroEtudiant || "—"}</div>
+                    </div>
+                    <div className="info-row">
+                        <div className="info-label">Filière / Niveau</div>
+                        <div className="info-value">
+                        {selected?.utilisateur?.filiere
+                            ? `${selected.utilisateur.filiere} — ${selected.utilisateur.niveau || ""}`
+                            : "—"}
+                        </div>
+                    </div>
+                    <div className="info-row">
+                        <div className="info-label">Institution</div>
+                        <div className="info-value">{selected?.institution?.nom || "IFRI — UAC"}</div>
+                    </div>
+                    <div className="divider-h" />
+                    <div className="info-row">
+                        <div className="info-label">Type de document</div>
+                        <div className="doc-type-pill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        {selected?.typeDocument === "ATTESTATION_INSCRIPTION" ? "Attestation d'inscription"
+                            : selected?.typeDocument === "RELEVE_NOTES" ? "Relevé de notes"
+                            : selected?.typeDocument || "—"}
+                        </div>
+                    </div>
+                    {selected?.typeDocument === "ATTESTATION_INSCRIPTION" && selected?.anneeAcademique && (
+                        <div className="info-row" style={{ marginTop: 10 }}>
+                        <div className="info-label">Année académique</div>
+                        <div className="info-value" style={{
+                            background:"#f0fdf4", color:"#16a34a", border:"1px solid #bbf7d0",
+                            padding:"5px 12px", borderRadius:7, display:"inline-block", fontWeight:700
+                        }}>
+                            {selected.anneeAcademique}
+                        </div>
+                        </div>
+                    )}
+                    <div className="divider-h" />
+                    <div className="info-row">
+                        <div className="info-label">Date de soumission</div>
+                        <div className="info-value">
+                        {selected?.createdAt
+                            ? new Date(selected.createdAt).toLocaleDateString("fr-FR", { day:"2-digit", month:"long", year:"numeric" })
+                            : "—"}
+                        </div>
+                    </div>
+                    <div className="info-row">
+                        <div className="info-label">Référence</div>
+                        <div className="info-value mono">{selected?.documents?.[0]?.reference || "—"}</div>
+                    </div>
                 </div>
               </div>
 
-              <div className="panel">
-                <div className="panel-header">
-                  <div className="panel-title">Parcours de la demande</div>
-                </div>
-                <div className="panel-body">
-                  {[
-                    { label: "Soumise par l'étudiant", st: "done" },
-                    { label: "Secrétaire Adjoint", st: "done" },
-                    { label: "Secrétaire Général", st: "done" },
-                    { label: "Chef Division Scolarité", st: "active" },
-                    { label: "Directeur Adjoint", st: "todo" },
-                    { label: "Directeur", st: "todo" },
-                  ].map((t, i, arr) => (
-                    <div className="tl-item" key={t.label}>
-                      <div className="tl-left">
-                        <div className={`tl-dot ${t.st}`} />
-                        {i < arr.length - 1 && <div className="tl-line" />}
-                      </div>
-                      <div>
-                        <div className={`tl-step ${t.st === "todo" ? "muted" : ""}`}>{t.label}</div>
-                        <div className="tl-time">
-                          {t.st === "done" ? "Effectué" : t.st === "active" ? "En cours" : "—"}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              
             </div>
 
             {/* ── CENTRE — Pièces ── */}

@@ -37,7 +37,7 @@ const parseSemestres = (semestres) => {
 };
 
 exports.soumettre = async (utilisateurId, institutionId, body, files) => {
-  const { typeDocument, semestres } = body;
+  const { typeDocument, semestres, anneeAcademique } = body;
 
   if (!typeDocument) {
     const err = new Error("typeDocument est requis");
@@ -63,6 +63,7 @@ exports.soumettre = async (utilisateurId, institutionId, body, files) => {
     data: {
       typeDocument: docKey,
       semestres: parseSemestres(semestres),
+      anneeAcademique: anneeAcademique ? String(anneeAcademique).trim() : null,
       serviceCible: normalizeService(getServiceCible(docKey)),
       statut: "SOUMISE",
       utilisateurId,

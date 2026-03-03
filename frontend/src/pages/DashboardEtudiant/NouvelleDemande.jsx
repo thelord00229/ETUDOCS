@@ -212,6 +212,7 @@ export default function NouvelleDemande() {
   const [acteFile, setActeFile] = useState(null);
   const [justifFile, setJustifFile] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [anneeAcademique, setAnneeAcademique] = useState("");
   const navigate = useNavigate();
 
   const cipInputRef  = useRef(null);
@@ -239,7 +240,7 @@ export default function NouvelleDemande() {
   const toggleSemestre = (s) =>
     setSemestreChoix(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
-  const step1Ok = !!selected && (!isReleve || semestreChoix.length > 0);
+  const step1Ok = !!selected && (!isReleve || semestreChoix.length > 0) && (!isAttestation || !!anneeAcademique);
   const step2Ok = !!cipFile && !!qttFile && (!needFourPieces || (!!acteFile && !!justifFile));
 
   const handleCopy = () => {
@@ -272,7 +273,7 @@ export default function NouvelleDemande() {
                 key={d.id}
                 className={`doc-card${selected === d.id ? " selected" : ""}`}
                 style={d.full ? { gridColumn: "1 / -1" } : {}}
-                onClick={() => { if (!d.enabled) return; setSelected(d.id); setSemestreChoix([]); }}
+                onClick={() => { if (!d.enabled) return; setSelected(d.id); setSemestreChoix([]); setAnneeAcademique(""); }}
               >
                 {!d.enabled && <span className="coming-badge">Bientôt disponible</span>}
                 <div className="doc-card__icon">
@@ -303,6 +304,34 @@ export default function NouvelleDemande() {
                   {`Semestre ${s.replace("S","")}`}
                 </label>
               ))}
+            </div>
+          )}
+
+          {isAttestation && (
+            <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:14, padding:"14px 16px", marginTop:14 }}>
+              <div style={{ fontFamily:"Sora,sans-serif", fontWeight:700, color:"#1a2744", marginBottom:10 }}>
+                Pour quelle année académique ?
+              </div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
+                {["2022-2023","2023-2024","2024-2025","2025-2026"].map(a => (
+                  <label key={a} style={{
+                    display:"flex", alignItems:"center", gap:8, cursor:"pointer",
+                    padding:"8px 14px", borderRadius:8, border:"1.5px solid",
+                    borderColor: anneeAcademique === a ? "#1a2744" : "#e2e8f0",
+                    background: anneeAcademique === a ? "#f0f4ff" : "#fff",
+                    fontWeight: anneeAcademique === a ? 700 : 400,
+                    color:"#1a2744", fontSize:".88rem", transition:"all .15s"
+                  }}>
+                    <input
+                      type="radio" name="annee" value={a}
+                      checked={anneeAcademique === a}
+                      onChange={() => setAnneeAcademique(a)}
+                      style={{ display:"none" }}
+                    />
+                    {a}
+                  </label>
+                ))}
+              </div>
             </div>
           )}
 
@@ -457,9 +486,9 @@ export default function NouvelleDemande() {
               <div>
                 <div className="recap-doc-title">{selectedDoc?.title || "Attestation d'inscription"}</div>
                 <div className="recap-doc-sub">Délai estimé: {selectedDoc?.delai || "24-48h"}</div>
-                {isReleve && (
+                {isAttestation && anneeAcademique && (
                   <div className="recap-doc-sub" style={{ marginTop:6 }}>
-                    Semestre(s) : <b>{semestreChoix.map(s => `Semestre ${s.replace("S","")}`).join(" + ")}</b>
+                    Année académique : <b>{anneeAcademique}</b>
                   </div>
                 )}
                 <div className="recap-doc-sub" style={{ marginTop:6 }}>
@@ -492,6 +521,7 @@ export default function NouvelleDemande() {
                   const payload = {
                     typeDocument: selectedDoc?.id === 1 ? "ATTESTATION_INSCRIPTION" : "RELEVE_NOTES",
                     semestres: selectedDoc?.id === 2 ? semestreChoix : [],
+                    anneeAcademique: selectedDoc?.id === 1 ? anneeAcademique : null,
                     CIP: cipFile,
                     QUITTANCE: qttFile,
                     ACTE_NAISSANCE: acteFile,

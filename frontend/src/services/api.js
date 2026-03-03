@@ -160,7 +160,8 @@ export const avancerDemande = async (id, action, commentaire = "") => {
 export const submitDemande = async ({
   typeDocument,
   semestre,
-  semestres, // si tu veux envoyer plusieurs
+  semestres,
+  anneeAcademique, // si tu veux envoyer plusieurs
   CIP,
   QUITTANCE,
   ACTE_NAISSANCE,
@@ -171,6 +172,7 @@ export const submitDemande = async ({
 
   const form = new FormData();
   form.append("typeDocument", typeDocument);
+  if (anneeAcademique) form.append("anneeAcademique", anneeAcademique);
 
   // Compat: ton backend parse "semestres" (array) mais tu envoyais "semestre"
   if (Array.isArray(semestres)) {

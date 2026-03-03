@@ -110,6 +110,7 @@ model Demande {
   id           String       @id @default(uuid())
   typeDocument TypeDocument
   semestres     Int[]
+  anneeAcademique String?
   serviceCible Service
 
   statut    StatutDemande @default(SOUMISE)

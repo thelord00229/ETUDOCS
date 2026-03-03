@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { NavLink } from "react-router-dom";
 import { getDemandes, avancerDemande, clearSession } from "../../services/api";
+import logo from "../../assets/logo.png";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
@@ -12,53 +13,57 @@ const css = `
     background: #f8fafc; font-family: 'DM Sans', sans-serif;
   }
 
-  /* ── SIDEBAR ── */
+  /* ── SIDEBAR (style unifié blanc) ── */
   .agent-sidebar {
     width: 220px; flex-shrink: 0;
-    background: #1a2744;
+    background: #fff;
+    border-right: 1px solid #e2e8f0;
     display: flex; flex-direction: column;
     position: fixed; top: 0; left: 0; bottom: 0; z-index: 50;
     padding-bottom: 24px;
   }
   .agent-sidebar__brand {
-    display: flex; align-items: center; gap: 8px;
-    padding: 22px 20px 28px;
+    display: flex; align-items: center; gap: 10px;
+    padding: 20px 20px 20px;
+    text-decoration: none;
+  }
+  .agent-sidebar__brand-logo {
+    height: 52px; width: auto; object-fit: contain;
+  }
+  .agent-sidebar__brand-name {
     font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.15rem;
-    color: #fff; text-decoration: none;
+    color: #1a2744; letter-spacing: -.01em;
   }
-  .agent-sidebar__brand-icon {
-    width: 34px; height: 34px; border-radius: 8px; background: rgba(255,255,255,.15);
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  .agent-sidebar__nav {
+    flex: 1; padding: 0 12px;
+    display: flex; flex-direction: column; gap: 2px;
   }
-  .agent-sidebar__brand-tag {
-    font-family: 'DM Sans', sans-serif; font-size: .75rem; font-weight: 500;
-    color: #f5a623; margin-left: 2px;
-  }
-  .agent-sidebar__nav { flex: 1; padding: 0 12px; display: flex; flex-direction: column; gap: 4px; }
   .agent-sidebar__link {
     display: flex; align-items: center; gap: 12px;
-    padding: 11px 14px; border-radius: 10px;
+    padding: 10px 12px; border-radius: 10px;
     font-family: 'DM Sans', sans-serif; font-size: .9rem; font-weight: 500;
-    color: rgba(255,255,255,.6); text-decoration: none;
+    color: #475569; text-decoration: none;
     transition: background .15s, color .15s;
+    background: none; border: none; cursor: pointer; width: 100%; text-align: left;
   }
-  .agent-sidebar__link:hover { background: rgba(255,255,255,.08); color: #fff; }
-  .agent-sidebar__link.active { background: #f5a623; color: #fff; }
+  .agent-sidebar__link:hover { background: #f1f5f9; color: #1a2744; }
+  .agent-sidebar__link.active { background: #1a2744; color: #fff; }
   .agent-sidebar__link.active svg { stroke: #fff; }
-  .agent-sidebar__link svg { stroke: rgba(255,255,255,.6); transition: stroke .15s; }
-  .agent-sidebar__link:hover svg { stroke: #fff; }
+  .agent-sidebar__link svg { stroke: #94a3b8; transition: stroke .15s; }
+  .agent-sidebar__link:hover svg { stroke: #1a2744; }
+  .agent-sidebar__link.active:hover svg { stroke: #fff; }
 
-  .agent-sidebar__divider { height: 1px; background: rgba(255,255,255,.1); margin: 12px 12px; }
+  .agent-sidebar__divider { height: 1px; background: #e2e8f0; margin: 12px 12px; }
   .agent-sidebar__logout {
     display: flex; align-items: center; gap: 12px;
-    padding: 11px 26px; font-family: 'DM Sans', sans-serif;
-    font-size: .9rem; font-weight: 500; color: rgba(255,255,255,.4);
-    background: none; border: none; cursor: pointer; width: 100%;
+    padding: 10px 24px;
+    font-family: 'DM Sans', sans-serif; font-size: .9rem; font-weight: 500;
+    color: #94a3b8; background: none; border: none; cursor: pointer; width: 100%;
     transition: color .15s;
   }
   .agent-sidebar__logout:hover { color: #ef4444; }
   .agent-sidebar__logout:hover svg { stroke: #ef4444; }
-  .agent-sidebar__logout svg { stroke: rgba(255,255,255,.4); transition: stroke .15s; }
+  .agent-sidebar__logout svg { stroke: #94a3b8; transition: stroke .15s; }
 
   /* ── MAIN ── */
   .agent-main { margin-left: 220px; flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -198,7 +203,7 @@ const css = `
   .state-box { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 24px; color: #475569; font-size: .9rem; }
   .state-error { color: #dc2626; border-color: #fecaca; background: #fef2f2; }
 
-  /* ── MODAL ── */
+  /* ── MODAL VÉRIFIER ── */
   .sa-modal-overlay {
     position: fixed; inset: 0; background: rgba(15,23,42,.5);
     z-index: 100; display: flex; align-items: center; justify-content: center;
@@ -267,6 +272,59 @@ const css = `
   .sa-btn--warn:hover:not(:disabled)   { background: #ffedd5; }
   .sa-btn--primary { background: #1a2744; color: #fff; }
   .sa-btn--primary:hover:not(:disabled) { background: #243057; }
+  .sa-btn--danger  { background: #fef2f2; color: #dc2626; border: 1.5px solid #fecaca; }
+  .sa-btn--danger:hover:not(:disabled)  { background: #fee2e2; }
+
+  /* ── MODAL MOT DE PASSE ── */
+  .pwd-modal {
+    background: #fff; border-radius: 16px; width: 100%; max-width: 420px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.18); overflow: hidden;
+  }
+  .pwd-modal__head {
+    padding: 22px 26px 18px; border-bottom: 1px solid #f1f5f9;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .pwd-modal__title {
+    font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.05rem; color: #1a2744;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .pwd-modal__title-icon {
+    width: 36px; height: 36px; border-radius: 10px; background: #eff6ff;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .pwd-modal__body { padding: 20px 26px; display: flex; flex-direction: column; gap: 14px; }
+  .pwd-field { display: flex; flex-direction: column; gap: 6px; }
+  .pwd-label {
+    font-family: 'DM Sans', sans-serif; font-size: .82rem; font-weight: 600;
+    color: #475569; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .pwd-input-wrap { position: relative; }
+  .pwd-input {
+    width: 100%; padding: 11px 42px 11px 14px;
+    border: 1.5px solid #e2e8f0; border-radius: 9px;
+    font-family: 'DM Sans', sans-serif; font-size: .9rem; color: #334155;
+    outline: none; transition: border-color .2s; box-sizing: border-box;
+  }
+  .pwd-input:focus { border-color: #1a2744; }
+  .pwd-input.error { border-color: #ef4444; }
+  .pwd-eye {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; color: #94a3b8;
+    display: flex; align-items: center; padding: 0;
+    transition: color .15s;
+  }
+  .pwd-eye:hover { color: #1a2744; }
+  .pwd-strength { display: flex; gap: 4px; margin-top: 4px; }
+  .pwd-strength__bar {
+    flex: 1; height: 3px; border-radius: 2px; background: #e2e8f0;
+    transition: background .3s;
+  }
+  .pwd-strength__bar.weak   { background: #ef4444; }
+  .pwd-strength__bar.medium { background: #f5a623; }
+  .pwd-strength__bar.strong { background: #16a34a; }
+  .pwd-hint { font-size: .75rem; color: #94a3b8; margin-top: 2px; }
+  .pwd-hint.error { color: #ef4444; }
+  .pwd-modal__footer { padding: 0 26px 22px; }
 
   /* Toast */
   .sa-toast {
@@ -282,7 +340,11 @@ const css = `
 `;
 
 const NAV = [
-  { to: "/dashboardsa", label: "Tableau de bord", d: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
+  {
+    to: "/dashboardsa",
+    label: "Tableau de bord",
+    d: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
+  },
 ];
 
 /* ─── helpers ─────────────────────────────────────────── */
@@ -298,7 +360,6 @@ const PIECE_LABEL = {
   JUSTIFICATIF_INSCRIPTION: "Justificatif d'inscription",
 };
 
-// ✅ Statuts que le SA traite réellement
 const SA_STATUTS = ["SOUMISE", "CORRECTION_DEMANDEE"];
 
 const badgeClass = (statut) => {
@@ -314,14 +375,213 @@ const badgeLabel = (statut) => {
 };
 
 const fmtDate = (d) =>
-  d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+  d
+    ? new Date(d).toLocaleDateString("fr-FR", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "—";
 
 const initials = (nom = "", prenom = "") =>
   `${prenom?.[0] || ""}${nom?.[0] || ""}`.toUpperCase();
 
-/* ─── Modal vérification ──────────────────────────────── */
+/* ─── Force/indicateur de robustesse du mot de passe ─── */
+function getStrength(pwd) {
+  if (!pwd) return 0;
+  let score = 0;
+  if (pwd.length >= 8) score++;
+  if (/[A-Z]/.test(pwd)) score++;
+  if (/[0-9]/.test(pwd)) score++;
+  if (/[^A-Za-z0-9]/.test(pwd)) score++;
+  return score; // 0-4
+}
+
+/* ─── Modal Modifier Mot de Passe ────────────────────── */
+function ModalMotDePasse({ onClose, onSuccess }) {
+  const [actuel, setActuel] = useState("");
+  const [nouveau, setNouveau] = useState("");
+  const [confirmer, setConfirmer] = useState("");
+  const [showActuel, setShowActuel] = useState(false);
+  const [showNouveau, setShowNouveau] = useState(false);
+  const [showConfirmer, setShowConfirmer] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [erreur, setErreur] = useState("");
+
+  const strength = getStrength(nouveau);
+  const strengthLabel = ["", "Faible", "Faible", "Moyen", "Fort"][strength];
+  const strengthClass = strength <= 1 ? "weak" : strength <= 2 ? "weak" : strength === 3 ? "medium" : "strong";
+
+  const handleSubmit = async () => {
+    setErreur("");
+    if (!actuel || !nouveau || !confirmer) {
+      setErreur("Tous les champs sont obligatoires.");
+      return;
+    }
+    if (nouveau.length < 8) {
+      setErreur("Le nouveau mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
+    if (nouveau !== confirmer) {
+      setErreur("Les mots de passe ne correspondent pas.");
+      return;
+    }
+    setLoading(true);
+    try {
+      // Appel API — adapter selon votre endpoint
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/auth/change-password", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ancienMotDePasse: actuel, nouveauMotDePasse: nouveau }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.message || "Mot de passe actuel incorrect.");
+      }
+      onSuccess("Mot de passe modifié avec succès ✓");
+      onClose();
+    } catch (e) {
+      setErreur(e?.message || "Une erreur est survenue.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const EyeIcon = ({ show }) => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {show ? (
+        <>
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+          <line x1="1" y1="1" x2="23" y2="23" />
+        </>
+      ) : (
+        <>
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <circle cx="12" cy="12" r="3" />
+        </>
+      )}
+    </svg>
+  );
+
+  return (
+    <div className="sa-modal-overlay" onClick={onClose}>
+      <div className="pwd-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="pwd-modal__head">
+          <div className="pwd-modal__title">
+            <div className="pwd-modal__title-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </div>
+            Modifier le mot de passe
+          </div>
+          <button className="sa-modal__close" onClick={onClose}>×</button>
+        </div>
+
+        <div className="pwd-modal__body">
+          {/* Mot de passe actuel */}
+          <div className="pwd-field">
+            <label className="pwd-label">Mot de passe actuel</label>
+            <div className="pwd-input-wrap">
+              <input
+                type={showActuel ? "text" : "password"}
+                className="pwd-input"
+                placeholder="••••••••"
+                value={actuel}
+                onChange={(e) => setActuel(e.target.value)}
+                autoFocus
+              />
+              <button className="pwd-eye" type="button" onClick={() => setShowActuel((v) => !v)}>
+                <EyeIcon show={showActuel} />
+              </button>
+            </div>
+          </div>
+
+          {/* Nouveau mot de passe */}
+          <div className="pwd-field">
+            <label className="pwd-label">Nouveau mot de passe</label>
+            <div className="pwd-input-wrap">
+              <input
+                type={showNouveau ? "text" : "password"}
+                className="pwd-input"
+                placeholder="••••••••"
+                value={nouveau}
+                onChange={(e) => setNouveau(e.target.value)}
+              />
+              <button className="pwd-eye" type="button" onClick={() => setShowNouveau((v) => !v)}>
+                <EyeIcon show={showNouveau} />
+              </button>
+            </div>
+            {nouveau && (
+              <>
+                <div className="pwd-strength">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className={`pwd-strength__bar ${strength >= i ? strengthClass : ""}`}
+                    />
+                  ))}
+                </div>
+                <div className="pwd-hint">{strengthLabel} — minimum 8 caractères</div>
+              </>
+            )}
+          </div>
+
+          {/* Confirmer */}
+          <div className="pwd-field">
+            <label className="pwd-label">Confirmer le nouveau mot de passe</label>
+            <div className="pwd-input-wrap">
+              <input
+                type={showConfirmer ? "text" : "password"}
+                className={`pwd-input ${confirmer && confirmer !== nouveau ? "error" : ""}`}
+                placeholder="••••••••"
+                value={confirmer}
+                onChange={(e) => setConfirmer(e.target.value)}
+              />
+              <button className="pwd-eye" type="button" onClick={() => setShowConfirmer((v) => !v)}>
+                <EyeIcon show={showConfirmer} />
+              </button>
+            </div>
+            {confirmer && confirmer !== nouveau && (
+              <div className="pwd-hint error">Les mots de passe ne correspondent pas</div>
+            )}
+          </div>
+
+          {erreur && (
+            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "10px 14px", fontSize: ".85rem", color: "#dc2626" }}>
+              {erreur}
+            </div>
+          )}
+        </div>
+
+        <div className="pwd-modal__footer">
+          <div className="sa-btn-row">
+            <button className="sa-btn sa-btn--ghost" onClick={onClose} disabled={loading}>
+              Annuler
+            </button>
+            <button
+              className="sa-btn sa-btn--primary"
+              onClick={handleSubmit}
+              disabled={loading || !actuel || !nouveau || !confirmer}
+            >
+              {loading ? "Enregistrement…" : "Enregistrer"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Modal vérification demande ─────────────────────── */
 function ModalVerifier({ demande, onClose, onSuccess }) {
-  const [step, setStep] = useState("actions"); // "actions" | "correction"
+  const [step, setStep] = useState("actions");
   const [motif, setMotif] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -347,7 +607,6 @@ function ModalVerifier({ demande, onClose, onSuccess }) {
     if (!motif.trim()) return;
     setLoading(true);
     try {
-      // IMPORTANT: api.js doit envoyer `commentaire` (voir correctif plus bas)
       await avancerDemande(demande.id, "DEMANDER_CORRECTION", motif.trim());
       onSuccess("Correction demandée à l'étudiant ✓");
       onClose();
@@ -358,7 +617,6 @@ function ModalVerifier({ demande, onClose, onSuccess }) {
     }
   };
 
-  // ✅ backend renvoie `utilisateur`, pas `etudiant`
   const etudiant = demande.utilisateur || {};
   const pieces = Array.isArray(demande.pieces) ? demande.pieces : [];
 
@@ -374,18 +632,14 @@ function ModalVerifier({ demande, onClose, onSuccess }) {
               Réf : {demande.id} · soumise le {fmtDate(demande.createdAt)}
             </div>
           </div>
-          <button className="sa-modal__close" onClick={onClose}>
-            ×
-          </button>
+          <button className="sa-modal__close" onClick={onClose}>×</button>
         </div>
 
         <div className="sa-modal__body">
           <div className="sa-info-grid">
             <div className="sa-info-item">
               <div className="sa-info-key">Étudiant</div>
-              <div className="sa-info-val">
-                {etudiant.prenom} {etudiant.nom}
-              </div>
+              <div className="sa-info-val">{etudiant.prenom} {etudiant.nom}</div>
             </div>
             <div className="sa-info-item">
               <div className="sa-info-key">N° Étudiant</div>
@@ -393,9 +647,7 @@ function ModalVerifier({ demande, onClose, onSuccess }) {
             </div>
             <div className="sa-info-item">
               <div className="sa-info-key">Document</div>
-              <div className="sa-info-val">
-                {TYPE_LABEL[demande.typeDocument] || demande.typeDocument}
-              </div>
+              <div className="sa-info-val">{TYPE_LABEL[demande.typeDocument] || demande.typeDocument}</div>
             </div>
             <div className="sa-info-item">
               <div className="sa-info-key">Statut</div>
@@ -409,12 +661,8 @@ function ModalVerifier({ demande, onClose, onSuccess }) {
               {pieces.map((p) => (
                 <div key={p.id} className="sa-piece-row">
                   <div>
-                    <div className="sa-piece-name">
-                      {PIECE_LABEL[p.typePiece] || p.typePiece}
-                    </div>
-                    <div className="sa-piece-meta">
-                      {p.nom ? p.nom : "Fichier uploadé"}
-                    </div>
+                    <div className="sa-piece-name">{PIECE_LABEL[p.typePiece] || p.typePiece}</div>
+                    <div className="sa-piece-meta">{p.nom || "Fichier uploadé"}</div>
                   </div>
                   <span className="sa-piece-tag">{p.statut || "SOUMISE"}</span>
                 </div>
@@ -439,40 +687,18 @@ function ModalVerifier({ demande, onClose, onSuccess }) {
         <div className="sa-modal__footer">
           {step === "actions" ? (
             <div className="sa-btn-row">
-              <button className="sa-btn sa-btn--ghost" onClick={onClose}>
-                Fermer
-              </button>
-
-              <button
-                className="sa-btn sa-btn--warn"
-                onClick={() => setStep("correction")}
-                disabled={!peutTransmettre}
-              >
+              <button className="sa-btn sa-btn--ghost" onClick={onClose}>Fermer</button>
+              <button className="sa-btn sa-btn--warn" onClick={() => setStep("correction")} disabled={!peutTransmettre}>
                 ⚠ Correction
               </button>
-
-              <button
-                className="sa-btn sa-btn--primary"
-                onClick={handleTransmettre}
-                disabled={loading || !peutTransmettre}
-              >
+              <button className="sa-btn sa-btn--primary" onClick={handleTransmettre} disabled={loading || !peutTransmettre}>
                 {loading ? "Envoi…" : "Transmettre au SG →"}
               </button>
             </div>
           ) : (
             <div className="sa-btn-row">
-              <button
-                className="sa-btn sa-btn--ghost"
-                onClick={() => setStep("actions")}
-                disabled={loading}
-              >
-                ← Retour
-              </button>
-              <button
-                className="sa-btn sa-btn--warn"
-                onClick={handleCorrection}
-                disabled={loading || !motif.trim()}
-              >
+              <button className="sa-btn sa-btn--ghost" onClick={() => setStep("actions")} disabled={loading}>← Retour</button>
+              <button className="sa-btn sa-btn--warn" onClick={handleCorrection} disabled={loading || !motif.trim()}>
                 {loading ? "Envoi…" : "Envoyer la correction"}
               </button>
             </div>
@@ -490,7 +716,8 @@ export default function DashboardSA() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
-  const [toast, setToast] = useState(null); // { msg, error }
+  const [showPwd, setShowPwd] = useState(false);
+  const [toast, setToast] = useState(null);
 
   const user = (() => {
     try {
@@ -503,7 +730,8 @@ export default function DashboardSA() {
   const displayName =
     user.prenom && user.nom ? `${user.prenom} ${user.nom}` : "Agent";
   const avatarText = initials(user.nom || "", user.prenom || "");
-  const institution = user.institution?.sigle || user.institution?.nom || "IFRI";
+  const institution =
+    user.institution?.sigle || user.institution?.nom || "IFRI";
 
   const showToast = (msg, isError = false) => {
     setToast({ msg, isError });
@@ -516,8 +744,6 @@ export default function DashboardSA() {
     try {
       const data = await getDemandes();
       const list = Array.isArray(data) ? data : data?.demandes || [];
-
-      // ✅ On garde les demandes SA pertinentes (si backend renvoie aussi correction)
       const filtered = list.filter((d) => SA_STATUTS.includes(d.statut));
       setDemandes(filtered);
     } catch (e) {
@@ -540,21 +766,22 @@ export default function DashboardSA() {
     nouvelles: demandes.filter((d) => d.statut === "SOUMISE").length,
     corrections: demandes.filter((d) => d.statut === "CORRECTION_DEMANDEE").length,
     total: demandes.length,
-    transmises: 0, // SA ne voit pas après transmission (normal si backend filtre)
+    transmises: 0,
   };
 
-  const filtered = demandes.filter((d) => {
-    const q = search.trim().toLowerCase();
-    if (!q) return true;
-
-    const u = d.utilisateur || {};
-    const nom = `${u.prenom || ""} ${u.nom || ""}`.toLowerCase();
-    const ref = String(d.id || "").toLowerCase();
-    const doc = String(TYPE_LABEL[d.typeDocument] || d.typeDocument || "").toLowerCase();
-    const num = String(u.numeroEtudiant || "").toLowerCase();
-
-    return nom.includes(q) || ref.includes(q) || doc.includes(q) || num.includes(q);
-  });
+  // ✅ Filtrage + tri du plus ancien au plus récent
+  const filtered = demandes
+    .filter((d) => {
+      const q = search.trim().toLowerCase();
+      if (!q) return true;
+      const u = d.utilisateur || {};
+      const nom = `${u.prenom || ""} ${u.nom || ""}`.toLowerCase();
+      const ref = String(d.id || "").toLowerCase();
+      const doc = String(TYPE_LABEL[d.typeDocument] || d.typeDocument || "").toLowerCase();
+      const num = String(u.numeroEtudiant || "").toLowerCase();
+      return nom.includes(q) || ref.includes(q) || doc.includes(q) || num.includes(q);
+    })
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); // Plus ancien → plus récent
 
   const handleLogout = () => {
     clearSession();
@@ -571,38 +798,29 @@ export default function DashboardSA() {
         </div>
       )}
 
+      {/* Modal vérification demande */}
       {selected && (
         <ModalVerifier
           demande={selected}
-          onClose={() => {
-            setSelected(null);
-            load();
-          }}
-          onSuccess={(msg, isErr) => {
-            showToast(msg, isErr);
-            if (!isErr) load();
-          }}
+          onClose={() => { setSelected(null); load(); }}
+          onSuccess={(msg, isErr) => { showToast(msg, isErr); if (!isErr) load(); }}
         />
       )}
 
+      {/* Modal modifier mot de passe */}
+      {showPwd && (
+        <ModalMotDePasse
+          onClose={() => setShowPwd(false)}
+          onSuccess={(msg) => showToast(msg)}
+        />
+      )}
+
+      {/* ── SIDEBAR ── */}
       <aside className="agent-sidebar">
-        <a href="/agent" className="agent-sidebar__brand">
-          <div className="agent-sidebar__brand-icon">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
-          </div>
-          EtuDocs <span className="agent-sidebar__brand-tag">Agent</span>
+        {/* Logo identique au dashboard étudiant */}
+        <a href="/dashboardsa" className="agent-sidebar__brand">
+          <img src={logo} alt="EtuDocs" className="agent-sidebar__brand-logo" />
+          <span className="agent-sidebar__brand-name">EtuDocs</span>
         </a>
 
         <nav className="agent-sidebar__nav">
@@ -610,44 +828,42 @@ export default function DashboardSA() {
             <NavLink
               key={n.to}
               to={n.to}
-              end={n.to === "/agent"}
+              end
               className={({ isActive }) =>
                 "agent-sidebar__link" + (isActive ? " active" : "")
               }
             >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d={n.d} />
               </svg>
               {n.label}
             </NavLink>
           ))}
+
+          {/* Modifier mot de passe */}
+          <button
+            className="agent-sidebar__link"
+            onClick={() => setShowPwd(true)}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            Modifier mot de passe
+          </button>
         </nav>
 
         <div className="agent-sidebar__divider" />
+
         <button className="agent-sidebar__logout" onClick={handleLogout}>
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
           Déconnexion
         </button>
       </aside>
 
+      {/* ── MAIN ── */}
       <div className="agent-main">
         <header className="agent-topbar">
           <div className="agent-topbar__role">
@@ -655,16 +871,7 @@ export default function DashboardSA() {
           </div>
           <div className="agent-topbar__right">
             <button className="agent-topbar__notif">
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
@@ -687,16 +894,7 @@ export default function DashboardSA() {
               <p className="agent-page-sub">Gérez les nouvelles demandes des étudiants.</p>
             </div>
             <button className="btn-actualiser" onClick={load} disabled={loading}>
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="23 4 23 10 17 10" />
                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
               </svg>
@@ -707,92 +905,24 @@ export default function DashboardSA() {
           <div className="agent-stats">
             {[
               {
-                value: stats.nouvelles,
-                label: "NOUVELLES DEMANDES",
-                iconBg: "#eff6ff",
-                icon: (
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#1d4ed8"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0" />
-                  </svg>
-                ),
+                value: stats.nouvelles, label: "NOUVELLES DEMANDES", iconBg: "#eff6ff",
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0" /></svg>,
               },
               {
-                value: stats.corrections,
-                label: "CORRECTIONS DEMANDÉES",
-                iconBg: "#fff7ed",
-                icon: (
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#ea580c"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                  </svg>
-                ),
+                value: stats.corrections, label: "CORRECTIONS DEMANDÉES", iconBg: "#fff7ed",
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>,
               },
               {
-                value: stats.total,
-                label: "TOTAL À TRAITER",
-                iconBg: "#f1f5f9",
-                icon: (
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#475569"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect x="3" y="3" width="7" height="7" />
-                    <rect x="14" y="3" width="7" height="7" />
-                    <rect x="3" y="14" width="7" height="7" />
-                    <rect x="14" y="14" width="7" height="7" />
-                  </svg>
-                ),
+                value: stats.total, label: "TOTAL À TRAITER", iconBg: "#f1f5f9",
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>,
               },
               {
-                value: stats.transmises,
-                label: "TRANSMISES",
-                iconBg: "#f0fdf4",
-                icon: (
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#16a34a"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
-                  </svg>
-                ),
+                value: stats.transmises, label: "TRANSMISES", iconBg: "#f0fdf4",
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>,
               },
             ].map((s, i) => (
               <div className="agent-stat-card" key={i}>
-                <div className="agent-stat-card__icon" style={{ background: s.iconBg }}>
-                  {s.icon}
-                </div>
+                <div className="agent-stat-card__icon" style={{ background: s.iconBg }}>{s.icon}</div>
                 <div>
                   <div className="agent-stat-card__value">{loading ? "…" : s.value}</div>
                   <div className="agent-stat-card__label">{s.label}</div>
@@ -808,21 +938,10 @@ export default function DashboardSA() {
               <div className="agent-table-title">
                 Demandes à traiter <span className="count-badge">{filtered.length}</span>
               </div>
-
               <div className="agent-table-actions">
                 <div className="search-box">
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#94a3b8"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                   </svg>
                   <input
                     placeholder="Rechercher..."
@@ -831,16 +950,7 @@ export default function DashboardSA() {
                   />
                 </div>
                 <button className="btn-filter" type="button">
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#475569"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
                   </svg>
                 </button>
@@ -853,28 +963,21 @@ export default function DashboardSA() {
                   <th>Référence</th>
                   <th>Étudiant</th>
                   <th>Document</th>
-                  <th>Date</th>
+                  <th>Date ↑</th>
                   <th>Statut</th>
                   <th style={{ textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
-
               <tbody>
                 {loading ? (
                   <tr>
-                    <td
-                      colSpan="6"
-                      style={{ textAlign: "center", padding: "32px", color: "#94a3b8", fontSize: ".9rem" }}
-                    >
+                    <td colSpan="6" style={{ textAlign: "center", padding: "32px", color: "#94a3b8", fontSize: ".9rem" }}>
                       Chargement…
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan="6"
-                      style={{ textAlign: "center", padding: "32px", color: "#94a3b8", fontSize: ".9rem" }}
-                    >
+                    <td colSpan="6" style={{ textAlign: "center", padding: "32px", color: "#94a3b8", fontSize: ".9rem" }}>
                       {search ? "Aucune demande trouvée" : "Aucune demande en attente"}
                     </td>
                   </tr>
@@ -913,7 +1016,6 @@ export default function DashboardSA() {
               </tbody>
             </table>
           </div>
-
         </div>
       </div>
     </div>
