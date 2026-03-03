@@ -40,6 +40,13 @@ enum StatutDemande {
   ANNULEE
 }
 
+enum StatutDocument {
+  DOCUMENT_GENERE
+  ATTENTE_SIGNATURE_DIRECTEUR
+  DISPONIBLE
+  REJETEE
+}
+
 enum TypePiece {
   CIP
   QUITTANCE
@@ -96,7 +103,6 @@ model Utilisateur {
   numeroEtudiant String?  @unique
   service        Service?
 
-  // Auth / état du compte
   actif              Boolean   @default(true)
   emailVerifie       Boolean   @default(false)
   tokenVerification  String?
@@ -108,15 +114,15 @@ model Utilisateur {
 }
 
 model Demande {
-  id           String       @id @default(uuid())
-  typeDocument TypeDocument
-  semestres     Int[]
+  id             String       @id @default(uuid())
+  typeDocument   TypeDocument
+  semestres      Int[]
   anneeAcademique String?
-  serviceCible Service
+  serviceCible   Service
 
-  statut    StatutDemande @default(SOUMISE)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  statut      StatutDemande @default(SOUMISE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   deliveredAt DateTime?
 
   utilisateurId String
@@ -128,7 +134,6 @@ model Demande {
   pieces     PieceJustificative[]
   historique WorkflowHistory[]
 
-  // 1 document final par demande (MVP)
   documents Document[]
 }
 
@@ -148,15 +153,20 @@ model WorkflowHistory {
 model Document {
   id String @id @default(uuid())
 
-  // Référence unique métier (ex: ETD-2026-IFRI-S1-00847-XK29)
   reference String @unique
-
-  // Pour QR code + page /verify/:reference
   qrPayload String @unique
 
   urlPdf      String
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   deliveredAt DateTime?
+
+  // ✅ statut indépendant par document
+  statut StatutDocument @default(DOCUMENT_GENERE)
+
+  // (optionnel mais utile)
+  signedByDAAt  DateTime?
+  signedByDIRAt DateTime?
 
   downloadCount Int       @default(0)
   maxDownloads  Int       @default(3)

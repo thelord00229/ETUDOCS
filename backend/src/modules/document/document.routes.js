@@ -6,8 +6,29 @@ const role = require("../../middlewares/role.middleware");
 // Download: propriétaire uniquement, incrémente le compteur
 router.get("/download/:reference", auth, ctrl.telecharger);
 
-// ✅ Preview: agents seulement, inline sans toucher au compteur
-router.get("/preview/:reference", auth, role("DIRECTEUR_ADJOINT", "DIRECTEUR", "SECRETAIRE_GENERAL", "SECRETAIRE_ADJOINT", "CHEF_DIVISION", "SUPER_ADMIN"), ctrl.preview);
+// Preview: agents seulement, inline sans toucher au compteur
+router.get(
+  "/preview/:reference",
+  auth,
+  role(
+    "DIRECTEUR_ADJOINT",
+    "DIRECTEUR",
+    "SECRETAIRE_GENERAL",
+    "SECRETAIRE_ADJOINT",
+    "CHEF_DIVISION",
+    "SUPER_ADMIN"
+  ),
+  ctrl.preview
+);
+
+// ✅ Avancer un document (DA / Directeur) par référence
+// Le front appelle : POST /api/documents/:reference/avancer
+router.post(
+  "/:reference/avancer",
+  auth,
+  role("DIRECTEUR_ADJOINT", "DIRECTEUR", "SUPER_ADMIN"),
+  ctrl.avancerParReference
+);
 
 // Suppression
 router.delete("/:reference", auth, role("SUPER_ADMIN"), ctrl.supprimer);

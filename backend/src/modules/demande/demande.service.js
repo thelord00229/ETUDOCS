@@ -107,21 +107,45 @@ exports.getDemandes = async (user) => {
       };
     }
   } else if (role === "DIRECTEUR_ADJOINT") {
-    where = { institutionId, statut: "DOCUMENT_GENERE" };
+    // ✅ DA : les demandes au stade "DOCUMENT_GENERE"
+    // (On filtre sur Demande.statut, PAS sur Document.statut)
+    where = {
+      institutionId,
+      statut: "DOCUMENT_GENERE",
+    };
   } else if (role === "DIRECTEUR") {
-    where = { institutionId, statut: "ATTENTE_SIGNATURE_DIRECTEUR" };
+    // ✅ Directeur : les demandes au stade "ATTENTE_SIGNATURE_DIRECTEUR"
+    // (On filtre sur Demande.statut, PAS sur Document.statut)
+    where = {
+      institutionId,
+      statut: "ATTENTE_SIGNATURE_DIRECTEUR",
+    };
   } else if (role === "SUPER_ADMIN") {
     where = institutionId ? { institutionId } : {};
   } else {
     where = { institutionId };
   }
 
+  // documents retournés (pas de "statut", car Document.statut n'existe pas)
+  const documentsInclude = {
+    select: {
+      reference: true,
+      urlPdf: true,
+      downloadCount: true,
+      qrPayload: true,
+      createdAt: true,
+      deliveredAt: true,
+      maxDownloads: true,
+      blockedAt: true,
+    },
+  };
+
   return prisma.demande.findMany({
     where,
     include: {
       utilisateur: { select: { nom: true, prenom: true, numeroEtudiant: true, email: true } },
       pieces: true,
-      documents: { select: { reference: true, urlPdf: true, downloadCount: true } },
+      documents: documentsInclude,
     },
     orderBy: { createdAt: "desc" },
   });
@@ -133,8 +157,12 @@ exports.getById = async (demandeId, user) => {
     include: {
       utilisateur: {
         select: {
-          nom: true, prenom: true, email: true,
-          numeroEtudiant: true, filiere: true, niveau: true,
+          nom: true,
+          prenom: true,
+          email: true,
+          numeroEtudiant: true,
+          filiere: true,
+          niveau: true,
         },
       },
       pieces: true,
@@ -198,11 +226,17 @@ async function generateDocumentsOutsideTransaction({ demande, institutionId }) {
   const results = [];
 
   if (demande.typeDocument === "ATTESTATION_INSCRIPTION") {
-    const reference = `ETD-${annee}-${sigle}-ATT-${String(demande.id).substring(0, 5).toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
+    const reference = `ETD-${annee}-${sigle}-ATT-${String(demande.id).substring(0, 5).toUpperCase()}-${uuidv4()
+      .substring(0, 4)
+      .toUpperCase()}`;
     const qrData = `${baseUrl}/verify/${reference}`;
 
     const pdfPath = await pdfService.generateAttestationInscription(
-      demande, etudiant, reference, institution, qrData
+      demande,
+      etudiant,
+      reference,
+      institution,
+      qrData
     );
 
     await qrcodeService.generate(qrData, reference);
@@ -214,11 +248,18 @@ async function generateDocumentsOutsideTransaction({ demande, institutionId }) {
     const semestres = demande.semestres?.length ? demande.semestres : [1];
 
     for (const semestre of semestres) {
-      const reference = `ETD-${annee}-${sigle}-S${semestre}-${String(demande.id).substring(0, 5).toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
+      const reference = `ETD-${annee}-${sigle}-S${semestre}-${String(demande.id)
+        .substring(0, 5)
+        .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
       const qrData = `${baseUrl}/verify/${reference}`;
 
       const pdfPath = await pdfService.generateDocument(
-        { ...demande, semestre }, etudiant, null, reference, institution, qrData
+        { ...demande, semestre },
+        etudiant,
+        null,
+        reference,
+        institution,
+        qrData
       );
 
       await qrcodeService.generate(qrData, reference);
@@ -228,13 +269,12 @@ async function generateDocumentsOutsideTransaction({ demande, institutionId }) {
     return results;
   }
 
-  // Autres types
-  const reference = `ETD-${annee}-${sigle}-${String(demande.id).substring(0, 5).toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
+  const reference = `ETD-${annee}-${sigle}-${String(demande.id).substring(0, 5).toUpperCase()}-${uuidv4()
+    .substring(0, 4)
+    .toUpperCase()}`;
   const qrData = `${baseUrl}/verify/${reference}`;
 
-  const pdfPath = await pdfService.generateDocument(
-    demande, etudiant, null, reference, institution, qrData
-  );
+  const pdfPath = await pdfService.generateDocument(demande, etudiant, null, reference, institution, qrData);
 
   await qrcodeService.generate(qrData, reference);
   results.push({ reference, qrPayload: qrData, urlPdf: pdfPath });
@@ -271,31 +311,6 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
     const err = new Error(e.message || "Action non permise");
     err.statusCode = 403;
     throw err;
-  }
-
-  if (role === "SECRETAIRE_ADJOINT" && demande.statut === "SOUMISE" && action === "TRANSMETTRE") {
-    const sg = await prisma.utilisateur.findFirst({
-      where: { role: "SECRETAIRE_GENERAL", institutionId: demande.institutionId, actif: true },
-      select: { id: true },
-    });
-    if (!sg) {
-      const err = new Error("Impossible de transmettre : aucun Secrétaire général actif n'est configuré pour cette institution.");
-      err.statusCode = 400;
-      throw err;
-    }
-  }
-
-  if (role === "SECRETAIRE_GENERAL" && demande.statut === "TRANSMISE_SECRETAIRE_ADJOINT" && action === "TRANSMETTRE") {
-    const cible = normalizeService(demande.serviceCible);
-    const chef = await prisma.utilisateur.findFirst({
-      where: { role: "CHEF_DIVISION", institutionId: demande.institutionId, actif: true, service: cible },
-      select: { id: true },
-    });
-    if (!chef) {
-      const err = new Error(`Impossible de transmettre : aucun Chef de division ${cible} actif n'est configuré pour cette institution.`);
-      err.statusCode = 400;
-      throw err;
-    }
   }
 
   if (action === "GENERER_DOCUMENT") {
@@ -357,14 +372,8 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
   });
 
   try {
-    await emailService.sendStatutChange(
-      demande.utilisateur.email,
-      demande.utilisateur.prenom,
-      prochainStatut
-    );
-  } catch (e) {
-    // Email non bloquant
-  }
+    await emailService.sendStatutChange(demande.utilisateur.email, demande.utilisateur.prenom, prochainStatut);
+  } catch {}
 
   return updated;
 };
@@ -454,7 +463,7 @@ exports.getStatsDA = async (user) => {
 
   const now = new Date();
   const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const nextMonth  = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
   const [aSigner, signesCeMois, refuses] = await Promise.all([
     prisma.demande.count({
@@ -494,7 +503,7 @@ exports.getStatsDI = async (user) => {
   const { institutionId } = user;
   const now = new Date();
   const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const nextMonth  = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
   const [aSigner, signesCeMois, refuses] = await Promise.all([
     prisma.demande.count({

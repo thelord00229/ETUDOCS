@@ -107,3 +107,23 @@ exports.getStatsSG = asyncHandler(async (req, res) => {
 exports.getStatsDI = asyncHandler(async (req, res) => {
   res.json(await service.getStatsDI(req.user));
 });
+
+exports.telecharger = asyncHandler(async (req, res) => {
+  // logique de téléchargement avec incrément du compteur
+  res.json(await service.telecharger(req.params.reference, req.user));
+});
+
+exports.preview = asyncHandler(async (req, res) => {
+  // aperçu sans toucher au compteur
+  res.json(await service.preview(req.params.reference, req.user));
+});
+
+exports.supprimer = asyncHandler(async (req, res) => {
+  await service.supprimer(req.params.reference, req.user);
+  res.json({ message: "Document supprimé." });
+});
+
+exports.verifier = asyncHandler(async (req, res) => {
+  // vérification publique QR code
+  res.json(await service.verifier(req.params.reference));
+});

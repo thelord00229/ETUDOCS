@@ -59,6 +59,13 @@ export const setSession = ({ token, user }) => {
   }
 };
 
+// ✅ Avancer un document (DA / Directeur)
+export const avancerDocument = async (reference, action, commentaire = "") => {
+  const body = { action };
+  if (commentaire) body.commentaire = commentaire;
+  return apiRequest(`/api/documents/${reference}/avancer`, { method: "POST", body });
+};
+
 export const clearSession = () => {
   localStorage.removeItem("etudocs_token");
   localStorage.removeItem("token");

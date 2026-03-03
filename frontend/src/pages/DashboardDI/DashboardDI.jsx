@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { getDemandes, avancerDemande } from "../../services/api";
+import { useEffect, useMemo, useState } from "react";
+import { getDemandes, avancerDocument, previewDocumentBlob } from "../../services/api";
 import logo from "../../assets/logo.png"; // ✅ même logo que SALayout
 
 const styles = `
@@ -356,20 +356,54 @@ const XCircleIcon = () => (
 
 export default function DashboardDI() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [demandes, setDemandes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [busyRef, setBusyRef] = useState(null);
+  const [preview, setPreview] = useState(null); // { url, name }
+  const [rows, setRows] = useState([]); // une ligne par document
 
-  const chargerDemandes = async () => {
+  const charger = async () => {
+    setLoading(true);
     try {
       const data = await getDemandes();
-      const list = Array.isArray(data) ? data : (data?.demandes ?? []);
-      setDemandes(list);
+      const demandes = Array.isArray(data) ? data : (data?.demandes ?? []);
+
+      const lignes = [];
+      for (const d of demandes) {
+        const docs = Array.isArray(d.documents) ? d.documents : [];
+        for (const doc of docs) {
+          const sMatch = doc.reference?.match(/-S(\d+)-/);
+          const semestre = sMatch ? `S${sMatch[1]}` : null;
+
+          lignes.push({
+            reference: doc.reference,
+            etudiant: `${d.utilisateur?.prenom ?? ""} ${d.utilisateur?.nom ?? ""}`.trim(),
+            typeDocument: d.typeDocument,
+            semestre,
+            createdAt: doc.createdAt || d.createdAt,
+            statutDoc: doc.statut,
+          });
+        }
+      }
+      setRows(lignes);
     } catch (e) {
       console.error(e);
-      setDemandes([]);
+      setRows([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => { chargerDemandes(); }, []);
+  useEffect(() => { charger(); }, []);
+
+  const filtered = useMemo(() => {
+    const q = (searchQuery || "").trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((r) =>
+      (r.reference || "").toLowerCase().includes(q) ||
+      (r.etudiant || "").toLowerCase().includes(q) ||
+      (r.typeDocument || "").toLowerCase().includes(q)
+    );
+  }, [rows, searchQuery]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -377,42 +411,43 @@ export default function DashboardDI() {
     window.location.href = "/";
   };
 
+  const openPreview = async (reference) => {
+    if (!reference) return;
+    try {
+      const blob = await previewDocumentBlob(reference);
+      const url = window.URL.createObjectURL(blob);
+      setPreview({ url, name: reference });
+    } catch (e) {
+      alert(e?.message || "Impossible d'ouvrir le document");
+    }
+  };
+
+  const closePreview = () => {
+    if (preview?.url) window.URL.revokeObjectURL(preview.url);
+    setPreview(null);
+  };
+
   return (
     <>
       <style>{styles}</style>
       <div className="layout">
-
-        {/* ── SIDEBAR ── */}
         <aside className="sidebar">
-          {/* Brand identique à SALayout */}
           <a href="/" className="sidebar-brand">
             <img src={logo} alt="EtuDocs" className="sidebar-brand__logo" />
             <span className="sidebar-brand__name">EtuDocs</span>
           </a>
-
           <nav className="sidebar-nav">
-            <button className="nav-item active">
-              <GridIcon />
-              Tableau de bord
-            </button>
+            <button className="nav-item active"><GridIcon /> Tableau de bord</button>
           </nav>
-
           <div className="sidebar-divider" />
-
-          <button className="logout-btn" onClick={handleLogout}>
-            <LogoutIcon /> Déconnexion
-          </button>
+          <button className="logout-btn" onClick={handleLogout}><LogoutIcon /> Déconnexion</button>
         </aside>
 
-        {/* ── MAIN ── */}
         <main className="main">
           <header className="topbar">
             <div className="breadcrumb">Directeur — IFRI</div>
             <div className="topbar-right">
-              <button className="notif-btn">
-                <BellIcon />
-                <span className="notif-dot" />
-              </button>
+              <button className="notif-btn"><BellIcon /><span className="notif-dot" /></button>
               <div className="user-info">
                 <div className="user-name">Prof. Théophile KODJO</div>
                 <div className="user-org">IFRI</div>
@@ -425,30 +460,32 @@ export default function DashboardDI() {
             <div className="page-header">
               <div>
                 <h1 className="page-title">Espace Directeur</h1>
-                <p className="page-subtitle">Apposez la signature finale pour délivrance.</p>
+                <p className="page-subtitle">Signature finale — par document.</p>
               </div>
-              <button className="actualiser-btn" onClick={chargerDemandes}>Actualiser</button>
+              <button className="actualiser-btn" onClick={charger} disabled={loading}>
+                {loading ? "Chargement..." : "Actualiser"}
+              </button>
             </div>
 
             <div className="stats-grid">
               <div className="stat-card">
                 <div className="stat-icon sign"><PenIcon /></div>
                 <div>
-                  <div className="stat-value">0</div>
+                  <div className="stat-value">{rows.length}</div>
                   <div className="stat-label">À signer</div>
                 </div>
               </div>
               <div className="stat-card">
                 <div className="stat-icon ok"><CheckCircleIcon /></div>
                 <div>
-                  <div className="stat-value">45</div>
+                  <div className="stat-value">—</div>
                   <div className="stat-label">Validés (mois)</div>
                 </div>
               </div>
               <div className="stat-card">
                 <div className="stat-icon refused"><XCircleIcon /></div>
                 <div>
-                  <div className="stat-value">0</div>
+                  <div className="stat-value">—</div>
                   <div className="stat-label">Refusés</div>
                 </div>
               </div>
@@ -458,7 +495,7 @@ export default function DashboardDI() {
               <div className="table-header">
                 <div className="table-title">
                   Documents en attente de signature finale
-                  <span className="badge-count">{demandes.length}</span>
+                  <span className="badge-count">{filtered.length}</span>
                 </div>
                 <div className="search-box">
                   <span className="search-icon"><SearchIcon /></span>
@@ -480,51 +517,57 @@ export default function DashboardDI() {
                       <th>Référence</th>
                       <th>Étudiant</th>
                       <th>Document</th>
+                      <th>Semestre</th>
                       <th>Date</th>
                       <th>Statut</th>
-                      <th>Action</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {demandes.length === 0 ? (
+                    {filtered.length === 0 ? (
                       <tr>
-                        <td colSpan={6} style={{ padding: 24, color: "var(--text-muted)" }}>
-                          Aucun document en attente de signature finale
+                        <td colSpan={7} style={{ padding: 24, color: "var(--text-muted)" }}>
+                          Aucun document en attente
                         </td>
                       </tr>
                     ) : (
-                      demandes
-                        .filter((d) => {
-                          const q = (searchQuery || "").toLowerCase();
-                          const ref = (d?.documents?.[0]?.reference || "").toLowerCase();
-                          const nom = `${d?.utilisateur?.prenom || ""} ${d?.utilisateur?.nom || ""}`.toLowerCase();
-                          return !q || ref.includes(q) || nom.includes(q);
-                        })
-                        .map((d) => (
-                          <tr key={d.id}>
-                            <td style={{ padding: "12px 28px" }}>{d.documents?.[0]?.reference ?? "—"}</td>
-                            <td style={{ padding: "12px 28px" }}>{d.utilisateur?.prenom} {d.utilisateur?.nom}</td>
-                            <td style={{ padding: "12px 28px" }}>{d.typeDocument}</td>
-                            <td style={{ padding: "12px 28px" }}>{new Date(d.createdAt).toLocaleString()}</td>
-                            <td style={{ padding: "12px 28px" }}>{d.statut}</td>
-                            <td style={{ padding: "12px 28px" }}>
-                              <button
-                                className="actualiser-btn"
-                                onClick={async () => {
-                                  await avancerDemande(d.id, "APPROUVER");
-                                  await chargerDemandes();
-                                }}
-                              >
-                                Approuver
-                              </button>
-                            </td>
-                          </tr>
-                        ))
+                      filtered.map((r) => (
+                        <tr key={r.reference}>
+                          <td style={{ padding: "12px 28px", fontFamily: "monospace", fontSize: 12 }}>
+                            {r.reference}
+                          </td>
+                          <td style={{ padding: "12px 28px" }}>{r.etudiant}</td>
+                          <td style={{ padding: "12px 28px" }}>{r.typeDocument}</td>
+                          <td style={{ padding: "12px 28px" }}>{r.semestre ?? "—"}</td>
+                          <td style={{ padding: "12px 28px" }}>{new Date(r.createdAt).toLocaleString()}</td>
+                          <td style={{ padding: "12px 28px" }}>{r.statutDoc}</td>
+                          <td style={{ padding: "12px 28px", display: "flex", gap: 8 }}>
+                            <button className="actualiser-btn" onClick={() => openPreview(r.reference)}>
+                              Aperçu
+                            </button>
+                            <button
+                              className="actualiser-btn"
+                              disabled={busyRef === r.reference}
+                              onClick={async () => {
+                                setBusyRef(r.reference);
+                                try {
+                                  await avancerDocument(r.reference, "APPROUVER");
+                                  await charger();
+                                } finally {
+                                  setBusyRef(null);
+                                }
+                              }}
+                            >
+                              {busyRef === r.reference ? "..." : "Approuver"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))
                     )}
                   </tbody>
                 </table>
 
-                {demandes.length === 0 && (
+                {filtered.length === 0 && (
                   <div className="empty-state">
                     <div className="empty-icon">📄</div>
                     <div className="empty-text">Aucun document en attente de signature finale</div>
@@ -535,6 +578,20 @@ export default function DashboardDI() {
           </div>
         </main>
       </div>
+
+      {preview && (
+        <div className="modal-overlay" onClick={closePreview}>
+          <div className="modal-preview" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-preview-title">
+              <span>👁 Aperçu — <span style={{ fontFamily: "monospace" }}>{preview.name}</span></span>
+              <button className="btn outline" onClick={closePreview}>Fermer</button>
+            </div>
+            <div className="modal-body">
+              <iframe title="preview" src={preview.url} style={{ width: "100%", height: "100%", border: "none" }} />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

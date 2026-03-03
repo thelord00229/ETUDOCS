@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getDemandes, avancerDemande } from "../../services/api";
-import { previewDocumentBlob, getStatsDA } from "../../services/api";
+import { getDemandes, previewDocumentBlob, getStatsDA, avancerDocument } from "../../services/api";
 import logo from "../../assets/logo.png";
 
 const styles = `
@@ -238,10 +237,10 @@ export default function DashboardDA() {
 
   // ✅ Approuver : on avance la demande (une seule fois peu importe le nb de docs)
   const handleApprouver = async (row) => {
-    if (!row?.demandeId) return;
+    if (!row?.reference || row.reference === "—") return;
     setBusyId(row.reference);
     try {
-      await avancerDemande(row.demandeId, "APPROUVER");
+      await avancerDocument(row.reference, "APPROUVER");
       await charger();
     } catch (e) {
       alert(e?.message || "Erreur approbation");
@@ -373,8 +372,8 @@ export default function DashboardDA() {
                     {filtered.length === 0 ? (
                       <tr><td colSpan={7} style={{ textAlign: "center", padding: 24, color: "var(--text-muted)" }}>Aucun document en attente</td></tr>
                     ) : (
-                      filtered.map((row, i) => (
-                        <tr key={`${row.reference}-${i}`}>
+                      filtered.map((row) => (
+                        <tr key={row.reference}>
                           <td style={{ fontFamily: "monospace", fontSize: 12, color: "var(--accent-blue)" }}>{row.reference}</td>
                           <td>{row.etudiant}</td>
                           <td>{row.typeDocument}</td>

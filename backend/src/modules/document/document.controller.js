@@ -4,7 +4,6 @@ const fs = require("fs");
 const asyncHandler = require("../../utils/asyncHandler");
 
 const DEFAULT_MAX_DOWNLOADS = 3;
-
 const UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
 
 function toSafeAbsolutePath(filePath) {
@@ -13,6 +12,8 @@ function toSafeAbsolutePath(filePath) {
   const abs = path.isAbsolute(normalized)
     ? path.resolve(normalized)
     : path.resolve(process.cwd(), normalized);
+
+  // Sécurité: on autorise seulement dans /uploads
   if (!abs.startsWith(UPLOADS_DIR)) return null;
   return abs;
 }
@@ -28,6 +29,7 @@ exports.telecharger = asyncHandler(async (req, res) => {
 
     if (!doc) return { error: { code: 404, message: "Document introuvable" } };
 
+    // Propriétaire uniquement
     if (doc.demande.utilisateurId !== req.user.id) {
       return { error: { code: 403, message: "Accès refusé" } };
     }
@@ -39,7 +41,8 @@ exports.telecharger = asyncHandler(async (req, res) => {
       return {
         error: {
           code: 403,
-          message: "Limite de téléchargement atteinte. Faites une nouvelle demande.",
+          message:
+            "Limite de téléchargement atteinte. Faites une nouvelle demande.",
         },
       };
     }
@@ -63,13 +66,14 @@ exports.telecharger = asyncHandler(async (req, res) => {
 
   const absPath = toSafeAbsolutePath(result.urlPdf);
   if (!absPath || !fs.existsSync(absPath)) {
-    return res.status(404).json({ message: "Fichier PDF introuvable sur le serveur" });
+    return res
+      .status(404)
+      .json({ message: "Fichier PDF introuvable sur le serveur" });
   }
 
   return res.download(absPath, `${reference}.pdf`);
 });
 
-// ✅ NOUVEAU : preview inline sans téléchargement ni compteur
 exports.preview = asyncHandler(async (req, res) => {
   const { reference } = req.params;
 
@@ -82,13 +86,13 @@ exports.preview = asyncHandler(async (req, res) => {
 
   const absPath = toSafeAbsolutePath(doc.urlPdf);
   if (!absPath || !fs.existsSync(absPath)) {
-    return res.status(404).json({ message: "Fichier PDF introuvable sur le serveur" });
+    return res
+      .status(404)
+      .json({ message: "Fichier PDF introuvable sur le serveur" });
   }
 
-  // inline = affiché dans le navigateur, pas téléchargé
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader("Content-Disposition", `inline; filename="${reference}.pdf"`);
-  // Empêche la mise en cache et le téléchargement direct
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("X-Content-Type-Options", "nosniff");
 
@@ -107,7 +111,9 @@ exports.supprimer = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: "Document introuvable" });
   }
 
-  if (doc.demande.utilisateurId !== req.user.id) {
+  // Ici tu avais "propriétaire uniquement" :
+  // si tu veux que seul SUPER_ADMIN supprime, laisse la route côté routes avec role("SUPER_ADMIN")
+  if (doc.demande.utilisateurId !== req.user.id && req.user.role !== "SUPER_ADMIN") {
     return res.status(403).json({ message: "Accès refusé" });
   }
 
@@ -116,7 +122,9 @@ exports.supprimer = asyncHandler(async (req, res) => {
   await prisma.document.delete({ where: { id: doc.id } });
 
   if (absPath && fs.existsSync(absPath)) {
-    try { fs.unlinkSync(absPath); } catch { /* silencieux */ }
+    try {
+      fs.unlinkSync(absPath);
+    } catch {}
   }
 
   res.json({ success: true, message: "Document supprimé" });
@@ -147,7 +155,9 @@ exports.verifier = asyncHandler(async (req, res) => {
   const masked =
     nom.length <= 2
       ? `${prenom} ${nom.charAt(0)}*`
-      : `${prenom} ${nom.charAt(0)}${"*".repeat(nom.length - 2)}${nom.slice(-1)}`;
+      : `${prenom} ${nom.charAt(0)}${"*".repeat(nom.length - 2)}${nom.slice(
+          -1
+        )}`;
 
   res.json({
     valide: true,
@@ -157,5 +167,116 @@ exports.verifier = asyncHandler(async (req, res) => {
     sigle: doc.demande.institution.sigle,
     dateGeneration: doc.createdAt,
     nomMasque: masked,
+  });
+});
+
+/**
+ * ✅ Avancer par référence
+ * Route: POST /api/documents/:reference/avancer
+ * Body: { "action": "APPROUVER" | "REJETER" }
+ *
+ * IMPORTANT:
+ * - Ton modèle Document n'a PAS de champ "statut"
+ * - Le statut du workflow est sur Demande.statut
+ */
+exports.avancerParReference = asyncHandler(async (req, res) => {
+  const { reference } = req.params;
+  const action = String(req.body?.action || "").trim().toUpperCase();
+
+  if (!reference) return res.status(400).json({ message: "reference requise" });
+  if (!action) return res.status(400).json({ message: "action requise" });
+
+  const allowed = new Set(["APPROUVER", "REJETER"]);
+  if (!allowed.has(action)) {
+    return res.status(400).json({ message: "action invalide (APPROUVER | REJETER)" });
+  }
+
+  const userRole = req.user.role;
+
+  // On récupère le document + sa demande
+  const doc = await prisma.document.findUnique({
+    where: { reference },
+    include: { demande: true },
+  });
+
+  if (!doc) return res.status(404).json({ message: "Document introuvable" });
+
+  // Sécurité institution (sauf SUPER_ADMIN)
+  if (
+    userRole !== "SUPER_ADMIN" &&
+    doc.demande.institutionId &&
+    req.user.institutionId &&
+    doc.demande.institutionId !== req.user.institutionId
+  ) {
+    return res.status(403).json({ message: "Accès refusé" });
+  }
+
+  // On avance le workflow sur Demande.statut
+  const currentStatut = doc.demande.statut;
+  let nextStatut = null;
+
+  if (action === "REJETER") {
+    // DA / Directeur / Super admin peuvent rejeter
+    if (!["DIRECTEUR_ADJOINT", "DIRECTEUR", "SUPER_ADMIN"].includes(userRole)) {
+      return res.status(403).json({ message: "Rôle non autorisé" });
+    }
+    nextStatut = "REJETEE";
+  } else {
+    // APPROUVER
+    if (userRole === "DIRECTEUR_ADJOINT") {
+      // DA signe après génération
+      if (currentStatut !== "DOCUMENT_GENERE") {
+        return res.status(400).json({
+          message: "La demande n'est pas au stade 'DOCUMENT_GENERE' (DA).",
+        });
+      }
+      nextStatut = "ATTENTE_SIGNATURE_DIRECTEUR";
+    } else if (userRole === "DIRECTEUR") {
+      // Directeur signe après DA
+      if (currentStatut !== "ATTENTE_SIGNATURE_DIRECTEUR") {
+        return res.status(400).json({
+          message:
+            "La demande n'est pas au stade 'ATTENTE_SIGNATURE_DIRECTEUR' (Directeur).",
+        });
+      }
+      nextStatut = "DISPONIBLE";
+    } else if (userRole === "SUPER_ADMIN") {
+      // Super admin : avance “intelligemment”
+      if (currentStatut === "DOCUMENT_GENERE") nextStatut = "ATTENTE_SIGNATURE_DIRECTEUR";
+      else if (currentStatut === "ATTENTE_SIGNATURE_DIRECTEUR") nextStatut = "DISPONIBLE";
+      else nextStatut = "DISPONIBLE";
+    } else {
+      return res.status(403).json({ message: "Rôle non autorisé" });
+    }
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    // 1) update demande
+    const demandeUpd = await tx.demande.update({
+      where: { id: doc.demandeId },
+      data: {
+        statut: nextStatut,
+        deliveredAt: nextStatut === "DISPONIBLE" ? new Date() : doc.demande.deliveredAt,
+      },
+    });
+
+    // 2) si disponible, on peut marquer tous les documents "deliveredAt"
+    if (nextStatut === "DISPONIBLE") {
+      await tx.document.updateMany({
+        where: { demandeId: doc.demandeId },
+        data: { deliveredAt: new Date() },
+      });
+    }
+
+    return demandeUpd;
+  });
+
+  return res.json({
+    success: true,
+    reference,
+    demandeId: doc.demandeId,
+    previousStatut: currentStatut,
+    nextStatut: updated.statut,
+    deliveredAt: updated.deliveredAt,
   });
 });
