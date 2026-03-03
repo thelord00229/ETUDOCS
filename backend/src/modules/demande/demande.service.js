@@ -136,7 +136,16 @@ exports.getById = async (demandeId, user) => {
   const demande = await prisma.demande.findUnique({
     where: { id: demandeId },
     include: {
-      utilisateur: { select: { nom: true, prenom: true, email: true, numeroEtudiant: true } },
+      utilisateur: {
+        select: {
+          nom: true,
+          prenom: true,
+          email: true,
+          numeroEtudiant: true,
+          filiere: true,   // ← ajoute
+          niveau: true,    // ← ajoute
+        }
+      },
       pieces: true,
       documents: true,
       historique: {

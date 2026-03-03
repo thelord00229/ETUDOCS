@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
 import { getDemandes } from "../../services/api";
 
@@ -526,6 +526,9 @@ export default function MesDemandes() {
   const [demandes, setDemandes] = useState([]);
   const [detailItem, setDetailItem] = useState(null);
 
+  const location = useLocation();
+
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -541,6 +544,14 @@ export default function MesDemandes() {
     };
     load();
   }, []);
+
+  // Auto-ouvre le détail si on arrive depuis le Dashboard
+  useEffect(() => {
+    const openId = location.state?.openId;
+    if (!openId || demandes.length === 0) return;
+    const found = demandes.find((d) => d.id === openId);
+    if (found) setDetailItem(found);
+  }, [demandes, location.state?.openId]);
 
   const counts = useMemo(() => {
     const base = { Toutes: 0, "En attente": 0, "En traitement": 0, Disponible: 0, Expirée: 0, Rejetée: 0 };

@@ -19,7 +19,9 @@ const labelType = (t) => {
 
 function getUser() {
   try {
-    const raw = localStorage.getItem("etudocs_user") || sessionStorage.getItem("etudocs_user");
+    const raw =
+      localStorage.getItem("etudocs_user") ||
+      sessionStorage.getItem("etudocs_user");
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
@@ -50,7 +52,7 @@ export default function DashboardLayout({ children }) {
   const email = user.email || "";
   const initials = `${prenom[0] || ""}${nom[0] || ""}`.toUpperCase() || "EU";
 
-  // ✅ IMPORTANT : tu voulais plus afficher la filière à côté de l'email
+  // ✅ TU VEUX TOUJOURS L'EMAIL
   const meta = email;
 
   const [notifications, setNotifications] = useState([]);
@@ -63,7 +65,6 @@ export default function DashboardLayout({ children }) {
 
         const dismissed = getDismissed();
 
-        // ✅ Uniquement les demandes DISPONIBLES
         const notifs = demandes
           .filter((d) => d.statut === "DISPONIBLE")
           .map((d) => ({

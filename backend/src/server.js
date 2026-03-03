@@ -26,6 +26,8 @@ app.use('/assets/logos',  express.static(path.join(__dirname, 'assets/logos')));
 
 app.use('/verify', require('./modules/verify/verify.routes'));
 
+app.use("/api/institutions", require("./routes/institution.routes"));
+
 // Route de test
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'EtuDocs backend opérationnel' });

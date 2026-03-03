@@ -65,6 +65,15 @@ exports.createAgent = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(DEFAULT_PASSWORD, 10);
 
+    if (!institutionId) {
+        return res.status(400).json({ message: "institutionId est requis" });
+    }
+
+    const inst = await prisma.institution.findUnique({ where: { id: institutionId } });
+        if (!inst) {
+        return res.status(400).json({ message: "Institution invalide (introuvable)" });
+    }
+
     const agent = await prisma.utilisateur.create({
       data: {
         nom,

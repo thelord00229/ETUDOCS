@@ -174,7 +174,7 @@ export const submitDemande = async ({
 
   // Compat: ton backend parse "semestres" (array) mais tu envoyais "semestre"
   if (Array.isArray(semestres)) {
-    semestres.forEach((s) => form.append("semestres", String(s)));
+    semestres.forEach((s) => form.append("semestres", String(s).replace("S", "")));
   } else if (semestre) {
     form.append("semestres", String(semestre));
   }

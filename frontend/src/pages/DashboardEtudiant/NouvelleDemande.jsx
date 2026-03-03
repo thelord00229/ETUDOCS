@@ -491,7 +491,7 @@ export default function NouvelleDemande() {
                   setLoading(true);
                   const payload = {
                     typeDocument: selectedDoc?.id === 1 ? "ATTESTATION_INSCRIPTION" : "RELEVE_NOTES",
-                    semestre: selectedDoc?.id === 2 ? semestreChoix : null,
+                    semestres: selectedDoc?.id === 2 ? semestreChoix : [],
                     CIP: cipFile,
                     QUITTANCE: qttFile,
                     ACTE_NAISSANCE: acteFile,

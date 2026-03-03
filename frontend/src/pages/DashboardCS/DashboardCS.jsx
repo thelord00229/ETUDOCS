@@ -24,35 +24,44 @@ const css = `
 
   /* ── SIDEBAR ── */
   .agent-sidebar {
-    width:220px; flex-shrink:0; background:var(--navy);
+    width:220px; flex-shrink:0; background:#ffffff;
+    border-right: 1px solid #e2e8f0;
     display:flex; flex-direction:column;
-    position:fixed; top:0; left:0; bottom:0; z-index:50; padding-bottom:24px;
+    position:fixed; top:0; left:0; bottom:0; z-index:50;
   }
   .agent-sidebar__brand {
-    display:flex; align-items:center; gap:8px; padding:22px 20px 28px;
-    font-family:'Sora',sans-serif; font-weight:700; font-size:1.15rem;
-    color:#fff; text-decoration:none;
+    display:flex; align-items:center; gap:10px; padding:22px 20px 22px;
+    font-family:'Sora',sans-serif; font-weight:800; font-size:1.15rem;
+    color:#1a2744; text-decoration:none;
+    border-bottom: 1px solid #f1f5f9;
   }
   .agent-sidebar__brand-icon {
-    width:34px; height:34px; border-radius:8px; background:rgba(255,255,255,.15);
+    width:36px; height:36px; border-radius:10px; background:#1a2744;
     display:flex; align-items:center; justify-content:center; flex-shrink:0;
   }
-  .agent-sidebar__brand-tag { font-family:'DM Sans',sans-serif; font-size:.75rem; font-weight:500; color:var(--gold); margin-left:2px; }
-  .agent-sidebar__nav { flex:1; padding:0 12px; display:flex; flex-direction:column; gap:4px; }
+  .agent-sidebar__brand-tag {
+    font-family:'DM Sans',sans-serif; font-size:.75rem;
+    font-weight:500; color:#f5a623; margin-left:2px;
+  }
+  .agent-sidebar__nav {
+    flex:1; padding:14px 12px; display:flex;
+    flex-direction:column; gap:3px;
+  }
   .agent-sidebar__link {
     display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:10px;
-    font-size:.9rem; font-weight:500; color:rgba(255,255,255,.6); text-decoration:none;
+    font-size:.9rem; font-weight:500; color:#475569; text-decoration:none;
     transition:background .15s, color .15s;
   }
-  .agent-sidebar__link:hover { background:rgba(255,255,255,.08); color:#fff; }
-  .agent-sidebar__link.active { background:var(--gold); color:#fff; }
-  .agent-sidebar__divider { height:1px; background:rgba(255,255,255,.1); margin:12px; }
+  .agent-sidebar__link:hover { background:#f1f5f9; color:#1a2744; }
+  .agent-sidebar__link.active { background:#1a2744; color:#ffffff; font-weight:700; box-shadow:0 4px 14px rgba(26,39,68,.18); }
+  .agent-sidebar__divider { height:1px; background:#f1f5f9; margin:4px 12px; }
   .agent-sidebar__logout {
     display:flex; align-items:center; gap:12px; padding:11px 26px;
-    font-size:.9rem; font-weight:500; color:rgba(255,255,255,.4);
-    background:none; border:none; cursor:pointer; width:100%; transition:color .15s;
+    font-size:.88rem; font-weight:500; color:#ef4444;
+    background:none; border:none; cursor:pointer; width:100%; transition:background .15s;
+    border-top: 1px solid #f1f5f9;
   }
-  .agent-sidebar__logout:hover { color:var(--red); }
+  .agent-sidebar__logout:hover { background:#fef2f2; }
 
   /* ── MAIN ── */
   .agent-main { margin-left:220px; flex:1; min-width:0; display:flex; flex-direction:column; }
@@ -306,18 +315,9 @@ function Sidebar({ onLogout }) {
     <aside className="agent-sidebar">
       <NavLink to="/dashboardsc" className="agent-sidebar__brand">
         <div className="agent-sidebar__brand-icon">
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="white"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
           </svg>
         </div>
         EtuDocs <span className="agent-sidebar__brand-tag">Agent</span>
@@ -326,43 +326,22 @@ function Sidebar({ onLogout }) {
       <nav className="agent-sidebar__nav">
         {NAV.map((n) => (
           <NavLink
-            key={n.to}
-            to={n.to}
-            end
-            className={({ isActive }) =>
-              "agent-sidebar__link" + (isActive ? " active" : "")
-            }
+            key={n.to} to={n.to} end
+            className={({ isActive }) => "agent-sidebar__link" + (isActive ? " active" : "")}
           >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              stroke="currentColor"
-            >
-              <path d={n.d} />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="currentColor">
+              <path d={n.d}/>
             </svg>
             {n.label}
           </NavLink>
         ))}
       </nav>
 
-      <div className="agent-sidebar__divider" />
       <button className="agent-sidebar__logout" onClick={onLogout} type="button">
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
         </svg>
         Déconnexion
       </button>

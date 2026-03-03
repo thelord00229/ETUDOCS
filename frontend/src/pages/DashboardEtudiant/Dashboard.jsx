@@ -1,8 +1,9 @@
+// frontend/src/pages/DashboardEtudiant/Dashboard.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getMe, getDemandes } from "../../services/api";
 
-import Sidebar from "../../components/DashboardEtudiant/Sidebar.jsx";
-import TopBar from "../../components/DashboardEtudiant/Topbar.jsx";
+import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
 import StatCard from "../../components/DashboardEtudiant/Statcard.jsx";
 import DemandRow from "../../components/DashboardEtudiant/Demandrow.jsx";
 
@@ -11,19 +12,6 @@ import DemandRow from "../../components/DashboardEtudiant/Demandrow.jsx";
 ───────────────────────────────────────────────────────────── */
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap');
-
-  .dash-layout {
-    display: flex; min-height: 100vh;
-    background: #f8fafc;
-    font-family: 'DM Sans', sans-serif;
-  }
-  .dash-main {
-    margin-left: 200px;
-    padding-top: 64px;
-    flex: 1; min-width: 0;
-    padding-bottom: 40px;
-  }
-  .dash-content { padding: 28px 32px; display: flex; flex-direction: column; gap: 24px; }
 
   /* HERO BANNER */
   .dash-hero {
@@ -298,7 +286,7 @@ const css = `
 ───────────────────────────────────────────────────────────── */
 const getInitials = (prenom = "", nom = "") => {
   const a = (prenom || "").trim()[0]?.toUpperCase() || "";
-  const b = (nom    || "").trim()[0]?.toUpperCase() || "";
+  const b = (nom || "").trim()[0]?.toUpperCase() || "";
   return `${a}${b}` || "U";
 };
 
@@ -423,7 +411,7 @@ function DetailDemande({ demande, onBack }) {
     : demande.date || "—";
 
   return (
-    <div className="dash-content">
+    <>
       <button className="detail-back" onClick={onBack}>
         <SvgArrowLeft /> Retour
       </button>
@@ -529,7 +517,7 @@ function DetailDemande({ demande, onBack }) {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -560,22 +548,22 @@ const makeStatusMap = (list) => {
 };
 
 const detectStatusChanges = (prevMap, nextList) => {
-    const changes = [];
-    const alreadyNotified = safeJsonParse(localStorage.getItem(NOTIFIED_KEY), []);
+  const changes = [];
+  const alreadyNotified = safeJsonParse(localStorage.getItem(NOTIFIED_KEY), []);
 
-    (Array.isArray(nextList) ? nextList : []).forEach((d) => {
-      const id = d?.id;
-      if (!id) return;
-      const next = d.statut || null;
-      const notifId = `${id}-DISPONIBLE`;
+  (Array.isArray(nextList) ? nextList : []).forEach((d) => {
+    const id = d?.id;
+    if (!id) return;
+    const next = d.statut || null;
+    const notifId = `${id}-DISPONIBLE`;
 
-      // ✅ Notifier si DISPONIBLE et jamais notifié, peu importe prev
-      if (next === "DISPONIBLE" && !alreadyNotified.includes(notifId)) {
-        changes.push({ id, next, demande: d, notifId });
-      }
-    });
-    return changes;
-  };
+    // ✅ Notifier si DISPONIBLE et jamais notifié, peu importe prev
+    if (next === "DISPONIBLE" && !alreadyNotified.includes(notifId)) {
+      changes.push({ id, next, demande: d, notifId });
+    }
+  });
+  return changes;
+};
 
 const notifMessage = ({ demande }) => {
   const titre = formatDocLabel(demande?.typeDocument);
@@ -592,6 +580,7 @@ export default function Dashboard() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const [detailDemande, setDetailDemande] = useState(null);
+  const navigate = useNavigate();
 
   // ✅ Notifications
   const [notifications, setNotifications] = useState(() => {
@@ -603,7 +592,6 @@ export default function Dashboard() {
     const saved = localStorage.getItem(STATUSMAP_KEY);
     return safeJsonParse(saved, {});
   });
-  // hack: on stocke la value dans ref correctement
   if (typeof statusMapRef.current === "function") statusMapRef.current = statusMapRef.current();
 
   const persistNotifs = (list) => localStorage.setItem(NOTIF_KEY, JSON.stringify(list));
@@ -611,12 +599,11 @@ export default function Dashboard() {
 
   const addNotifications = (items) => {
     if (!items.length) return;
-    
-    // Marquer ces demandes comme déjà notifiées
+
     const alreadyNotified = safeJsonParse(localStorage.getItem(NOTIFIED_KEY), []);
     const newIds = items.map(i => i.notifId).filter(Boolean);
     localStorage.setItem(NOTIFIED_KEY, JSON.stringify([...new Set([...alreadyNotified, ...newIds])]));
-    
+
     setNotifications((prev) => {
       const merged = [...items, ...(Array.isArray(prev) ? prev : [])].slice(0, 50);
       persistNotifs(merged);
@@ -680,10 +667,6 @@ export default function Dashboard() {
   // ✅ fetch demandes + generate notifications on status change
   const refreshDemandes = async ({ notifyChanges } = { notifyChanges: false }) => {
     const list = await getDemandes();
-    console.log("TYPE:", typeof list);
-    console.log("IS_ARRAY:", Array.isArray(list));
-    console.log("KEYS:", list && typeof list === "object" ? Object.keys(list) : null);
-    console.log("STRING:", JSON.stringify(list, null, 2));
     const nextList = Array.isArray(list) ? list : [];
     setDemandes(nextList);
 
@@ -726,7 +709,6 @@ export default function Dashboard() {
           localStorage.setItem("etudocs_user", JSON.stringify(me));
           setUser(me);
         } else {
-          // getMe a échoué mais on continue quand même
           const cached = localStorage.getItem("etudocs_user");
           if (cached) setUser(JSON.parse(cached));
         }
@@ -739,8 +721,7 @@ export default function Dashboard() {
 
       } catch (err) {
         if (!alive) return;
-        if (err.message === "UNAUTHORIZED") hardLogout();
-        // ✅ On ne montre plus d'erreur si les demandes chargent bien
+        if (err?.message === "UNAUTHORIZED") hardLogout();
       } finally {
         if (alive) setLoading(false);
       }
@@ -756,150 +737,126 @@ export default function Dashboard() {
   }, []);
 
   const fullName = useMemo(() => (!user ? "…" : `${user.prenom ?? ""} ${user.nom ?? ""}`.trim() || "Étudiant"), [user]);
-  const meta = useMemo(() => (!user ? "…" : `${user.numeroEtudiant || "—"} • IFRI`), [user]);
+  const meta = useMemo(() => (!user ? "…" : (user.email || "—")), [user]);
   const initials = useMemo(() => (!user ? "…" : getInitials(user.prenom, user.nom)), [user]);
 
-  if (detailDemande) {
-    return (
-      <div className="dash-layout">
-        <style>{css}</style>
-        <Sidebar />
-        <div className="dash-main">
-          <TopBar
-            name={fullName}
-            meta={meta}
-            initials={initials}
-            notifications={notifications}
-            onDeleteNotif={deleteNotif}
-            onClearAllNotifs={clearAllNotifs}
-          />
-          <DetailDemande demande={detailDemande} onBack={() => setDetailDemande(null)} />
-        </div>
-      </div>
-    );
-  }
+  const topbarProps = useMemo(() => ({
+    name: fullName,
+    meta,
+    initials,
+    notifications,
+    onDeleteNotif: deleteNotif,
+    onClearAllNotifs: clearAllNotifs,
+  }), [fullName, meta, initials, notifications]);
+
+  
 
   return (
-    <div className="dash-layout">
+    <DashboardLayout disableAutoNotifs topbarProps={topbarProps}>
       <style>{css}</style>
-      <Sidebar />
 
-      <div className="dash-main">
-        <TopBar
-          name={fullName}
-          meta={meta}
-          initials={initials}
-          notifications={notifications}
-          onDeleteNotif={deleteNotif}
-          onClearAllNotifs={clearAllNotifs}
-        />
-
-        <div className="dash-content">
-          <div className="dash-hero">
-            <div>
-              <h1>Bonjour {user ? user.prenom : "…"}, que pouvons-nous faire pour vous aujourd'hui ?</h1>
-              <p>Bienvenue sur votre espace personnel EtuDocs</p>
-              <a href="/dashboardEtu/nouvelle" className="btn-new-demand">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14 2 14 8 20 8"/>
-                </svg>
-                Nouvelle demande
-              </a>
-            </div>
-          </div>
-
-          {errorMsg && <div className="hint-error">{errorMsg}</div>}
-
-          <div className="stats-grid">
-            <StatCard
-              label="Demandes en cours"
-              value={loading ? "…" : String(nbEnCours)}
-              sub="Suivi de vos demandes"
-              icon={<SvgClock />}
-              accentColor="#f59e0b"
-              iconBg="#fffbeb"
-            />
-            <StatCard
-              label="Documents disponibles"
-              value={loading ? "…" : String(docsCount)}
-              sub="Prêts à être téléchargés"
-              icon={<SvgDownload />}
-              accentColor="#22c55e"
-              iconBg="#f0fdf4"
-            />
-            <StatCard
-              label="Demandes rejetées"
-              value={loading ? "…" : String(nbRejetees)}
-              sub={nbRejetees === 0 ? "Aucune demande rejetée" : "Certaines demandes ont été rejetées"}
-              icon={<SvgX />}
-              accentColor="#ef4444"
-              iconBg="#fef2f2"
-            />
-          </div>
-
-          <div className="card-section">
-            <div className="card-section__header">
-              <span className="card-section__title">Demandes récentes</span>
-              <a href="/dashboardEtu/demandes" className="card-section__link">Voir tout</a>
-            </div>
-
-            {!loading && demandesRecentes.length === 0 && (
-              <div style={{ color: "#64748b", fontSize: ".9rem", padding: "10px 0" }}>
-                Aucune demande pour le moment.
-              </div>
-            )}
-
-            {demandesRecentes.map((d, i) => (
-              <DemandRow
-                key={i}
-                title={d.title}
-                ref_={d.ref_}
-                date={d.date}
-                status={d.status}
-                onDetails={() => setDetailDemande(d)}
-              />
-            ))}
-          </div>
-
-          <div className="bottom-grid">
-            <div className="promo-card">
-              <div className="promo-card__icon" style={{ background: "#eff6ff" }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a2744" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14 2 14 8 20 8"/>
-                </svg>
-              </div>
-              <div className="promo-card__title" style={{ color: "#1a2744" }}>Besoin d'un document ?</div>
-              <div className="promo-card__sub">Soumettez une nouvelle demande en quelques clics</div>
-              <a href="/dashboardEtu/nouvelle" className="btn-outline-sm">Faire une demande</a>
-            </div>
-
-            <div className="promo-card">
-              <div className="promo-card__icon" style={{ background: "#f0fdf4" }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"/>
-                  <polyline points="9 11 12 14 22 4"/>
-                </svg>
-              </div>
-              <div className="promo-card__title" style={{ color: "#16a34a" }}>Documents prêts</div>
-              <div className="promo-card__sub">{loading ? "Chargement..." : `${docsCount} document(s) disponible(s)`}</div>
-              <a href="/dashboardEtu/documents" className="btn-outline-sm">Télécharger</a>
-            </div>
-          </div>
-
-          <div className="support-card">
-            <h3>Besoin d'aide ?</h3>
-            <p>Notre équipe est là pour vous accompagner dans vos démarches</p>
-            <div className="support-card__links">
-              <a href="mailto:support@etudocs.bj">support@etudocs.bj</a>
-              <span className="support-card__sep">|</span>
-              <a href="tel:+22900000000">+229 XX XX XX XX</a>
-            </div>
-          </div>
-
+      <div className="dash-hero">
+        <div>
+          <h1>Bonjour {user ? user.prenom : "…"}, que pouvons-nous faire pour vous aujourd'hui ?</h1>
+          <p>Bienvenue sur votre espace personnel EtuDocs</p>
+          <a href="/dashboardEtu/nouvelle" className="btn-new-demand">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            Nouvelle demande
+          </a>
         </div>
       </div>
-    </div>
+
+      {errorMsg && <div className="hint-error">{errorMsg}</div>}
+
+      <div className="stats-grid">
+        <StatCard
+          label="Demandes en cours"
+          value={loading ? "…" : String(nbEnCours)}
+          sub="Suivi de vos demandes"
+          icon={<SvgClock />}
+          accentColor="#f59e0b"
+          iconBg="#fffbeb"
+        />
+        <StatCard
+          label="Documents disponibles"
+          value={loading ? "…" : String(docsCount)}
+          sub="Prêts à être téléchargés"
+          icon={<SvgDownload />}
+          accentColor="#22c55e"
+          iconBg="#f0fdf4"
+        />
+        <StatCard
+          label="Demandes rejetées"
+          value={loading ? "…" : String(nbRejetees)}
+          sub={nbRejetees === 0 ? "Aucune demande rejetée" : "Certaines demandes ont été rejetées"}
+          icon={<SvgX />}
+          accentColor="#ef4444"
+          iconBg="#fef2f2"
+        />
+      </div>
+
+      <div className="card-section">
+        <div className="card-section__header">
+          <span className="card-section__title">Demandes récentes</span>
+          <a href="/dashboardEtu/demandes" className="card-section__link">Voir tout</a>
+        </div>
+
+        {!loading && demandesRecentes.length === 0 && (
+          <div style={{ color: "#64748b", fontSize: ".9rem", padding: "10px 0" }}>
+            Aucune demande pour le moment.
+          </div>
+        )}
+
+        {demandesRecentes.map((d, i) => (
+          <DemandRow
+            key={i}
+            title={d.title}
+            ref_={d.ref_}
+            date={d.date}
+            status={d.status}
+            onDetails={() => navigate("/dashboardEtu/demandes", { state: { openId: d.id } })}
+          />
+        ))}
+      </div>
+
+      <div className="bottom-grid">
+        <div className="promo-card">
+          <div className="promo-card__icon" style={{ background: "#eff6ff" }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a2744" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+          </div>
+          <div className="promo-card__title" style={{ color: "#1a2744" }}>Besoin d'un document ?</div>
+          <div className="promo-card__sub">Soumettez une nouvelle demande en quelques clics</div>
+          <a href="/dashboardEtu/nouvelle" className="btn-outline-sm">Faire une demande</a>
+        </div>
+
+        <div className="promo-card">
+          <div className="promo-card__icon" style={{ background: "#f0fdf4" }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="9 11 12 14 22 4"/>
+            </svg>
+          </div>
+          <div className="promo-card__title" style={{ color: "#16a34a" }}>Documents prêts</div>
+          <div className="promo-card__sub">{loading ? "Chargement..." : `${docsCount} document(s) disponible(s)`}</div>
+          <a href="/dashboardEtu/documents" className="btn-outline-sm">Télécharger</a>
+        </div>
+      </div>
+
+      <div className="support-card">
+        <h3>Besoin d'aide ?</h3>
+        <p>Notre équipe est là pour vous accompagner dans vos démarches</p>
+        <div className="support-card__links">
+          <a href="mailto:support@etudocs.bj">support@etudocs.bj</a>
+          <span className="support-card__sep">|</span>
+          <a href="tel:+22900000000">+229 XX XX XX XX</a>
+        </div>
+      </div>
+    </DashboardLayout>
   );
 }

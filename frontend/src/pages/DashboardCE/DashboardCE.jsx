@@ -32,43 +32,52 @@ const styles = `
 
   body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); }
   .layout { display: flex; min-height: 100vh; }
+  .main { margin-left: 240px; flex: 1; display: flex; flex-direction: column; }
 
   /* ── SIDEBAR ── */
   .sidebar {
     width: var(--sidebar-width);
-    background: var(--navy);
+    background: #ffffff;
+    border-right: 1px solid #e2e8f0;
     display: flex; flex-direction: column;
     position: fixed; top: 0; left: 0; bottom: 0;
     z-index: 100;
   }
-  .sidebar-logo { padding: 28px 20px; }
-  .logo-text { font-size: 22px; font-weight: 700; color: white; letter-spacing: -0.5px; }
-  .logo-text span { color: var(--accent-gold); font-weight: 400; font-size: 14px; margin-left: 6px; }
-  .sidebar-nav { flex: 1; padding: 8px 12px; }
-  .nav-item {
+  .sidebar-logo {
     display: flex; align-items: center; gap: 10px;
-    padding: 12px 16px; border-radius: 10px; cursor: pointer;
-    transition: all 0.2s; font-size: 14px; font-weight: 500;
-    color: rgba(255,255,255,0.6); margin-bottom: 2px;
+    padding: 22px 20px 28px;
+    font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.15rem;
+    color: var(--navy); text-decoration: none; border-bottom: 1px solid #f1f5f9;
+  }
+  .sidebar-logo__icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--navy);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .logo-text { font-size: 22px; font-weight: 700; color: var(--navy); letter-spacing: -0.5px; }
+  .logo-text span { color: var(--accent-gold); font-weight: 400; font-size: 14px; margin-left: 6px; }
+  .sidebar-nav { flex: 1; padding: 14px 12px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px; border-radius: 10px; cursor: pointer;
+    transition: all 0.2s; font-size: .9rem; font-weight: 500;
+    color: #475569; margin-bottom: 3px;
     border: none; background: none; width: 100%; text-align: left;
   }
-  .nav-item:hover { background: rgba(255,255,255,0.08); color: white; }
+  .nav-item:hover { background: #f1f5f9; color: var(--navy); }
   .nav-item.active {
-    background: var(--accent-gold); color: var(--navy-dark);
-    font-weight: 700; box-shadow: 0 4px 14px rgba(245,166,35,0.35);
+    background: var(--navy); color: #ffffff;
+    font-weight: 700; box-shadow: 0 4px 14px rgba(26,47,94,0.18);
   }
-  .nav-icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .sidebar-footer { padding: 20px 12px; }
+  .nav-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .sidebar-footer { padding: 16px 12px; border-top: 1px solid #f1f5f9; }
   .logout-btn {
     display: flex; align-items: center; gap: 10px;
-    padding: 10px 16px; border-radius: 8px; cursor: pointer;
-    color: #f87171; font-size: 14px; font-weight: 500;
+    padding: 10px 14px; border-radius: 8px; cursor: pointer;
+    color: #ef4444; font-size: .88rem; font-weight: 500;
     transition: background 0.2s; border: none; background: none; width: 100%;
   }
-  .logout-btn:hover { background: rgba(239,68,68,0.1); }
-
-  /* ── MAIN ── */
-  .main { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; }
+  .logout-btn:hover { background: #fef2f2; }
 
   /* ── TOPBAR ── */
   .topbar {
@@ -186,7 +195,7 @@ const styles = `
     font-size: 13px; font-weight: 600; margin-top: 4px;
   }
 
-  .sem-pills { display: flex; gap: 8px; margin-top: 6px; }
+  .sem-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
   .sem-pill { padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; }
   .sem-pill.active { background: var(--navy); color: white; }
   .sem-pill.inactive { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
@@ -636,6 +645,8 @@ export default function ChefDivisionExamens() {
     try {
       const full = await getDemandeById(d.id);
       setSelected(full);
+      console.log("SEMESTRE BRUT:", full?.semestre, "| TYPE:", typeof full?.semestre);
+      console.log("FULL DEMANDE:", JSON.stringify(full, null, 2));
 
       const mapped = (full?.pieces || []).map((p, idx) => ({
         id: p.id,
@@ -858,34 +869,41 @@ export default function ChefDivisionExamens() {
 
                           return etu.includes(q) || ref.includes(q) || fil.includes(q) || num.includes(q);
                         })
-                        .map((d) => (
-                          <tr key={d.id ?? d.ref}>
-                            <td>
-                              <span className="td-ref">{d.ref}</span>
-                            </td>
-                            <td>
-                              <div className="td-student">{d.etudiant}</div>
-                              <div className="td-sub">
-                                N° {d.num} — {d.filiere}
-                              </div>
-                            </td>
-                            <td style={{ fontSize: 13 }}>{d.type}</td>
-                            <td style={{ fontSize: 13, color: "var(--text-muted)" }}>
-                              {d.date || (d.createdAt ? new Date(d.createdAt).toLocaleDateString() : "-")}
-                            </td>
-                            <td>
-                              <span className={`td-delay ${d.urgent ? "urgent" : "ok"}`}>
-                                {d.delai} {d.urgent && "⚠"}
-                              </span>
-                            </td>
-                            <td>{statutBadge(d.statut)}</td>
-                            <td>
-                              <button className="btn-action primary" onClick={() => openTraitement(d)}>
-                                <EyeIcon /> Traiter le dossier
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
+                        .map((d) => {
+                          const nom = `${d.utilisateur?.nom || ""} ${d.utilisateur?.prenom || ""}`.trim() || "—";
+                          const num = d.utilisateur?.numeroEtudiant || "—";
+                          const ref = d.document?.reference || (d.id || "").toString().substring(0, 8).toUpperCase() || "—";
+                          const type = d.typeDocument === "RELEVE_NOTES" ? "Relevé de notes"
+                                    : d.typeDocument === "ATTESTATION_INSCRIPTION" ? "Attestation d'inscription"
+                                    : d.typeDocument || "—";
+                          const date = d.createdAt ? new Date(d.createdAt).toLocaleDateString("fr-FR", { day:"2-digit", month:"2-digit", year:"numeric" }) : "—";
+                          const h = d.createdAt ? Math.floor((Date.now() - new Date(d.createdAt)) / 3600000) : 0;
+                          const delai = h < 24 ? `${h}h` : `${Math.floor(h/24)} j`;
+                          const urgent = h >= 48;
+
+                          return (
+                            <tr key={d.id ?? ref}>
+                              <td><span className="td-ref">{ref}</span></td>
+                              <td>
+                                <div className="td-student">{nom}</div>
+                                <div className="td-sub">N° {num}</div>
+                              </td>
+                              <td style={{ fontSize: 13 }}>{type}</td>
+                              <td style={{ fontSize: 13, color: "var(--text-muted)" }}>{date}</td>
+                              <td>
+                                <span className={`td-delay ${urgent ? "urgent" : "ok"}`}>
+                                  {delai} {urgent && "⚠"}
+                                </span>
+                              </td>
+                              <td>{statutBadge(d.statut)}</td>
+                              <td>
+                                <button className="btn-action primary" onClick={() => openTraitement(d)}>
+                                  <EyeIcon /> Traiter le dossier
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                     </tbody>
                   </table>
                 </div>
@@ -993,9 +1011,7 @@ export default function ChefDivisionExamens() {
                 <h1 className="page-title" style={{ fontSize: 22 }}>
                   Traitement du dossier
                 </h1>
-                <span className="td-ref" style={{ fontSize: 13 }}>
-                  {selected?.ref}
-                </span>
+                <span className="td-ref" style={{ fontSize: 13 }}>{selected?.id?.substring(0,8).toUpperCase() || "—"}</span>
               </div>
             </div>
 
@@ -1009,110 +1025,90 @@ export default function ChefDivisionExamens() {
                   <div className="panel-body">
                     <div className="info-row">
                       <div className="info-label">Nom complet</div>
-                      <div className="info-value">{selected?.etudiant}</div>
+                      <div className="info-value">
+                        {selected?.utilisateur
+                          ? `${selected.utilisateur.nom || ""} ${selected.utilisateur.prenom || ""}`.trim() || "—"
+                          : selected?.etudiant || "—"}
+                      </div>
                     </div>
                     <div className="info-row">
                       <div className="info-label">N° Étudiant</div>
-                      <div className="info-value">{selected?.num}</div>
+                      <div className="info-value">
+                        {selected?.utilisateur?.numeroEtudiant || selected?.num || "—"}
+                      </div>
                     </div>
                     <div className="info-row">
                       <div className="info-label">Filière / Niveau</div>
-                      <div className="info-value">{selected?.filiere}</div>
+                      <div className="info-value">
+                        {selected?.utilisateur?.filiere
+                          ? `${selected.utilisateur.filiere} — ${selected.utilisateur.niveau || ""}`
+                          : selected?.filiere || "—"}
+                      </div>
                     </div>
                     <div className="info-row">
                       <div className="info-label">Institution</div>
-                      <div className="info-value">IFRI — UAC</div>
+                      <div className="info-value">
+                        {selected?.institution?.nom || "IFRI — UAC"}
+                      </div>
                     </div>
                     <div className="divider-h" />
                     <div className="info-row">
                       <div className="info-label">Type de document</div>
                       <div className="doc-type-pill">
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                          <polyline points="14 2 14 8 20 8" />
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                          <polyline points="14 2 14 8 20 8"/>
                         </svg>
-                        Relevé de notes
+                        {selected?.typeDocument === "RELEVE_NOTES" ? "Relevé de notes"
+                          : selected?.typeDocument === "ATTESTATION_INSCRIPTION" ? "Attestation d'inscription"
+                          : selected?.typeDocument || "—"}
                       </div>
                     </div>
-                    <div className="info-row">
-                      <div className="info-label">Semestre</div>
-                      <div className="sem-pills">
-                        <span
-                          className={`sem-pill ${
-                            String(selected?.type ?? "").includes("S2") ? "inactive" : "active"
-                          }`}
-                        >
-                          Semestre 1
-                        </span>
-                        <span
-                          className={`sem-pill ${
-                            String(selected?.type ?? "").includes("S2") ? "active" : "inactive"
-                          }`}
-                        >
-                          Semestre 2
-                        </span>
+                    {selected?.typeDocument === "RELEVE_NOTES" && (
+                      <div className="info-row">
+                        <div className="info-label">Semestre</div>
+                        <div className="sem-pills">
+                          {[1,2,3,4,5,6].map((n) => (
+                            <span
+                              key={n}
+                              className={`sem-pill ${
+                              (selected?.semestres || []).includes(n) ? "active" : "inactive"
+                            }`}
+                            >
+                              S{n}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                     <div className="divider-h" />
                     <div className="info-row">
                       <div className="info-label">Date de soumission</div>
-                      <div className="info-value">{selected?.date}</div>
+                      <div className="info-value">
+                        {selected?.createdAt
+                          ? new Date(selected.createdAt).toLocaleDateString("fr-FR", { day:"2-digit", month:"long", year:"numeric" })
+                          : "—"}
+                      </div>
                     </div>
                     <div className="info-row">
                       <div className="info-label">Référence</div>
-                      <div className="info-value mono">{selected?.ref}</div>
+                      <div className="info-value mono">
+                        {selected?.documents?.[0]?.reference || "—"}
+                      </div>
                     </div>
                   </div>
                 </div>
-
-                {/* Timeline (actuellement statique, mais propre) */}
-                <div className="panel">
-                  <div className="panel-header">
-                    <div className="panel-title">Parcours de la demande</div>
-                  </div>
-                  <div className="panel-body">
-                    <div className="timeline">
-                      {[
-                        { label: "Soumise par l'étudiant", time: "—", st: "done" },
-                        { label: "Reçue — Secrétaire Adjoint", time: "—", st: "done" },
-                        { label: "Transmise — Secrétaire Général", time: "—", st: "done" },
-                        { label: "En traitement — Chef de Division", time: "En cours", st: "active" },
-                        { label: "En attente de signature — Dir. Adj.", time: "—", st: "todo" },
-                        { label: "Signature finale — Directeur", time: "—", st: "todo" },
-                      ].map((t, i, arr) => (
-                        <div className="tl-item" key={t.label}>
-                          <div className="tl-left">
-                            <div className={`tl-dot ${t.st}`} />
-                            {i < arr.length - 1 && <div className="tl-line" />}
-                          </div>
-                          <div className="tl-text">
-                            <div className={`tl-step ${t.st === "todo" ? "muted" : ""}`}>{t.label}</div>
-                            <div className="tl-time">{t.time}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                
               </div>
 
               {/* ── CENTRE — Visionneuse pièces ── */}
               <div>
-                <div style={{ marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: "var(--navy)" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+                  <div style={{ fontWeight:700, fontSize:".95rem", color:"var(--navy)" }}>
                     Vérification des pièces justificatives
                   </div>
                   <span className="badge blue">
-                    {pieces.filter((p) => p.status === "valid").length}/{pieces.length} pièces validées
+                    {pieces.filter(p => p.status === "valid").length}/{pieces.length} pièces validées
                   </span>
                 </div>
 
@@ -1122,36 +1118,20 @@ export default function ChefDivisionExamens() {
                       <div className="piece-name">
                         <FileIcon />
                         {piece.name}
-                        <span className="piece-num">{piece.num || ""}</span>
                       </div>
-                      {piece.status === "valid" && (
-                        <span className="badge green">
-                          <CheckIcon /> Validée
-                        </span>
-                      )}
-                      {piece.status === "reject" && (
-                        <span className="badge red">
-                          <XIcon /> Rejetée
-                        </span>
-                      )}
-                      {piece.status === null && <span className="badge gray">En attente de décision</span>}
-                    </div>
-
-                    <div className="piece-preview">
-                      <div className="piece-preview-inner">
-                        <FileIcon />
-                        <span>Aperçu du document</span>
-                        <span style={{ fontSize: 11 }}>JPG / PDF</span>
-                      </div>
+                      {piece.status === "valid" && <span className="badge green"><CheckIcon /> Validée</span>}
+                      {piece.status === "reject" && <span className="badge red"><XIcon /> Rejetée</span>}
+                      {piece.status === null && <span className="badge gray">En attente</span>}
                     </div>
 
                     <div className="piece-footer">
                       <button
                         className="btn-action outline"
                         onClick={() => openPreview(piece)}
-                        style={{ width: "100%", marginBottom: 10, justifyContent: "center" }}
+                        style={{ width:"100%", justifyContent:"center", marginBottom:10 }}
+                        type="button"
                       >
-                        <EyeIcon /> Consulter
+                        <EyeIcon /> Consulter le fichier
                       </button>
 
                       <div className="piece-actions">
@@ -1159,14 +1139,15 @@ export default function ChefDivisionExamens() {
                           disabled={pieceBusy === piece.id}
                           className={`btn-valider valid ${piece.status === "valid" ? "selected" : ""}`}
                           onClick={() => setPieceStatus(piece.id, "valid")}
+                          type="button"
                         >
                           <CheckIcon /> Valider ✓
                         </button>
-
                         <button
                           disabled={pieceBusy === piece.id}
                           className={`btn-valider reject ${piece.status === "reject" ? "selected" : ""}`}
                           onClick={() => setPieceStatus(piece.id, "reject")}
+                          type="button"
                         >
                           <XIcon /> Rejeter ✗
                         </button>
@@ -1175,11 +1156,7 @@ export default function ChefDivisionExamens() {
                       <textarea
                         className="piece-comment-area"
                         rows={2}
-                        placeholder={
-                          piece.status === "reject"
-                            ? "Motif du rejet de cette pièce (obligatoire)..."
-                            : "Commentaire optionnel sur cette pièce..."
-                        }
+                        placeholder={piece.status === "reject" ? "Motif du rejet (obligatoire)..." : "Commentaire optionnel..."}
                         value={piece.comment || ""}
                         onChange={(e) => setPieceComment(piece.id, e.target.value)}
                       />
@@ -1188,17 +1165,13 @@ export default function ChefDivisionExamens() {
                 ))}
 
                 {allValidated && (
-                  <div className="info-box green" style={{ marginTop: 8 }}>
-                    <strong>✓ Toutes les pièces sont validées.</strong> Vous pouvez déclencher la génération automatique du document.
+                  <div className="info-box green" style={{ marginTop:8 }}>
+                    <strong>✓ Toutes les pièces sont validées.</strong> Vous pouvez déclencher la génération.
                   </div>
                 )}
-
                 {anyRejected && !allValidated && (
-                  <div
-                    className="info-box"
-                    style={{ background: "#fef2f2", color: "#991b1b", border: "1px solid #fca5a5", marginTop: 8 }}
-                  >
-                    <strong>⚠ Une ou plusieurs pièces ont été rejetées.</strong> Vous devrez rejeter la demande avec un motif explicatif.
+                  <div className="info-box" style={{ background:"#fef2f2", color:"#991b1b", border:"1px solid #fca5a5", marginTop:8 }}>
+                    <strong>⚠ Une ou plusieurs pièces rejetées.</strong> Rejetez la demande avec un motif.
                   </div>
                 )}
               </div>
@@ -1411,15 +1384,17 @@ function Sidebar({ onLogout }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <div className="logo-text">
-          EtuDocs <span>Agent</span>
+        <div className="sidebar-logo__icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
         </div>
+        <span>EtuDocs <span style={{fontSize:".75rem", fontWeight:500, color:"#f5a623"}}>Agent</span></span>
       </div>
       <nav className="sidebar-nav">
         <button className="nav-item active" type="button">
-          <span className="nav-icon">
-            <GridIcon />
-          </span>
+          <span className="nav-icon"><GridIcon /></span>
           Tableau de bord
         </button>
       </nav>
