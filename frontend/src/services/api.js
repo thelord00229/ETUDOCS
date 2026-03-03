@@ -151,6 +151,9 @@ export const getDemandes = async () => apiRequest("/api/demandes");
 
 export const getDemandeById = async (id) => apiRequest(`/api/demandes/${id}`);
 
+export const getStatsSG = () =>
+    api.get("api/demandes/stats/secretaire-general").then(r => r.data);
+
 export const avancerDemande = async (id, action, commentaire = "") => {
   const body = { action };
   if (commentaire) body.commentaire = commentaire;

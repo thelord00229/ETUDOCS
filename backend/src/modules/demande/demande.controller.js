@@ -127,3 +127,7 @@ exports.validerPiece = asyncHandler(async (req, res) => {
 exports.getStatsChefDivision = asyncHandler(async (req, res) => {
   res.json(await service.getStatsChefDivision(req.user));
 });
+
+exports.getStatsSG = asyncHandler(async (req, res) => {
+  res.json(await service.getStatsSG(req.user));
+});

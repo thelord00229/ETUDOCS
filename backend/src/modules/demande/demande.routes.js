@@ -60,4 +60,11 @@ router.patch(
   ctrl.validerPiece
 );
 
+router.get(
+    "/stats/secretaire-general",
+    auth,
+    role("SECRETAIRE_GENERAL"),
+    ctrl.getStatsSG
+);
+
 module.exports = router;
