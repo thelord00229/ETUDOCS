@@ -53,18 +53,6 @@ const css = `
     width: 54px; height: 54px;
     border-radius: 12px; object-fit: contain; flex-shrink: 0;
  }
-  .nav__links {
-    display: flex; align-items: center; gap: 4px;
-  }
-  .nav__link {
-    background: none; border: none; cursor: pointer;
-    font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
-    color: var(--g700); font-weight: 500;
-    padding: 8px 16px; border-radius: 8px; transition: background .2s, color .2s;
-    text-decoration: none;
-  }
-  .nav__link:hover { background: var(--g100); color: var(--navy); }
-  .nav__link.is-active { color: var(--gold); font-weight: 600; }
   .nav__actions { display: flex; align-items: center; gap: 14px; }
   .btn-ghost {
     background: none; border: none; cursor: pointer;
@@ -85,103 +73,274 @@ const css = `
   .hero {
     width: 100%;
     background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 55%, var(--navy-mid) 100%);
-    position: relative; overflow: hidden;
+    position: relative; 
+    overflow: hidden;
+    min-height: 650px;
+    display: flex;
+    align-items: center;
   }
-  .hero::before {
-    content: ''; position: absolute; inset: 0; pointer-events: none;
-    background:
-      radial-gradient(ellipse at 70% 50%, rgba(245,166,35,.09) 0%, transparent 60%),
-      radial-gradient(ellipse at 15% 80%, rgba(45,212,191,.06) 0%, transparent 55%);
-  }
-  .hero__decor { position:absolute; inset:0; pointer-events:none; z-index:0; }
-  .bubble {
-    position:absolute; border-radius:999px;
-    background: rgba(255,255,255,.08);
-    border: 1px solid rgba(255,255,255,.12);
-    backdrop-filter: blur(10px);
-    animation: floatY var(--dur, 12s) ease-in-out infinite;
-  }
-  .bubble--ring { background: transparent; border: 2px solid rgba(255,255,255,.18); }
-  .bubble--gold { background: rgba(245,166,35,.14); border: 1px solid rgba(245,166,35,.22); }
-  .bubble--teal { background: rgba(45,212,191,.12); border: 1px solid rgba(45,212,191,.2); }
-  @keyframes floatY {
-    0%,100% { transform: translateY(0) scale(1); }
-    50%      { transform: translateY(-18px) scale(1.02); }
-  }
-  @keyframes floatX {
-    0%,100% { transform: translateX(0) scale(1); }
-    50%     { transform: translateX(18px) scale(1.02); }
-  }
-  .bubble--x { animation-name: floatX; }
 
-  /* Hero inner : padding augmenté pour éviter la coupure */
   .hero__inner {
-    position: relative; z-index: 1;
+    position: relative;
+    z-index: 10;
     width: 100%;
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 60px; align-items: center;
-    padding: 110px 48px 120px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+    padding: 120px 48px 140px;
+    max-width: 1400px;
+    margin: 0 auto;
   }
-  .hero__left { position: relative; z-index: 1; }
-  .hero__slider { position: relative; min-height: 290px; }
-  .hero__slide {
-    position: absolute; inset: 0;
-    opacity: 0; transform: translateX(22px);
-    transition: opacity .55s ease, transform .55s ease;
-  }
-  .hero__slide.is-active { opacity: 1; transform: translateX(0); pointer-events: auto; }
-  .hero__title {
-    font-size: clamp(2rem, 3.5vw, 3rem); font-weight: 800;
-    color: var(--white); line-height: 1.15; margin-bottom: 18px;
-  }
-  .hero__sub {
-    color: rgba(255,255,255,.7); font-size: 1.05rem;
-    line-height: 1.65; margin-bottom: 36px; max-width: 560px;
-  }
-  .btn-cta {
-    display: inline-flex; align-items: center; gap: 10px;
-    background: var(--gold); color: var(--white);
-    font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem;
-    padding: 14px 28px; border-radius: 10px; border: none; cursor: pointer;
-    text-decoration: none;
-    transition: background .2s, transform .2s, box-shadow .2s;
-  }
-  .btn-cta:hover { background: var(--gold-lt); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(245,166,35,.35); }
-  .hero__dots { margin-top: 18px; display:flex; gap:8px; align-items:center; }
-  .dot {
-    width: 8px; height: 8px; border-radius: 999px;
-    background: rgba(255,255,255,.28); border: 1px solid rgba(255,255,255,.22);
-    cursor: pointer; transition: transform .2s, background .2s;
-  }
-  .dot:hover { transform: scale(1.1); background: rgba(255,255,255,.38); }
-  .dot.is-active { background: rgba(245,166,35,.75); border-color: rgba(245,166,35,.9); }
 
-  .hero__img-panel {
-    position: relative; z-index: 1;
-    width: 100%; height: 420px;
+  .hero-badge {
+    display: inline-block;
+    background: rgba(245, 166, 35, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(245, 166, 35, 0.3);
+    color: var(--gold);
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 30px;
+    margin-bottom: 24px;
+    letter-spacing: 0.5px;
+    animation: fadeInUp 0.6s ease-out;
   }
-  .hero__img-slide {
-    position: absolute; inset: 0;
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .hero__left {
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero__slides-container {
+    position: relative;
+    min-height: 400px;
+  }
+
+  .hero__slide {
+    position: absolute;
+    width: 100%;
     opacity: 0;
-    transition: opacity .6s ease;
+    visibility: hidden;
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .hero__img-slide.is-active { opacity: 1; }
+
+  .hero__slide.is-active {
+    opacity: 1;
+    visibility: visible;
+    position: relative;
+  }
+
+  .hero__slide.is-exit-left {
+    animation: slideOutLeft 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  .hero__slide.is-enter-right {
+    animation: slideInRight 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  @keyframes slideOutLeft {
+    0% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(-50px);
+    }
+  }
+
+  @keyframes slideInRight {
+    0% {
+      opacity: 0;
+      transform: translateX(50px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .hero__title {
+    font-size: clamp(2.5rem, 4vw, 3.5rem);
+    font-weight: 800;
+    color: var(--white);
+    line-height: 1.1;
+    margin-bottom: 24px;
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  .hero__title-highlight {
+    color: var(--gold);
+    display: inline-block;
+  }
+
+  .hero__sub {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.15rem;
+    line-height: 1.7;
+    margin-bottom: 36px;
+    max-width: 560px;
+    backdrop-filter: blur(10px);
+  }
+
+  .hero__cta-group {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 40px;
+  }
+
+  .btn-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--gold);
+    color: var(--white);
+    font-family: 'Sora', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 16px 32px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 10px 30px rgba(245, 166, 35, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-cta:hover {
+    background: var(--gold-lt);
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(245, 166, 35, 0.4);
+  }
+
+  .btn-cta:hover span {
+    transform: translateX(5px);
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 1rem;
+    padding: 16px 28px;
+    border-radius: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+  }
+
+  /* Images statiques et grandes */
+  .hero__img-panel {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 600px; /* Augmenté pour des images plus grandes */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hero__img-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .hero__img {
-    width: 100%; height: 100%;
+    width: auto;
+    height: 100%;
+    max-width: 120%; /* Permet à l'image d'être plus grande que le conteneur */
     object-fit: contain;
-    object-position: bottom center;
+    object-position: center;
     display: block;
+    filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.3));
+    /* Animation supprimée - image statique */
   }
-  .feat { display: flex; align-items: flex-start; gap: 14px; }
-  .feat__icon {
-    width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+
+  .hero__dots {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 40px;
   }
-  .feat__icon--gold  { background: rgba(245,166,35,.22); }
-  .feat__icon--green { background: rgba(34,197,94,.22); }
-  .feat__icon--teal  { background: rgba(45,212,191,.22); }
-  .feat__title { font-family:'Sora',sans-serif; font-weight:600; font-size:.95rem; color:var(--white); margin-bottom:3px; }
-  .feat__sub   { font-size:.84rem; color:rgba(255,255,255,.58); }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+  }
+
+  .dot:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.2);
+  }
+
+  .dot.is-active {
+    background: var(--gold);
+    border-color: var(--gold);
+    width: 30px;
+    transform: scale(1);
+  }
+
+  .dot.is-active::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border: 1px solid var(--gold);
+    border-radius: 999px;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1.5);
+      opacity: 0;
+    }
+  }
 
   /* ── STATS ── */
   .stats {
@@ -205,13 +364,12 @@ const css = `
   .section__title { font-size:clamp(1.6rem,3vw,2.2rem); font-weight:800; color:var(--navy); text-align:center; margin-bottom:10px; }
   .section__sub   { color:var(--g600); font-size:1rem; text-align:center; margin-bottom:50px; }
 
-  /* ── COMMENT ÇA MARCHE — Timeline alternée (remplace path) ── */
+  /* ── COMMENT ÇA MARCHE — Timeline alternée ── */
   .timeline {
     max-width: 860px;
     margin: 0 auto;
     position: relative;
   }
-  /* Ligne verticale centrale */
   .timeline::before {
     content: '';
     position: absolute;
@@ -230,34 +388,27 @@ const css = `
     position: relative;
     z-index: 1;
   }
-
-  /* Particule animée sur la timeline */
-    .tl-particle {
-        position: absolute;
-        left: 50%;
-        top: 40px;
-        width: 14px; height: 14px;
-        background: var(--gold);
-        border-radius: 50%;
-        transform: translateX(-50%);
-        box-shadow: 0 0 12px var(--gold), 0 0 28px var(--gold-lt);
-        animation: tlParticle 4s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
-        z-index: 3;
-        pointer-events: none;
-    }
-    @keyframes tlParticle {
-        0%   { top: 40px;  opacity: 0; transform: translateX(-50%) scale(0.5); }
-        10%  { opacity: 1; transform: translateX(-50%) scale(1); }
-        90%  { opacity: 1; transform: translateX(-50%) scale(1); }
-        100% { top: calc(100% - 40px); opacity: 0; transform: translateX(-50%) scale(0.5); }
-    }
-
-  /* Colonne gauche */
+  .tl-particle {
+    position: absolute;
+    left: 50%;
+    top: 40px;
+    width: 14px; height: 14px;
+    background: var(--gold);
+    border-radius: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 12px var(--gold), 0 0 28px var(--gold-lt);
+    animation: tlParticle 4s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
+    z-index: 3;
+    pointer-events: none;
+  }
+  @keyframes tlParticle {
+    0%   { top: 40px;  opacity: 0; transform: translateX(-50%) scale(0.5); }
+    10%  { opacity: 1; transform: translateX(-50%) scale(1); }
+    90%  { opacity: 1; transform: translateX(-50%) scale(1); }
+    100% { top: calc(100% - 40px); opacity: 0; transform: translateX(-50%) scale(0.5); }
+  }
   .tl-col-left  { display:flex; justify-content:flex-end; padding-right: 28px; }
-  /* Colonne droite */
   .tl-col-right { display:flex; justify-content:flex-start; padding-left: 28px; }
-
-  /* Icône centrale */
   .tl-col-center {
     display: flex; align-items: center; justify-content: center;
     position: relative; z-index: 2;
@@ -278,8 +429,6 @@ const css = `
     transform: scale(1.12) rotate(6deg);
     box-shadow: 0 8px 28px rgba(245,166,35,.3);
   }
-
-  /* Carte contenu */
   .tl-card {
     background: var(--white);
     border: 1.5px solid var(--g200);
@@ -300,11 +449,8 @@ const css = `
     font-size: 0.68rem; font-weight: 800; letter-spacing: .1em;
     padding: 4px 12px; border-radius: 20px; margin-bottom: 10px;
   }
-  /* Impairs (1,3) : card à gauche → badge navy */
   .tl-row:nth-child(odd) .tl-badge  { background: var(--navy); color: #fff; }
-  /* Pairs (2,4) : card à droite → badge gold */
   .tl-row:nth-child(even) .tl-badge { background: rgba(245,166,35,.15); color: #d97706; }
-
   .tl-title { font-family:'Sora',sans-serif; font-weight:700; font-size:1rem; color:var(--navy); margin-bottom:6px; }
   .tl-desc  { font-size:.85rem; color:var(--g600); line-height:1.6; }
 
@@ -319,8 +465,6 @@ const css = `
   .inst-card--ifri { border:2px solid #1a2744; }
   .inst-card--epac { border:2px solid #0f766e; }
   .inst-card--fss  { border:2px solid #d97706; }
-
-  /* Logo institution — cercle blanc avec l'image */
   .inst-logo-wrap {
     width: 90px; height: 90px; border-radius: 50%;
     margin: 0 auto 18px;
@@ -379,19 +523,35 @@ const css = `
   .footer-logo img { width:34px; height:34px; border-radius:8px; object-fit:contain; }
 
   /* ── RESPONSIVE ── */
-  @media (prefers-reduced-motion: reduce) {
-    .bubble { animation: none !important; }
-    .hero__slide { transition: none !important; }
-  }
   @media (max-width:1024px) {
+    .hero__inner { gap: 40px; padding: 100px 30px 120px; }
+    .hero__title { font-size: clamp(2.2rem, 3.5vw, 3rem); }
+    .hero__img-panel { height: 450px; }
     .testi-grid { grid-template-columns:repeat(2,1fr); }
     .footer__top { grid-template-columns:1fr 1fr; }
   }
+
   @media (max-width:768px) {
-    .nav__inner  { padding:0 20px; }
-    .hero__inner { grid-template-columns:1fr; padding:70px 20px 80px; }
-    .hero__img-panel  { display:none; }
-    .hero__slider { min-height: 300px; }
+    .nav__inner { padding:0 20px; }
+    .hero { min-height: auto; }
+    .hero__inner { 
+      grid-template-columns:1fr; 
+      padding: 80px 20px 100px;
+      gap: 40px;
+    }
+    .hero__img-panel { 
+      height: 350px;
+      order: -1;
+    }
+    .hero__img {
+      height: auto;
+      max-height: 100%;
+      max-width: 100%;
+    }
+    .hero__title { font-size: 2.2rem; }
+    .hero__sub { font-size: 1rem; }
+    .hero__cta-group { flex-direction: column; align-items: stretch; }
+    .btn-cta, .btn-secondary { justify-content: center; }
     .stats { grid-template-columns:1fr; }
     .stat + .stat { border-left:none; border-top:1px solid var(--g200); }
     .section { padding:60px 20px; }
@@ -402,7 +562,6 @@ const css = `
     .footer__top { grid-template-columns:1fr; }
     .footer__bottom { flex-direction:column; gap:12px; text-align:center; }
 
-    /* Timeline mobile : vertical, tout à droite */
     .timeline::before { left: 24px; top: 0; bottom: 0; }
     .tl-row { grid-template-columns: 56px 1fr; min-height: auto; margin-bottom: 20px; }
     .tl-col-left { display: none; }
@@ -410,7 +569,6 @@ const css = `
     .tl-icon { width: 52px; height: 52px; font-size: 1.3rem; }
     .tl-col-right,
     .tl-row:nth-child(even) .tl-col-right { padding-left: 16px; padding-right: 0; justify-content: flex-start; }
-    /* Sur mobile les pairs affichent aussi à droite */
     .tl-row:nth-child(even) { grid-template-columns: 56px 1fr; }
     .tl-row:nth-child(even) .tl-col-left { display: none; }
     .tl-row:nth-child(even) .tl-col-center { order: 1; }
@@ -421,29 +579,67 @@ const css = `
 export default function Home() {
   const slides = useMemo(() => ([
     {
-      title: "Fini les files d'attente. Demandez vos documents universitaires en ligne.",
-      sub: "Vos documents universitaires, en quelques clics.",
+      title: "Fini les files d'attente.",
+      titleHighlight: "Demandez vos documents universitaires en ligne.",
+      sub: "Vos documents universitaires, en quelques clics. Plus besoin de vous déplacer, tout se fait en ligne.",
       cta: "Faire une demande",
       href: "/login",
-      img: "/WhatsApp_Image_2026-03-03_at_04.31.23-removebg-preview.png"  // ← mets ici le lien de ta photo pour le slide 1
+      img: "/WhatsApp_Image_2026-03-03_at_04.31.23-removebg-preview.png",
+      badge: "Nouveau"
     },
     {
-      title: "Suivez chaque étape en temps réel, sans stress.",
-      sub: "Notifications + historique clair. Vous savez toujours où en est votre demande.",
+      title: "Suivez chaque étape",
+      titleHighlight: "en temps réel, sans stress.",
+      sub: "Notifications instantanées + historique clair. Vous savez toujours où en est votre demande.",
       cta: "Se connecter",
       href: "/login",
-      img: "/WhatsApp_Image_2026-03-03_at_04.31.23__1_-removebg-preview.png"  // ← mets ici le lien de ta photo pour le slide 2
+      img: "/WhatsApp_Image_2026-03-03_at_04.31.23__1_-removebg-preview.png",
+      badge: "Suivi en direct"
     },
   ]), []);
 
   const [active, setActive] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [exitSlide, setExitSlide] = useState(null);
+  const [enterSlide, setEnterSlide] = useState(null);
+
+  const goToNextSlide = () => {
+    if (isAnimating) return;
+
+    const next = (active + 1) % slides.length;
+    setIsAnimating(true);
+    setExitSlide(active);
+    setEnterSlide(next);
+
+    setTimeout(() => {
+      setActive(next);
+      setExitSlide(null);
+      setEnterSlide(null);
+      setIsAnimating(false);
+    }, 800);
+  };
+
+  const goToSlide = (index) => {
+    if (isAnimating || index === active) return;
+
+    setIsAnimating(true);
+    setExitSlide(active);
+    setEnterSlide(index);
+
+    setTimeout(() => {
+      setActive(index);
+      setExitSlide(null);
+      setEnterSlide(null);
+      setIsAnimating(false);
+    }, 800);
+  };
 
   useEffect(() => {
     const id = setInterval(() => {
-      setActive((p) => (p + 1) % slides.length);
-    }, 5200);
+      goToNextSlide();
+    }, 6000);
     return () => clearInterval(id);
-  }, [slides.length]);
+  }, [active, isAnimating]);
 
   const steps = [
     { n:1, icon:"👤", title:"Créer un compte",         desc:"Inscrivez-vous avec votre numéro étudiant et votre email institutionnel." },
@@ -452,11 +648,17 @@ export default function Home() {
     { n:4, icon:"📥", title:"Télécharger le document", desc:"Document certifié avec QR code d'authenticité, prêt en 48h." },
   ];
 
+  const getSlideClass = (index) => {
+    if (exitSlide === index) return "hero__slide is-exit-left";
+    if (enterSlide === index) return "hero__slide is-enter-right";
+    if (active === index) return "hero__slide is-active";
+    return "hero__slide";
+  };
+
   return (
       <div className="root" style={{width:"100%",maxWidth:"100%",margin:0,padding:0,boxSizing:"border-box"}}>
         <style>{css}</style>
 
-        {/* ── NAV ── */}
         <nav className="nav">
           <div className="nav__inner">
             <a href="#" className="logo">
@@ -470,55 +672,64 @@ export default function Home() {
           </div>
         </nav>
 
-        {/* ── HERO ── */}
         <section className="hero">
-          <div className="hero__decor" aria-hidden="true">
-            <div className="bubble bubble--ring" style={{ left:"6%", top:"18%", width:34, height:34, ["--dur"]:"9s" }} />
-            <div className="bubble bubble--gold" style={{ left:"18%", top:"70%", width:22, height:22, ["--dur"]:"7s" }} />
-            <div className="bubble bubble--teal bubble--x" style={{ left:"42%", top:"26%", width:18, height:18, ["--dur"]:"11s" }} />
-            <div className="bubble bubble--ring bubble--x" style={{ right:"10%", top:"22%", width:28, height:28, ["--dur"]:"8s" }} />
-            <div className="bubble bubble--gold" style={{ right:"8%", top:"62%", width:16, height:16, ["--dur"]:"8s" }} />
-            <div className="bubble" style={{ right:"22%", top:"78%", width:40, height:40, ["--dur"]:"12s" }} />
-          </div>
-
           <div className="hero__inner">
             <div className="hero__left">
-              <div className="hero__slider">
+              <span className="hero-badge">
+                ✨ Plateforme officielle de l'UAC
+              </span>
+
+              <div className="hero__slides-container">
                 {slides.map((s, i) => (
-                    <div className={`hero__slide ${i === active ? "is-active" : ""}`} key={i}>
-                      <h1 className="hero__title">{s.title}</h1>
+                    <div className={getSlideClass(i)} key={i}>
+                      <h1 className="hero__title">
+                        {s.title}{' '}
+                        <span className="hero__title-highlight">{s.titleHighlight}</span>
+                      </h1>
                       <p className="hero__sub">{s.sub}</p>
-                      <a href={s.href} className="btn-cta">{s.cta} <span>→</span></a>
-                      <div className="hero__dots">
-                        {slides.map((_, d) => (
-                            <button
-                                key={d} type="button"
-                                className={`dot ${d === active ? "is-active" : ""}`}
-                                onClick={() => setActive(d)}
-                                aria-label={`Slide ${d + 1}`}
-                            />
-                        ))}
+
+                      <div className="hero__cta-group">
+                        <a href={s.href} className="btn-cta">
+                          {s.cta}
+                          <span>→</span>
+                        </a>
+                        <a href="/demo" className="btn-secondary">
+                          <span>🎥</span>
+                          Voir la démo
+                        </a>
                       </div>
                     </div>
+                ))}
+              </div>
+
+              <div className="hero__dots">
+                {slides.map((_, d) => (
+                    <button
+                        key={d}
+                        type="button"
+                        className={`dot ${d === active ? "is-active" : ""}`}
+                        onClick={() => goToSlide(d)}
+                        disabled={isAnimating}
+                        aria-label={`Slide ${d + 1}`}
+                    />
                 ))}
               </div>
             </div>
 
             <div className="hero__img-panel">
-              {slides.map((s, i) => (
-                  <div className={`hero__img-slide ${i === active ? "is-active" : ""}`} key={i}>
-                    <img
-                        src={s.img || ""}
-                        alt={`Slide ${i + 1}`}
-                        className="hero__img"
-                    />
-                  </div>
-              ))}
+              <div className="hero__img-container">
+                {/* Image statique qui change avec l'index actif */}
+                <img
+                    src={slides[active].img || ""}
+                    alt={`Slide ${active + 1}`}
+                    className="hero__img"
+                />
+              </div>
             </div>
           </div>
         </section>
 
-        {/* ── STATS ── */}
+        {/* Stats section */}
         <div className="stats">
           <div className="stat">
             <div className="stat__num">🏛 3</div>
@@ -535,7 +746,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ── COMMENT ÇA MARCHE — Timeline alternée ── */}
+        {/* Comment ça marche */}
         <section className="section">
           <h2 className="section__title">Comment ça marche ?</h2>
           <p className="section__sub">Obtenez vos documents en 4 étapes simples</p>
@@ -565,19 +776,18 @@ export default function Home() {
                   </div>
               );
             })}
-
           </div>
         </section>
 
-        {/* ── INSTITUTIONS ── */}
+        {/* Institutions partenaires */}
         <section className="section section--gray">
           <h2 className="section__title">Institutions partenaires</h2>
           <p className="inst-univ">Université d'Abomey-Calavi (UAC)</p>
           <div className="inst-grid">
             {[
               { k:"ifri", label:"IFRI", full:"Institut de Formation et de Recherche en Informatique", src: logoIfri },
-              { k:"epac", label:"EPAC", full:"École Polytechnique d'Abomey-Calavi",                  src: logoEpac },
-              { k:"fss",  label:"FSS",  full:"Faculté des Sciences de la Santé",                     src: logoFss  },
+              { k:"epac", label:"EPAC", full:"École Polytechnique d'Abomey-Calavi", src: logoEpac },
+              { k:"fss",  label:"FSS",  full:"Faculté des Sciences de la Santé", src: logoFss },
             ].map(inst => (
                 <div className={`inst-card inst-card--${inst.k}`} key={inst.k}>
                   <div className="inst-logo-wrap">
@@ -591,15 +801,15 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── TÉMOIGNAGES ── */}
+        {/* Témoignages */}
         <section className="section">
           <h2 className="section__title">Ce que disent nos étudiants</h2>
           <p className="section__sub">Ils ont adopté EtuDocs</p>
           <div className="testi-grid">
             {[
-              { q:"Plus besoin de faire la queue pendant des heures. J'ai reçu mon attestation en 2 jours !", name:"Koffi A.",   role:"IFRI · L3 Informatique", l:"K" },
-              { q:"Interface très intuitive. Le suivi en temps réel est vraiment pratique.",                  name:"Mariam S.", role:"EPAC · M1 Génie Civil",   l:"M" },
-              { q:"Enfin une solution moderne pour nos démarches administratives. Bravo !",                   name:"Yves D.",   role:"FSS · L2 Médecine",       l:"Y" },
+              { q:"Plus besoin de faire la queue pendant des heures. J'ai reçu mon attestation en 2 jours !", name:"Koffi A.", role:"IFRI · L3 Informatique", l:"K" },
+              { q:"Interface très intuitive. Le suivi en temps réel est vraiment pratique.", name:"Mariam S.", role:"EPAC · M1 Génie Civil", l:"M" },
+              { q:"Enfin une solution moderne pour nos démarches administratives. Bravo !", name:"Yves D.", role:"FSS · L2 Médecine", l:"Y" },
             ].map((t, i) => (
                 <div className="testi-card" key={i}>
                   <div className="stars">★★★★★</div>
@@ -616,14 +826,14 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── CTA ── */}
+        {/* CTA */}
         <section className="cta-band">
           <h2 className="cta-band__title">Prêt à simplifier vos démarches administratives ?</h2>
           <p className="cta-band__sub">Rejoignez les centaines d'étudiants qui ont déjà adopté EtuDocs</p>
           <a href="/register" className="btn-cta">Créer mon compte gratuitement <span>→</span></a>
         </section>
 
-        {/* ── FOOTER ── */}
+        {/* Footer */}
         <footer className="footer">
           <div className="footer__inner">
             <div className="footer__top">
