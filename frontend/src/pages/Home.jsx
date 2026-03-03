@@ -53,6 +53,18 @@ const css = `
     width: 54px; height: 54px;
     border-radius: 12px; object-fit: contain; flex-shrink: 0;
  }
+  .nav__links {
+    display: flex; align-items: center; gap: 4px;
+  }
+  .nav__link {
+    background: none; border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+    color: var(--g700); font-weight: 500;
+    padding: 8px 16px; border-radius: 8px; transition: background .2s, color .2s;
+    text-decoration: none;
+  }
+  .nav__link:hover { background: var(--g100); color: var(--navy); }
+  .nav__link.is-active { color: var(--gold); font-weight: 600; }
   .nav__actions { display: flex; align-items: center; gap: 14px; }
   .btn-ghost {
     background: none; border: none; cursor: pointer;
@@ -94,11 +106,11 @@ const css = `
   .bubble--teal { background: rgba(45,212,191,.12); border: 1px solid rgba(45,212,191,.2); }
   @keyframes floatY {
     0%,100% { transform: translateY(0) scale(1); }
-    50%      { transform: translateY(-14px) scale(1.02); }
+    50%      { transform: translateY(-18px) scale(1.02); }
   }
   @keyframes floatX {
     0%,100% { transform: translateX(0) scale(1); }
-    50%     { transform: translateX(14px) scale(1.02); }
+    50%     { transform: translateX(18px) scale(1.02); }
   }
   .bubble--x { animation-name: floatX; }
 
@@ -144,12 +156,21 @@ const css = `
   .dot:hover { transform: scale(1.1); background: rgba(255,255,255,.38); }
   .dot.is-active { background: rgba(245,166,35,.75); border-color: rgba(245,166,35,.9); }
 
-  .hero__card {
-    background: rgba(255,255,255,.09); backdrop-filter: blur(16px);
-    border: 1px solid rgba(255,255,255,.15);
-    border-radius: 16px; padding: 36px;
-    display: flex; flex-direction: column; gap: 28px;
+  .hero__img-panel {
     position: relative; z-index: 1;
+    width: 100%; height: 420px;
+  }
+  .hero__img-slide {
+    position: absolute; inset: 0;
+    opacity: 0;
+    transition: opacity .6s ease;
+  }
+  .hero__img-slide.is-active { opacity: 1; }
+  .hero__img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    object-position: bottom center;
+    display: block;
   }
   .feat { display: flex; align-items: flex-start; gap: 14px; }
   .feat__icon {
@@ -369,7 +390,7 @@ const css = `
   @media (max-width:768px) {
     .nav__inner  { padding:0 20px; }
     .hero__inner { grid-template-columns:1fr; padding:70px 20px 80px; }
-    .hero__card  { display:none; }
+    .hero__img-panel  { display:none; }
     .hero__slider { min-height: 300px; }
     .stats { grid-template-columns:1fr; }
     .stat + .stat { border-left:none; border-top:1px solid var(--g200); }
@@ -403,13 +424,15 @@ export default function Home() {
       title: "Fini les files d'attente. Demandez vos documents universitaires en ligne.",
       sub: "Vos documents universitaires, en quelques clics.",
       cta: "Faire une demande",
-      href: "/login"
+      href: "/login",
+      img: "/WhatsApp_Image_2026-03-03_at_04.31.23-removebg-preview.png"  // ← mets ici le lien de ta photo pour le slide 1
     },
     {
       title: "Suivez chaque étape en temps réel, sans stress.",
       sub: "Notifications + historique clair. Vous savez toujours où en est votre demande.",
       cta: "Se connecter",
-      href: "/login"
+      href: "/login",
+      img: "/WhatsApp_Image_2026-03-03_at_04.31.23__1_-removebg-preview.png"  // ← mets ici le lien de ta photo pour le slide 2
     },
   ]), []);
 
@@ -430,220 +453,216 @@ export default function Home() {
   ];
 
   return (
-    <div className="root" style={{width:"100%",maxWidth:"100%",margin:0,padding:0,boxSizing:"border-box"}}>
-      <style>{css}</style>
+      <div className="root" style={{width:"100%",maxWidth:"100%",margin:0,padding:0,boxSizing:"border-box"}}>
+        <style>{css}</style>
 
-      {/* ── NAV ── */}
-      <nav className="nav">
-        <div className="nav__inner">
-          <a href="#" className="logo">
-            <img src={logo} alt="EtuDocs" className="logo__img" />
-            EtuDocs
-          </a>
-          <div className="nav__actions">
-            <a href="/login"><button className="btn-ghost">Connexion</button></a>
-            <a href="/register"><button className="btn-gold">Créer un compte</button></a>
+        {/* ── NAV ── */}
+        <nav className="nav">
+          <div className="nav__inner">
+            <a href="#" className="logo">
+              <img src={logo} alt="EtuDocs" className="logo__img" />
+              EtuDocs
+            </a>
+            <div className="nav__actions">
+              <a href="/login"><button className="btn-ghost">Connexion</button></a>
+              <a href="/register"><button className="btn-gold">Créer un compte</button></a>
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
 
-      {/* ── HERO ── */}
-      <section className="hero">
-        <div className="hero__decor" aria-hidden="true">
-          <div className="bubble bubble--ring" style={{ left:"6%", top:"18%", width:34, height:34, ["--dur"]:"12s" }} />
-          <div className="bubble bubble--gold" style={{ left:"18%", top:"70%", width:22, height:22, ["--dur"]:"9s" }} />
-          <div className="bubble bubble--teal bubble--x" style={{ left:"42%", top:"26%", width:18, height:18, ["--dur"]:"14s" }} />
-          <div className="bubble bubble--ring bubble--x" style={{ right:"10%", top:"22%", width:28, height:28, ["--dur"]:"11s" }} />
-          <div className="bubble bubble--gold" style={{ right:"8%", top:"62%", width:16, height:16, ["--dur"]:"10s" }} />
-          <div className="bubble" style={{ right:"22%", top:"78%", width:40, height:40, ["--dur"]:"16s" }} />
-        </div>
+        {/* ── HERO ── */}
+        <section className="hero">
+          <div className="hero__decor" aria-hidden="true">
+            <div className="bubble bubble--ring" style={{ left:"6%", top:"18%", width:34, height:34, ["--dur"]:"9s" }} />
+            <div className="bubble bubble--gold" style={{ left:"18%", top:"70%", width:22, height:22, ["--dur"]:"7s" }} />
+            <div className="bubble bubble--teal bubble--x" style={{ left:"42%", top:"26%", width:18, height:18, ["--dur"]:"11s" }} />
+            <div className="bubble bubble--ring bubble--x" style={{ right:"10%", top:"22%", width:28, height:28, ["--dur"]:"8s" }} />
+            <div className="bubble bubble--gold" style={{ right:"8%", top:"62%", width:16, height:16, ["--dur"]:"8s" }} />
+            <div className="bubble" style={{ right:"22%", top:"78%", width:40, height:40, ["--dur"]:"12s" }} />
+          </div>
 
-        <div className="hero__inner">
-          <div className="hero__left">
-            <div className="hero__slider">
+          <div className="hero__inner">
+            <div className="hero__left">
+              <div className="hero__slider">
+                {slides.map((s, i) => (
+                    <div className={`hero__slide ${i === active ? "is-active" : ""}`} key={i}>
+                      <h1 className="hero__title">{s.title}</h1>
+                      <p className="hero__sub">{s.sub}</p>
+                      <a href={s.href} className="btn-cta">{s.cta} <span>→</span></a>
+                      <div className="hero__dots">
+                        {slides.map((_, d) => (
+                            <button
+                                key={d} type="button"
+                                className={`dot ${d === active ? "is-active" : ""}`}
+                                onClick={() => setActive(d)}
+                                aria-label={`Slide ${d + 1}`}
+                            />
+                        ))}
+                      </div>
+                    </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="hero__img-panel">
               {slides.map((s, i) => (
-                <div className={`hero__slide ${i === active ? "is-active" : ""}`} key={i}>
-                  <h1 className="hero__title">{s.title}</h1>
-                  <p className="hero__sub">{s.sub}</p>
-                  <a href={s.href} className="btn-cta">{s.cta} <span>→</span></a>
-                  <div className="hero__dots">
-                    {slides.map((_, d) => (
-                      <button
-                        key={d} type="button"
-                        className={`dot ${d === active ? "is-active" : ""}`}
-                        onClick={() => setActive(d)}
-                        aria-label={`Slide ${d + 1}`}
-                      />
-                    ))}
+                  <div className={`hero__img-slide ${i === active ? "is-active" : ""}`} key={i}>
+                    <img
+                        src={s.img || ""}
+                        alt={`Slide ${i + 1}`}
+                        className="hero__img"
+                    />
                   </div>
-                </div>
               ))}
             </div>
           </div>
+        </section>
 
-          <div className="hero__card">
+        {/* ── STATS ── */}
+        <div className="stats">
+          <div className="stat">
+            <div className="stat__num">🏛 3</div>
+            <div className="stat__label">institutions connectées</div>
+            <div className="stat__sub">IFRI • EPAC • FSS</div>
+          </div>
+          <div className="stat">
+            <div className="stat__num">📄 7</div>
+            <div className="stat__label">types de documents disponibles</div>
+          </div>
+          <div className="stat">
+            <div className="stat__num stat__num--amber">⏱ 48h</div>
+            <div className="stat__label">délai moyen de traitement</div>
+          </div>
+        </div>
+
+        {/* ── COMMENT ÇA MARCHE — Timeline alternée ── */}
+        <section className="section">
+          <h2 className="section__title">Comment ça marche ?</h2>
+          <p className="section__sub">Obtenez vos documents en 4 étapes simples</p>
+
+          <div className="timeline">
+            <div className="tl-particle" />
+            {steps.map((s) => {
+              const isOdd = s.n % 2 !== 0;
+              const card = (
+                  <div className="tl-card">
+                    <span className="tl-badge">ÉTAPE {s.n}</span>
+                    <h3 className="tl-title">{s.title}</h3>
+                    <p className="tl-desc">{s.desc}</p>
+                  </div>
+              );
+              return (
+                  <div className="tl-row" key={s.n}>
+                    <div className="tl-col-left">
+                      {isOdd ? card : null}
+                    </div>
+                    <div className="tl-col-center">
+                      <div className="tl-icon">{s.icon}</div>
+                    </div>
+                    <div className="tl-col-right">
+                      {!isOdd ? card : null}
+                    </div>
+                  </div>
+              );
+            })}
+
+          </div>
+        </section>
+
+        {/* ── INSTITUTIONS ── */}
+        <section className="section section--gray">
+          <h2 className="section__title">Institutions partenaires</h2>
+          <p className="inst-univ">Université d'Abomey-Calavi (UAC)</p>
+          <div className="inst-grid">
             {[
-              { cls:"feat__icon--gold",  icon:"⚡", title:"Rapide et simple",    sub:"Demande en 3 minutes" },
-              { cls:"feat__icon--green", icon:"🔒", title:"100% sécurisé",       sub:"Documents certifiés avec QR code" },
-              { cls:"feat__icon--teal",  icon:"⏱", title:"Suivi en temps réel", sub:"Notifications à chaque étape" },
-            ].map((f, i) => (
-              <div className="feat" key={i}>
-                <div className={`feat__icon ${f.cls}`}>{f.icon}</div>
-                <div>
-                  <div className="feat__title">{f.title}</div>
-                  <div className="feat__sub">{f.sub}</div>
+              { k:"ifri", label:"IFRI", full:"Institut de Formation et de Recherche en Informatique", src: logoIfri },
+              { k:"epac", label:"EPAC", full:"École Polytechnique d'Abomey-Calavi",                  src: logoEpac },
+              { k:"fss",  label:"FSS",  full:"Faculté des Sciences de la Santé",                     src: logoFss  },
+            ].map(inst => (
+                <div className={`inst-card inst-card--${inst.k}`} key={inst.k}>
+                  <div className="inst-logo-wrap">
+                    <img src={inst.src} alt={`Logo ${inst.label}`} />
+                  </div>
+                  <div className="inst-name">{inst.label}</div>
+                  <div className="inst-full">{inst.full}</div>
+                  <span className="badge">✅ Actif</span>
                 </div>
-              </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── STATS ── */}
-      <div className="stats">
-        <div className="stat">
-          <div className="stat__num">🏛 3</div>
-          <div className="stat__label">institutions connectées</div>
-          <div className="stat__sub">IFRI • EPAC • FSS</div>
-        </div>
-        <div className="stat">
-          <div className="stat__num">📄 7</div>
-          <div className="stat__label">types de documents disponibles</div>
-        </div>
-        <div className="stat">
-          <div className="stat__num stat__num--amber">⏱ 48h</div>
-          <div className="stat__label">délai moyen de traitement</div>
-        </div>
+        {/* ── TÉMOIGNAGES ── */}
+        <section className="section">
+          <h2 className="section__title">Ce que disent nos étudiants</h2>
+          <p className="section__sub">Ils ont adopté EtuDocs</p>
+          <div className="testi-grid">
+            {[
+              { q:"Plus besoin de faire la queue pendant des heures. J'ai reçu mon attestation en 2 jours !", name:"Koffi A.",   role:"IFRI · L3 Informatique", l:"K" },
+              { q:"Interface très intuitive. Le suivi en temps réel est vraiment pratique.",                  name:"Mariam S.", role:"EPAC · M1 Génie Civil",   l:"M" },
+              { q:"Enfin une solution moderne pour nos démarches administratives. Bravo !",                   name:"Yves D.",   role:"FSS · L2 Médecine",       l:"Y" },
+            ].map((t, i) => (
+                <div className="testi-card" key={i}>
+                  <div className="stars">★★★★★</div>
+                  <p className="testi-text">"{t.q}"</p>
+                  <div className="testi-author">
+                    <div className="testi-ava">{t.l}</div>
+                    <div>
+                      <span className="testi-name">{t.name}</span>
+                      <span className="testi-role">{t.role}</span>
+                    </div>
+                  </div>
+                </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── CTA ── */}
+        <section className="cta-band">
+          <h2 className="cta-band__title">Prêt à simplifier vos démarches administratives ?</h2>
+          <p className="cta-band__sub">Rejoignez les centaines d'étudiants qui ont déjà adopté EtuDocs</p>
+          <a href="/register" className="btn-cta">Créer mon compte gratuitement <span>→</span></a>
+        </section>
+
+        {/* ── FOOTER ── */}
+        <footer className="footer">
+          <div className="footer__inner">
+            <div className="footer__top">
+              <div className="footer__brand">
+                <a href="#" className="footer-logo">
+                  <img src={logo} alt="EtuDocs" />
+                  EtuDocs
+                </a>
+                <p>Vos documents universitaires, en quelques clics.</p>
+              </div>
+              <div className="footer__col">
+                <h5>Navigation</h5>
+                <a href="/login">Connexion</a>
+                <a href="/register">Créer un compte</a>
+                <a href="/faq">FAQ</a>
+              </div>
+              <div className="footer__col">
+                <h5>Institutions</h5>
+                <a href="https://ifri-uac.bj/">IFRI</a>
+                <a href="https://epac.uac.bj/">EPAC</a>
+                <a href="https://epac.uac.bj/">FSS</a>
+              </div>
+              <div className="footer__col">
+                <h5>Contact</h5>
+                <a href="#">contact@etudocs.bj</a>
+                <a href="#">+229 XX XX XX XX</a>
+                <a href="#">Abomey-Calavi, Bénin</a>
+              </div>
+            </div>
+            <div className="footer__bottom">
+              <span className="footer__copy">© 2026 EtuDocs. Tous droits réservés.</span>
+              <div className="footer__legal">
+                <a href="#">Mentions légales</a>
+                <a href="#">Politique de confidentialité</a>
+                <a href="#">CGU</a>
+              </div>
+            </div>
+          </div>
+        </footer>
       </div>
-
-      {/* ── COMMENT ÇA MARCHE — Timeline alternée ── */}
-      <section className="section">
-        <h2 className="section__title">Comment ça marche ?</h2>
-        <p className="section__sub">Obtenez vos documents en 4 étapes simples</p>
-
-        <div className="timeline">
-          <div className="tl-particle" />
-          {steps.map((s) => {
-            const isOdd = s.n % 2 !== 0;
-            const card = (
-              <div className="tl-card">
-                <span className="tl-badge">ÉTAPE {s.n}</span>
-                <h3 className="tl-title">{s.title}</h3>
-                <p className="tl-desc">{s.desc}</p>
-              </div>
-            );
-            return (
-              <div className="tl-row" key={s.n}>
-                <div className="tl-col-left">
-                  {isOdd ? card : null}
-                </div>
-                <div className="tl-col-center">
-                  <div className="tl-icon">{s.icon}</div>
-                </div>
-                <div className="tl-col-right">
-                  {!isOdd ? card : null}
-                </div>
-              </div>
-            );
-          })}
-
-        </div>
-      </section>
-
-      {/* ── INSTITUTIONS ── */}
-      <section className="section section--gray">
-        <h2 className="section__title">Institutions partenaires</h2>
-        <p className="inst-univ">Université d'Abomey-Calavi (UAC)</p>
-        <div className="inst-grid">
-          {[
-            { k:"ifri", label:"IFRI", full:"Institut de Formation et de Recherche en Informatique", src: logoIfri },
-            { k:"epac", label:"EPAC", full:"École Polytechnique d'Abomey-Calavi",                  src: logoEpac },
-            { k:"fss",  label:"FSS",  full:"Faculté des Sciences de la Santé",                     src: logoFss  },
-          ].map(inst => (
-            <div className={`inst-card inst-card--${inst.k}`} key={inst.k}>
-              <div className="inst-logo-wrap">
-                <img src={inst.src} alt={`Logo ${inst.label}`} />
-              </div>
-              <div className="inst-name">{inst.label}</div>
-              <div className="inst-full">{inst.full}</div>
-              <span className="badge">✅ Actif</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── TÉMOIGNAGES ── */}
-      <section className="section">
-        <h2 className="section__title">Ce que disent nos étudiants</h2>
-        <p className="section__sub">Ils ont adopté EtuDocs</p>
-        <div className="testi-grid">
-          {[
-            { q:"Plus besoin de faire la queue pendant des heures. J'ai reçu mon attestation en 2 jours !", name:"Koffi A.",   role:"IFRI · L3 Informatique", l:"K" },
-            { q:"Interface très intuitive. Le suivi en temps réel est vraiment pratique.",                  name:"Mariam S.", role:"EPAC · M1 Génie Civil",   l:"M" },
-            { q:"Enfin une solution moderne pour nos démarches administratives. Bravo !",                   name:"Yves D.",   role:"FSS · L2 Médecine",       l:"Y" },
-          ].map((t, i) => (
-            <div className="testi-card" key={i}>
-              <div className="stars">★★★★★</div>
-              <p className="testi-text">"{t.q}"</p>
-              <div className="testi-author">
-                <div className="testi-ava">{t.l}</div>
-                <div>
-                  <span className="testi-name">{t.name}</span>
-                  <span className="testi-role">{t.role}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── CTA ── */}
-      <section className="cta-band">
-        <h2 className="cta-band__title">Prêt à simplifier vos démarches administratives ?</h2>
-        <p className="cta-band__sub">Rejoignez les centaines d'étudiants qui ont déjà adopté EtuDocs</p>
-        <a href="/register" className="btn-cta">Créer mon compte gratuitement <span>→</span></a>
-      </section>
-
-      {/* ── FOOTER ── */}
-      <footer className="footer">
-        <div className="footer__inner">
-          <div className="footer__top">
-            <div className="footer__brand">
-              <a href="#" className="footer-logo">
-                <img src={logo} alt="EtuDocs" />
-                EtuDocs
-              </a>
-              <p>Vos documents universitaires, en quelques clics.</p>
-            </div>
-            <div className="footer__col">
-              <h5>Navigation</h5>
-              <a href="/login">Connexion</a>
-              <a href="/register">Créer un compte</a>
-              <a href="/faq">FAQ</a>
-            </div>
-            <div className="footer__col">
-              <h5>Institutions</h5>
-              <a href="https://ifri-uac.bj/">IFRI</a>
-              <a href="https://epac.uac.bj/">EPAC</a>
-              <a href="https://epac.uac.bj/">FSS</a>
-            </div>
-            <div className="footer__col">
-              <h5>Contact</h5>
-              <a href="#">contact@etudocs.bj</a>
-              <a href="#">+229 XX XX XX XX</a>
-              <a href="#">Abomey-Calavi, Bénin</a>
-            </div>
-          </div>
-          <div className="footer__bottom">
-            <span className="footer__copy">© 2026 EtuDocs. Tous droits réservés.</span>
-            <div className="footer__legal">
-              <a href="#">Mentions légales</a>
-              <a href="#">Politique de confidentialité</a>
-              <a href="#">CGU</a>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
   );
 }
