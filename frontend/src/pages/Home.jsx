@@ -675,9 +675,7 @@ export default function Home() {
         <section className="hero">
           <div className="hero__inner">
             <div className="hero__left">
-              <span className="hero-badge">
-                ✨ Plateforme officielle de l'UAC
-              </span>
+
 
               <div className="hero__slides-container">
                 {slides.map((s, i) => (
