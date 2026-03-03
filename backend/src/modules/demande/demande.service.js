@@ -551,3 +551,30 @@ exports.getStatsChefDivision = async (user) => {
     rejetees,
   };
 };
+
+exports.getStatsSG = async (user) => {
+  const { institutionId } = user;
+
+  const [transmises, rejetees] = await Promise.all([
+    prisma.demande.count({
+      where: {
+        institutionId,
+        statut: "TRANSMISE_SECRETAIRE_GENERAL",
+      },
+    }),
+    prisma.demande.count({
+      where: { institutionId, statut: "REJETEE" },
+    }),
+  ]);
+
+  return { transmises, rejetees };
+};
+
+
+
+
+
+
+
+
+

@@ -62,7 +62,7 @@ async function main() {
   const comptes = [
     { id: 'user-etudiant-seed', nom: 'AGBETI', prenom: 'Test', email: 'etudiant@test.com', role: 'ETUDIANT', numeroEtudiant: 'IFRI2024001', service: null },
     { id: 'user-secadj-seed', nom: 'HOUNHOUI', prenom: 'Test', email: 'sec.adj@test.com', role: 'SECRETAIRE_ADJOINT', service: null },
-    { id: 'user-secgen-seed', nom: 'ADOKO', prenom: 'Test', email: 'sec.gen@test.com', role: 'SECRETAIRE_GENERAL', service: null },
+      { id: 'user-secgen-seed', nom: 'ADOKO', prenom: 'Test', email: 'sec.gen@test.com', role: 'SECRETAIRE_GENERAL', service: null },
     { id: 'user-chefexam-seed', nom: 'CHEF', prenom: 'Examens', email: 'chef.exam@test.com', role: 'CHEF_DIVISION', service: 'EXAMENS' },
     { id: 'user-chefscol-seed', nom: 'CHEF', prenom: 'Scolarite', email: 'chef.scol@test.com', role: 'CHEF_DIVISION', service: 'SCOLARITE' },
     { id: 'user-diradj-seed', nom: 'DIRECTEUR', prenom: 'Adjoint', email: 'dir.adj@test.com', role: 'DIRECTEUR_ADJOINT', service: null },
