@@ -740,16 +740,18 @@ export default function SAAnalytics() {
       </div>
 
       {/* KPI row (inchangé) */}
+      {loadingKpis && <div style={{ marginBottom: 8, color: "#64748b" }}>Mise à jour KPIs…</div>}
+      {errorKpis && <div style={{ marginBottom: 8, color: "crimson" }}>{errorKpis}</div>}
       <div className="sa-ana-kpis">
         <div className="sa-ana-card">
           <div className="sa-ana-kpi-top">
             <div className="sa-ana-kpi-icon">{miniIcon("clock")}</div>
-            <div className={`sa-ana-kpi-trend ${data.kpis.deltaAvg < 0 ? "trend-down" : "trend-up"}`}>
-              {data.kpis.deltaAvg < 0 ? "↘" : "↗"} {Math.abs(data.kpis.deltaAvg)}%
+            <div className={`sa-ana-kpi-trend ${kpis.deltaAvg < 0 ? "trend-down" : "trend-up"}`}>
+              {kpis.deltaAvg < 0 ? "↘" : "↗"} {Math.abs(kpis.deltaAvg)}%
             </div>
           </div>
           <div className="sa-ana-kpi-value">
-            {data.kpis.avgTimeH}
+            {kpis.avgTimeH}
             <span style={{ fontSize: ".9rem", marginLeft: 6, color: "#64748b" }}>h</span>
           </div>
           <div className="sa-ana-kpi-label">Temps moyen de traitement</div>
@@ -769,20 +771,20 @@ export default function SAAnalytics() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
             <div>
               <div className="sa-ana-kpi-value">
-                {data.kpis.sla}
+                {kpis.sla}
                 <span style={{ fontSize: "1rem", marginLeft: 6, color: "#64748b" }}>%</span>
               </div>
               <div className="sa-ana-kpi-label">Demandes livrées en moins de 48h</div>
             </div>
-            <div className="badge">Objectif : {data.kpis.slaTarget}%</div>
+            <div className="badge">Objectif : {kpis.slaTarget}%</div>
           </div>
 
           <div className="sa-ana-progress" aria-label="Progression SLA">
-            <div style={{ "--w": `${Math.min(Math.max(data.kpis.sla, 0), 100)}%` }} />
+            <div style={{ "--w": `${Math.min(Math.max(kpis.sla, 0), 100)}%` }} />
           </div>
           <div className="sa-ana-sla-foot">
             <span>0%</span>
-            <span>{data.kpis.sla}%</span>
+            <span>{kpis.sla}%</span>
             <span>100%</span>
           </div>
         </div>
@@ -792,11 +794,11 @@ export default function SAAnalytics() {
             <div className="sa-ana-kpi-icon" style={{ background: "rgba(239,68,68,.10)" }}>
               {miniIcon("warn")}
             </div>
-            <div className={`sa-ana-kpi-trend ${data.kpis.deltaOverdue < 0 ? "trend-up" : "trend-down"}`}>
-              {data.kpis.deltaOverdue < 0 ? "↘" : "↗"} {Math.abs(data.kpis.deltaOverdue)}%
+            <div className={`sa-ana-kpi-trend ${kpis.deltaOverdue < 0 ? "trend-up" : "trend-down"}`}>
+              {kpis.deltaOverdue < 0 ? "↘" : "↗"} {Math.abs(kpis.deltaOverdue)}%
             </div>
           </div>
-          <div className="sa-ana-kpi-value">{data.kpis.overdue}</div>
+          <div className="sa-ana-kpi-value">{kpis.overdue}</div>
           <div className="sa-ana-kpi-label">Demandes en retard</div>
           <div className="sa-ana-kpi-sub">Risque de dépasser 48h</div>
         </div>
@@ -804,11 +806,11 @@ export default function SAAnalytics() {
         <div className="sa-ana-card">
           <div className="sa-ana-kpi-top">
             <div className="sa-ana-kpi-icon">{miniIcon("doc")}</div>
-            <div className={`sa-ana-kpi-trend ${data.kpis.deltaActive >= 0 ? "trend-up" : "trend-down"}`}>
-              {data.kpis.deltaActive >= 0 ? "↗" : "↘"} {Math.abs(data.kpis.deltaActive)}%
+            <div className={`sa-ana-kpi-trend ${kpis.deltaActive >= 0 ? "trend-up" : "trend-down"}`}>
+              {kpis.deltaActive >= 0 ? "↗" : "↘"} {Math.abs(kpis.deltaActive)}%
             </div>
           </div>
-          <div className="sa-ana-kpi-value">{data.kpis.active}</div>
+          <div className="sa-ana-kpi-value">{kpis.active}</div>
           <div className="sa-ana-kpi-label">Demandes actives</div>
           <div className="sa-ana-kpi-sub">Toutes institutions</div>
         </div>

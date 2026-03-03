@@ -16,6 +16,15 @@ function fmtISODate(d) {
 
 const normalize = (v) => String(v || "").trim().toUpperCase();
 
+// rôles autorisés pour un agent (étudiant exclu)
+const AGENT_ROLES = [
+  "SECRETAIRE_ADJOINT",
+  "SECRETAIRE_GENERAL",
+  "CHEF_DIVISION",
+  "DIRECTEUR_ADJOINT",
+  "DIRECTEUR",
+];
+
 // ✅ Seed MVP : toujours 3 institutions
 const INSTITUTIONS_SEED = [
   { sigle: "IFRI", nom: "Institut de Formation et de Recherche en Informatique" },
@@ -44,7 +53,9 @@ async function ensureSeedInstitutions() {
     });
   } catch {
     // fallback create one by one (selon version prisma / contraintes)
-    await prisma.institution.create({ data: { sigle: x.sigle, nom: x.nom } });
+    for (const x of toCreate) {
+      await prisma.institution.create({ data: { sigle: x.sigle, nom: x.nom } });
+    }
   }
 }
 
@@ -80,6 +91,13 @@ exports.creerAgent = async ({
 }) => {
   if (!nom || !prenom || !email || !password || !role) {
     const err = new Error("Champs requis: nom, prenom, email, password, role.");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // vérification stricte du rôle pour éviter création d'étudiant/super_admin
+  if (!AGENT_ROLES.includes(role)) {
+    const err = new Error("Rôle invalide : un agent ne peut pas être ETUDIANT/SUPER_ADMIN.");
     err.statusCode = 400;
     throw err;
   }
@@ -134,26 +152,19 @@ exports.creerAgent = async ({
   });
 };
 
-// Lister les agents d'une institution
-exports.getAgents = async (institutionId) => {
+// Lister les agents d'une institution (ou tous si pas d'institutionId)
+async function getAgents(institutionId) {
   return prisma.utilisateur.findMany({
     where: {
-      institutionId,
-      role: { not: "ETUDIANT" },
+      ...(institutionId ? { institutionId } : {}), // ✅ optionnel
+      role: { in: AGENT_ROLES },                   // ✅ jamais ETUDIANT
     },
-    select: {
-      id: true,
-      nom: true,
-      prenom: true,
-      email: true,
-      role: true,
-      service: true,
-      actif: true,
-      createdAt: true,
-    },
-    orderBy: { createdAt: "asc" },
+    include: { institution: true },
+    orderBy: { createdAt: "desc" },
   });
-};
+}
+
+exports.getAgents = getAgents;
 
 // Activer ou désactiver un compte
 exports.toggleActif = async (userId) => {

@@ -6,7 +6,6 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 
-// Configuration stockage fichiers
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
   filename: (req, file, cb) => cb(null, `${uuidv4()}${path.extname(file.originalname)}`)
@@ -14,12 +13,10 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 20 * 1024 * 1024 } // 20MB max
+  limits: { fileSize: 20 * 1024 * 1024 }
 });
 
-// ✅ Tous les rôles possibles pour Chef Division (Examens / autre)
-// (on garde CHEF_DIVISION pour compatibilité)
-const CHEF_DIVISION_ROLES = ["CHEF_DIVISION"]; // ✅ conforme Prisma
+const CHEF_DIVISION_ROLES = ["CHEF_DIVISION"];
 
 // Étudiant soumet une demande
 router.post(
@@ -46,25 +43,34 @@ router.get(
   ctrl.getStatsChefDivision
 );
 
-// Détail d’une demande
+// ✅ Stats Directeur Adjoint
+router.get(
+  "/stats/directeur-adjoint",
+  auth,
+  role("DIRECTEUR_ADJOINT"),
+  ctrl.getStatsDA
+);
+
+// Stats Secrétaire Général
+router.get(
+  "/stats/secretaire-general",
+  auth,
+  role("SECRETAIRE_GENERAL"),
+  ctrl.getStatsSG
+);
+
+// Détail d'une demande
 router.get('/:id', auth, ctrl.getById);
 
 // Avancer dans le workflow
 router.post('/:id/avancer', auth, ctrl.avancer);
 
-// Valider une pièce (chef division uniquement)
+// Valider une pièce
 router.patch(
   '/pieces/:pieceId',
   auth,
   role(...CHEF_DIVISION_ROLES),
   ctrl.validerPiece
-);
-
-router.get(
-    "/stats/secretaire-general",
-    auth,
-    role("SECRETAIRE_GENERAL"),
-    ctrl.getStatsSG
 );
 
 module.exports = router;

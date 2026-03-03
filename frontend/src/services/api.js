@@ -1,7 +1,6 @@
 // src/services/api.js
 import axios from "axios";
 
-// VITE_API_URL must NOT include trailing `/api`
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 /* ================================
@@ -18,56 +17,41 @@ export const getStoredUser = () => {
     localStorage.getItem("etudocs_user") ||
     sessionStorage.getItem("etudocs_user");
   if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(raw); } catch { return null; }
 };
 
 const normalizeInst = (v) => String(v || "").trim().toUpperCase();
 
 export const getInstitutionCode = () => {
-  // Priorité au user stocké
   const u = getStoredUser();
-
   const code =
     normalizeInst(u?.institutionCode) ||
     normalizeInst(u?.institution?.sigle) ||
     normalizeInst(u?.institutionId);
-
   if (code) return code;
-
-  // fallback: si tu stockes juste le code
-  const stored =
+  return (
     normalizeInst(localStorage.getItem("etudocs_institution")) ||
-    normalizeInst(sessionStorage.getItem("etudocs_institution"));
-
-  return stored || null;
+    normalizeInst(sessionStorage.getItem("etudocs_institution")) ||
+    null
+  );
 };
 
 export const setSession = ({ token, user }) => {
   if (token) {
     localStorage.setItem("etudocs_token", token);
     sessionStorage.setItem("etudocs_token", token);
-
-    // compat si ancien code
     localStorage.setItem("token", token);
     sessionStorage.setItem("token", token);
   }
-
   if (user) {
     const serialized = JSON.stringify(user);
     localStorage.setItem("etudocs_user", serialized);
     sessionStorage.setItem("etudocs_user", serialized);
-
-    // Très pratique pour l'UI multi-institutions
     const code =
       normalizeInst(user?.institutionCode) ||
       normalizeInst(user?.institution?.sigle) ||
       normalizeInst(user?.institutionId) ||
       null;
-
     if (code) {
       localStorage.setItem("etudocs_institution", code);
       sessionStorage.setItem("etudocs_institution", code);
@@ -76,13 +60,10 @@ export const setSession = ({ token, user }) => {
 };
 
 export const clearSession = () => {
-  // localStorage
   localStorage.removeItem("etudocs_token");
   localStorage.removeItem("token");
   localStorage.removeItem("etudocs_user");
   localStorage.removeItem("etudocs_institution");
-
-  // sessionStorage
   sessionStorage.removeItem("etudocs_token");
   sessionStorage.removeItem("token");
   sessionStorage.removeItem("etudocs_user");
@@ -90,7 +71,7 @@ export const clearSession = () => {
 };
 
 /* ================================
-   AXIOS INSTANCE (optional use)
+   AXIOS INSTANCE
 ================================ */
 const api = axios.create({
   baseURL: API_URL,
@@ -106,9 +87,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (r) => r,
   (error) => {
-    if (error?.response?.status === 401) {
-      clearSession();
-    }
+    if (error?.response?.status === 401) clearSession();
     return Promise.reject(error);
   }
 );
@@ -116,15 +95,13 @@ api.interceptors.response.use(
 /* ================================
    LOW-LEVEL FETCH HELPERS
 ================================ */
-
 const buildHeaders = ({ json = true, extraHeaders = {} } = {}) => {
   const token = getToken();
-  const headers = {
+  return {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(json ? { "Content-Type": "application/json" } : {}),
     ...extraHeaders,
   };
-  return headers;
 };
 
 const parseErrorMessage = async (res) => {
@@ -139,64 +116,43 @@ const handleUnauthorized = () => {
   throw new Error("UNAUTHORIZED");
 };
 
-/**
- * JSON request helper
- */
 const apiRequest = async (endpoint, { method = "GET", body, headers } = {}) => {
   const res = await fetch(`${API_URL}${endpoint}`, {
     method,
     headers: buildHeaders({ json: true, extraHeaders: headers }),
     body: body ? JSON.stringify(body) : undefined,
   });
-
   if (res.status === 401) return handleUnauthorized();
-
   if (!res.ok) {
     const msg = await parseErrorMessage(res);
     throw new Error(msg);
   }
-
   return res.json().catch(() => ({}));
 };
 
-/**
- * FormData request helper (no JSON content-type)
- */
 const apiForm = async (endpoint, formData, { method = "POST", headers } = {}) => {
   const res = await fetch(`${API_URL}${endpoint}`, {
     method,
     headers: buildHeaders({ json: false, extraHeaders: headers }),
     body: formData,
   });
-
   if (res.status === 401) return handleUnauthorized();
-
   const ct = res.headers.get("content-type") || "";
   const isJson = ct.includes("application/json");
   const data = isJson ? await res.json().catch(() => ({})) : null;
-
-  if (!res.ok) {
-    throw new Error((data && data.message) || "Erreur API");
-  }
-
+  if (!res.ok) throw new Error((data && data.message) || "Erreur API");
   return data;
 };
 
-/**
- * Blob download helper
- */
 const apiBlob = async (endpoint, { headers } = {}) => {
   const res = await fetch(`${API_URL}${endpoint}`, {
     headers: buildHeaders({ json: false, extraHeaders: headers }),
   });
-
   if (res.status === 401) return handleUnauthorized();
-
   if (!res.ok) {
     const msg = await parseErrorMessage(res);
     throw new Error(msg);
   }
-
   return res.blob();
 };
 
@@ -208,10 +164,7 @@ export const login = async ({ email, password }) => {
     method: "POST",
     body: { email, password },
   });
-
-  // Attendu: { token, user }
   if (data?.token) setSession({ token: data.token, user: data.user });
-
   return data;
 };
 
@@ -221,21 +174,13 @@ export const register = async (payload) =>
 export const getMe = async () => {
   const token = getToken();
   if (!token) throw new Error("UNAUTHORIZED");
-
   const res = await fetch(`${API_URL}/api/auth/me`, {
     headers: buildHeaders({ json: false }),
   });
-
   if (res.status === 401) return handleUnauthorized();
   if (!res.ok) throw new Error("SERVER_ERROR");
-
   const me = await res.json();
-
-  // ✅ Mise à jour du cache session (utile après refresh)
-  if (me) {
-    setSession({ token, user: me });
-  }
-
+  if (me) setSession({ token, user: me });
   return me;
 };
 
@@ -249,6 +194,10 @@ export const getDemandeById = async (id) => apiRequest(`/api/demandes/${id}`);
 export const getStatsSG = () =>
   api.get("/api/demandes/stats/secretaire-general").then((r) => r.data);
 
+// ✅ Stats Directeur Adjoint
+export const getStatsDA = () =>
+  apiRequest("/api/demandes/stats/directeur-adjoint");
+
 export const avancerDemande = async (id, action, commentaire = "") => {
   const body = { action };
   if (commentaire) body.commentaire = commentaire;
@@ -256,14 +205,8 @@ export const avancerDemande = async (id, action, commentaire = "") => {
 };
 
 export const submitDemande = async ({
-  typeDocument,
-  semestre,
-  semestres,
-  anneeAcademique, // si tu veux envoyer plusieurs
-  CIP,
-  QUITTANCE,
-  ACTE_NAISSANCE,
-  JUSTIFICATIF_INSCRIPTION,
+  typeDocument, semestre, semestres, anneeAcademique,
+  CIP, QUITTANCE, ACTE_NAISSANCE, JUSTIFICATIF_INSCRIPTION,
 }) => {
   const token = getToken();
   if (!token) throw new Error("UNAUTHORIZED");
@@ -272,11 +215,8 @@ export const submitDemande = async ({
   form.append("typeDocument", typeDocument);
   if (anneeAcademique) form.append("anneeAcademique", anneeAcademique);
 
-  // Compat: ton backend parse "semestres" (array) mais tu envoyais "semestre"
   if (Array.isArray(semestres)) {
-    semestres.forEach((s) =>
-      form.append("semestres", String(s).replace("S", ""))
-    );
+    semestres.forEach((s) => form.append("semestres", String(s).replace("S", "")));
   } else if (semestre) {
     form.append("semestres", String(semestre));
   }
@@ -284,8 +224,7 @@ export const submitDemande = async ({
   if (CIP) form.append("CIP", CIP);
   if (QUITTANCE) form.append("QUITTANCE", QUITTANCE);
   if (ACTE_NAISSANCE) form.append("ACTE_NAISSANCE", ACTE_NAISSANCE);
-  if (JUSTIFICATIF_INSCRIPTION)
-    form.append("JUSTIFICATIF_INSCRIPTION", JUSTIFICATIF_INSCRIPTION);
+  if (JUSTIFICATIF_INSCRIPTION) form.append("JUSTIFICATIF_INSCRIPTION", JUSTIFICATIF_INSCRIPTION);
 
   return apiForm("/api/demandes", form, { method: "POST" });
 };
@@ -293,12 +232,16 @@ export const submitDemande = async ({
 /* ================================
    DOCUMENTS
 ================================ */
+// Téléchargement (incrémente le compteur, réservé à l'étudiant)
 export const downloadDocumentBlob = async (reference) =>
   apiBlob(`/api/documents/download/${reference}`);
 
+// ✅ Preview inline (sans compteur, réservé aux agents)
+export const previewDocumentBlob = async (reference) =>
+  apiBlob(`/api/documents/preview/${reference}`);
+
 export const downloadDocument = async (reference, filename) => {
   const blob = await downloadDocumentBlob(reference);
-
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

@@ -1,8 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import logoDefault from "../../assets/logo.png";
-import IFRI from "../../assets/IFRI.png";
-import EPAC from "../../assets/EPAC.png";
-import FSS from "../../assets/FSS.png";
 import { clearSession } from "../../services/api";
 
 const css = `
@@ -93,48 +90,8 @@ const NAV = [
   },
 ];
 
-const normalizeInst = (v) => String(v || "").trim().toUpperCase();
-
-function getStoredUser() {
-  try {
-    const raw =
-      localStorage.getItem("etudocs_user") ||
-      sessionStorage.getItem("etudocs_user");
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function getInstitutionCodeFallback(propInstitution) {
-  if (propInstitution) return normalizeInst(propInstitution);
-
-  const user = getStoredUser();
-  const fromUser =
-    normalizeInst(user?.institutionCode) ||
-    normalizeInst(user?.institution?.sigle) ||
-    normalizeInst(user?.institutionId);
-  if (fromUser) return fromUser;
-
-  const stored = normalizeInst(localStorage.getItem("etudocs_institution"));
-  if (stored) return stored;
-
-  return "IFRI";
-}
-
-function getInstitutionLogo(code) {
-  const c = normalizeInst(code);
-  if (c === "IFRI") return IFRI;
-  if (c === "EPAC") return EPAC;
-  if (c === "FSS") return FSS;
-  return logoDefault;
-}
-
-export default function Sidebar({ institution }) {
+export default function Sidebar() {
   const navigate = useNavigate();
-
-  const institutionCode = getInstitutionCodeFallback(institution);
-  const brandLogo = getInstitutionLogo(institutionCode);
 
   const handleLogout = () => {
     clearSession();
@@ -152,8 +109,8 @@ export default function Sidebar({ institution }) {
         <a href="/dashboardEtu" className="sidebar__brand">
           <div className="sidebar__brand-icon">
             <img
-              src={brandLogo}
-              alt={institutionCode ? `Logo ${institutionCode}` : "EtuDocs"}
+              src={logoDefault}
+              alt="EtuDocs"
               style={{ width: 42, height: 42, objectFit: "contain" }}
             />
           </div>

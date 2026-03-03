@@ -6,10 +6,6 @@ const emailService = require("../../services/email.service");
 
 const normalizeField = (v) => String(v || "").trim().toUpperCase();
 
-/**
- * Normalise les valeurs possibles de "service"
- * Ex: "EXAMEN" => "EXAMENS"
- */
 const normalizeService = (s) => {
   const v = normalizeField(s);
   if (!v) return "";
@@ -101,8 +97,6 @@ exports.getDemandes = async (user) => {
     where = { institutionId, statut: "TRANSMISE_SECRETAIRE_ADJOINT" };
   } else if (role === "CHEF_DIVISION") {
     const chefService = normalizeService(service);
-
-    // ✅ SÉCURITÉ : si service non configuré → aucune donnée
     if (!chefService) {
       where = { id: "__NOPE__" };
     } else {
@@ -139,13 +133,9 @@ exports.getById = async (demandeId, user) => {
     include: {
       utilisateur: {
         select: {
-          nom: true,
-          prenom: true,
-          email: true,
-          numeroEtudiant: true,
-          filiere: true,   // ← ajoute
-          niveau: true,    // ← ajoute
-        }
+          nom: true, prenom: true, email: true,
+          numeroEtudiant: true, filiere: true, niveau: true,
+        },
       },
       pieces: true,
       documents: true,
@@ -179,16 +169,11 @@ exports.getById = async (demandeId, user) => {
   return demande;
 };
 
-/**
- * Génère les documents (PDF + QR) HORS transaction, puis écrit en DB dans une transaction courte.
- * => évite "Transaction already closed" (timeout 5s).
- */
 async function generateDocumentsOutsideTransaction({ demande, institutionId }) {
   const { v4: uuidv4 } = require("uuid");
   const pdfService = require("../../services/pdf.service");
   const qrcodeService = require("../../services/qrcode.service");
 
-  // On lit hors tx (pas de tx interactive) => aucune limite 5s
   const [institution, etudiant] = await Promise.all([
     prisma.institution.findUnique({ where: { id: institutionId } }),
     prisma.utilisateur.findUnique({ where: { id: demande.utilisateurId } }),
@@ -212,72 +197,46 @@ async function generateDocumentsOutsideTransaction({ demande, institutionId }) {
 
   const results = [];
 
-  // ✅ ATTESTATION D'INSCRIPTION → template dédié
   if (demande.typeDocument === "ATTESTATION_INSCRIPTION") {
-    const reference = `ETD-${annee}-${sigle}-ATT-${String(demande.id)
-      .substring(0, 5)
-      .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
+    const reference = `ETD-${annee}-${sigle}-ATT-${String(demande.id).substring(0, 5).toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
     const qrData = `${baseUrl}/verify/${reference}`;
 
     const pdfPath = await pdfService.generateAttestationInscription(
-      demande,
-      etudiant,
-      reference,
-      institution,
-      qrData
+      demande, etudiant, reference, institution, qrData
     );
 
-    // QR (si ton service écrit un fichier ou autre)
     await qrcodeService.generate(qrData, reference);
-
     results.push({ reference, qrPayload: qrData, urlPdf: pdfPath });
     return results;
   }
 
-  // ✅ RELEVÉ DE NOTES → un PDF par semestre
   if (demande.typeDocument === "RELEVE_NOTES") {
     const semestres = demande.semestres?.length ? demande.semestres : [1];
 
     for (const semestre of semestres) {
-      const reference = `ETD-${annee}-${sigle}-S${semestre}-${String(demande.id)
-        .substring(0, 5)
-        .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
+      const reference = `ETD-${annee}-${sigle}-S${semestre}-${String(demande.id).substring(0, 5).toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
       const qrData = `${baseUrl}/verify/${reference}`;
 
       const pdfPath = await pdfService.generateDocument(
-        { ...demande, semestre },
-        etudiant,
-        null,
-        reference,
-        institution,
-        qrData
+        { ...demande, semestre }, etudiant, null, reference, institution, qrData
       );
 
       await qrcodeService.generate(qrData, reference);
-
       results.push({ reference, qrPayload: qrData, urlPdf: pdfPath });
     }
 
     return results;
   }
 
-  // ✅ Autres types → template générique
-  const reference = `ETD-${annee}-${sigle}-${String(demande.id)
-    .substring(0, 5)
-    .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
+  // Autres types
+  const reference = `ETD-${annee}-${sigle}-${String(demande.id).substring(0, 5).toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
   const qrData = `${baseUrl}/verify/${reference}`;
 
   const pdfPath = await pdfService.generateDocument(
-    demande,
-    etudiant,
-    null,
-    reference,
-    institution,
-    qrData
+    demande, etudiant, null, reference, institution, qrData
   );
 
   await qrcodeService.generate(qrData, reference);
-
   results.push({ reference, qrPayload: qrData, urlPdf: pdfPath });
   return results;
 }
@@ -314,58 +273,31 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
     throw err;
   }
 
-  // 🔒 SÉCURITÉ : SA -> SG
-  if (
-    role === "SECRETAIRE_ADJOINT" &&
-    demande.statut === "SOUMISE" &&
-    action === "TRANSMETTRE"
-  ) {
+  if (role === "SECRETAIRE_ADJOINT" && demande.statut === "SOUMISE" && action === "TRANSMETTRE") {
     const sg = await prisma.utilisateur.findFirst({
-      where: {
-        role: "SECRETAIRE_GENERAL",
-        institutionId: demande.institutionId,
-        actif: true,
-      },
+      where: { role: "SECRETAIRE_GENERAL", institutionId: demande.institutionId, actif: true },
       select: { id: true },
     });
-
     if (!sg) {
-      const err = new Error(
-        "Impossible de transmettre : aucun Secrétaire général actif n'est configuré pour cette institution."
-      );
+      const err = new Error("Impossible de transmettre : aucun Secrétaire général actif n'est configuré pour cette institution.");
       err.statusCode = 400;
       throw err;
     }
   }
 
-  // 🔒 SÉCURITÉ : SG -> Chef ciblé (EXAMENS/SCOLARITE)
-  if (
-    role === "SECRETAIRE_GENERAL" &&
-    demande.statut === "TRANSMISE_SECRETAIRE_ADJOINT" &&
-    action === "TRANSMETTRE"
-  ) {
+  if (role === "SECRETAIRE_GENERAL" && demande.statut === "TRANSMISE_SECRETAIRE_ADJOINT" && action === "TRANSMETTRE") {
     const cible = normalizeService(demande.serviceCible);
-
     const chef = await prisma.utilisateur.findFirst({
-      where: {
-        role: "CHEF_DIVISION",
-        institutionId: demande.institutionId,
-        actif: true,
-        service: cible,
-      },
-      select: { id: true, nom: true, prenom: true, service: true, actif: true },
+      where: { role: "CHEF_DIVISION", institutionId: demande.institutionId, actif: true, service: cible },
+      select: { id: true },
     });
-
     if (!chef) {
-      const err = new Error(
-        `Impossible de transmettre : aucun Chef de division ${cible} actif n'est configuré pour cette institution.`
-      );
+      const err = new Error(`Impossible de transmettre : aucun Chef de division ${cible} actif n'est configuré pour cette institution.`);
       err.statusCode = 400;
       throw err;
     }
   }
 
-  // Contrôle pièces avant génération
   if (action === "GENERER_DOCUMENT") {
     const invalid = demande.pieces.some((p) => p.statut !== "VALIDEE");
     if (invalid) {
@@ -375,23 +307,15 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
     }
   }
 
-  const prochainStatut = getNextStatut({
-    role,
-    statutActuel: demande.statut,
-    action,
-  });
+  const prochainStatut = getNextStatut({ role, statutActuel: demande.statut, action });
 
-  // ✅ 1) Génération HORS transaction (Puppeteer/QR peuvent prendre > 5s)
   let generatedDocs = null;
   if (action === "GENERER_DOCUMENT") {
     generatedDocs = await generateDocumentsOutsideTransaction({ demande, institutionId });
   }
 
-  // ✅ 2) Transaction DB courte : create Document(s) + update statut + historique
   const updated = await prisma.$transaction(async (tx) => {
     if (action === "GENERER_DOCUMENT" && Array.isArray(generatedDocs) && generatedDocs.length) {
-      // (Optionnel) Empêcher double génération si documents existent déjà
-      // Tu peux commenter si tu veux autoriser plusieurs générations.
       const existingCount = await tx.document.count({ where: { demandeId: demande.id } });
       if (existingCount > 0) {
         const err = new Error("Documents déjà générés pour cette demande.");
@@ -426,12 +350,10 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
       dataUpdate.deliveredAt = new Date();
     }
 
-    const up = await tx.demande.update({
+    return tx.demande.update({
       where: { id: demandeId },
       data: dataUpdate,
     });
-
-    return up;
   });
 
   try {
@@ -509,73 +431,61 @@ exports.getStatsChefDivision = async (user) => {
   const { institutionId, service } = user;
   const chefService = normalizeService(service);
 
-  // 🔒 SÉCURITÉ : si le chef n’a pas de service configuré
   if (!chefService) {
-    return {
-      aTraiter: 0,
-      documentGenere: 0,
-      attenteDirecteur: 0,
-      disponibles: 0,
-      rejetees: 0,
-    };
+    return { aTraiter: 0, documentGenere: 0, attenteDirecteur: 0, disponibles: 0, rejetees: 0 };
   }
 
-  const baseFilter = {
-    institutionId,
-    serviceCible: chefService,
-  };
+  const baseFilter = { institutionId, serviceCible: chefService };
 
-  const [aTraiter, rejetees, documentGenere, attenteDirecteur, disponibles] =
-    await Promise.all([
-      prisma.demande.count({
-        where: { ...baseFilter, statut: "TRANSMISE_SECRETAIRE_GENERAL" },
-      }),
-      prisma.demande.count({
-        where: { ...baseFilter, statut: "REJETEE" },
-      }),
-      prisma.demande.count({
-        where: { ...baseFilter, statut: "DOCUMENT_GENERE" },
-      }),
-      prisma.demande.count({
-        where: { ...baseFilter, statut: "ATTENTE_SIGNATURE_DIRECTEUR" },
-      }),
-      prisma.demande.count({
-        where: { ...baseFilter, statut: "DISPONIBLE" },
-      }),
-    ]);
+  const [aTraiter, rejetees, documentGenere, attenteDirecteur, disponibles] = await Promise.all([
+    prisma.demande.count({ where: { ...baseFilter, statut: "TRANSMISE_SECRETAIRE_GENERAL" } }),
+    prisma.demande.count({ where: { ...baseFilter, statut: "REJETEE" } }),
+    prisma.demande.count({ where: { ...baseFilter, statut: "DOCUMENT_GENERE" } }),
+    prisma.demande.count({ where: { ...baseFilter, statut: "ATTENTE_SIGNATURE_DIRECTEUR" } }),
+    prisma.demande.count({ where: { ...baseFilter, statut: "DISPONIBLE" } }),
+  ]);
 
-  return {
-    aTraiter,
-    documentGenere,
-    attenteDirecteur,
-    disponibles,
-    rejetees,
-  };
+  return { aTraiter, documentGenere, attenteDirecteur, disponibles, rejetees };
+};
+
+// ✅ Stats Directeur Adjoint
+exports.getStatsDA = async (user) => {
+  const { institutionId } = user;
+
+  const now = new Date();
+  const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nextMonth  = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  const [aSigner, signesCeMois, refuses] = await Promise.all([
+    prisma.demande.count({
+      where: { institutionId, statut: "DOCUMENT_GENERE" },
+    }),
+    prisma.demande.count({
+      where: {
+        institutionId,
+        statut: "ATTENTE_SIGNATURE_DIRECTEUR",
+        updatedAt: { gte: startMonth, lt: nextMonth },
+      },
+    }),
+    prisma.demande.count({
+      where: {
+        institutionId,
+        statut: "REJETEE",
+        updatedAt: { gte: startMonth, lt: nextMonth },
+      },
+    }),
+  ]);
+
+  return { aSigner, signesCeMois, refuses };
 };
 
 exports.getStatsSG = async (user) => {
   const { institutionId } = user;
 
   const [transmises, rejetees] = await Promise.all([
-    prisma.demande.count({
-      where: {
-        institutionId,
-        statut: "TRANSMISE_SECRETAIRE_GENERAL",
-      },
-    }),
-    prisma.demande.count({
-      where: { institutionId, statut: "REJETEE" },
-    }),
+    prisma.demande.count({ where: { institutionId, statut: "TRANSMISE_SECRETAIRE_GENERAL" } }),
+    prisma.demande.count({ where: { institutionId, statut: "REJETEE" } }),
   ]);
 
   return { transmises, rejetees };
 };
-
-
-
-
-
-
-
-
-
