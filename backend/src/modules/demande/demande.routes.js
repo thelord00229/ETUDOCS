@@ -72,5 +72,6 @@ router.patch(
   role(...CHEF_DIVISION_ROLES),
   ctrl.validerPiece
 );
+router.get("/stats/directeur", authMiddleware, authorize("DIRECTEUR"), getStatsDI);
 
 module.exports = router;

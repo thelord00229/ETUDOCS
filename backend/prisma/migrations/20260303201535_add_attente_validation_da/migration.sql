@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "StatutDemande" ADD VALUE 'ATTENTE_VALIDATION_DA';

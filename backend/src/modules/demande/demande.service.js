@@ -489,3 +489,32 @@ exports.getStatsSG = async (user) => {
 
   return { transmises, rejetees };
 };
+
+exports.getStatsDI = async (user) => {
+  const { institutionId } = user;
+  const now = new Date();
+  const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nextMonth  = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  const [aSigner, signesCeMois, refuses] = await Promise.all([
+    prisma.demande.count({
+      where: { institutionId, statut: "ATTENTE_SIGNATURE_DIRECTEUR" },
+    }),
+    prisma.demande.count({
+      where: {
+        institutionId,
+        statut: "DISPONIBLE",
+        updatedAt: { gte: startMonth, lt: nextMonth },
+      },
+    }),
+    prisma.demande.count({
+      where: {
+        institutionId,
+        statut: "REJETEE",
+        updatedAt: { gte: startMonth, lt: nextMonth },
+      },
+    }),
+  ]);
+
+  return { aSigner, signesCeMois, refuses };
+};

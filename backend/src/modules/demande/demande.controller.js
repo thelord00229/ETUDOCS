@@ -103,3 +103,7 @@ exports.getStatsDA = asyncHandler(async (req, res) => {
 exports.getStatsSG = asyncHandler(async (req, res) => {
   res.json(await service.getStatsSG(req.user));
 });
+
+exports.getStatsDI = asyncHandler(async (req, res) => {
+  res.json(await service.getStatsDI(req.user));
+});
