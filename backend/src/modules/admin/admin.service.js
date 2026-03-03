@@ -14,25 +14,110 @@ function fmtISODate(d) {
   return x.toISOString().slice(0, 10);
 }
 
+const normalize = (v) => String(v || "").trim().toUpperCase();
+
+// ✅ Seed MVP : toujours 3 institutions
+const INSTITUTIONS_SEED = [
+  { sigle: "IFRI", nom: "Institut de Formation et de Recherche en Informatique" },
+  { sigle: "EPAC", nom: "École Polytechnique d'Abomey-Calavi" },
+  { sigle: "FSS",  nom: "Faculté des Sciences de la Santé" },
+];
+
+async function ensureSeedInstitutions() {
+  const existing = await prisma.institution.findMany({
+    select: { id: true, sigle: true },
+  });
+
+  const existingSet = new Set(existing.map((i) => normalize(i.sigle)));
+
+  const toCreate = INSTITUTIONS_SEED.filter(
+    (s) => !existingSet.has(normalize(s.sigle))
+  );
+
+  if (!toCreate.length) return;
+
+  // createMany si dispo
+  try {
+    await prisma.institution.createMany({
+      data: toCreate.map((x) => ({ sigle: x.sigle, nom: x.nom })),
+      skipDuplicates: true,
+    });
+  } catch {
+    // fallback create one by one (selon version prisma / contraintes)
+    await prisma.institution.create({ data: { sigle: x.sigle, nom: x.nom } });
+  }
+}
+
+async function resolveInstitutionId(institutionIdOrSigle) {
+  const raw = String(institutionIdOrSigle || "").trim();
+  if (!raw) return null;
+
+  const sigle = normalize(raw);
+
+  const inst = await prisma.institution.findFirst({
+    where: {
+      OR: [
+        { id: raw },
+        { sigle },
+        { nom: { equals: raw, mode: "insensitive" } },
+      ],
+    },
+    select: { id: true, sigle: true, nom: true },
+  });
+
+  return inst?.id || null;
+}
+
 // Créer un compte agent
-exports.creerAgent = async ({ nom, prenom, email, password, role, service, institutionId }) => {
-  const existing = await prisma.utilisateur.findUnique({ where: { email } });
+exports.creerAgent = async ({
+  nom,
+  prenom,
+  email,
+  password,
+  role,
+  service,
+  institutionId,
+}) => {
+  if (!nom || !prenom || !email || !password || !role) {
+    const err = new Error("Champs requis: nom, prenom, email, password, role.");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const cleanEmail = String(email).trim().toLowerCase();
+
+  const existing = await prisma.utilisateur.findUnique({
+    where: { email: cleanEmail },
+    select: { id: true },
+  });
+
   if (existing) {
     const err = new Error("Cet email est déjà utilisé");
     err.statusCode = 400;
     throw err;
   }
 
+  // ✅ institution obligatoire
+  const resolvedInstitutionId = await resolveInstitutionId(institutionId);
+  if (!resolvedInstitutionId) {
+    const err = new Error(
+      "Institution obligatoire pour créer un agent (institutionId ou sigle)."
+    );
+    err.statusCode = 400;
+    throw err;
+  }
+
   const hash = await bcrypt.hash(password, 12);
+
   return prisma.utilisateur.create({
     data: {
-      nom,
-      prenom,
-      email,
+      nom: String(nom).trim(),
+      prenom: String(prenom).trim(),
+      email: cleanEmail,
       password: hash,
       role,
       service: service || null,
-      institutionId,
+      institutionId: resolvedInstitutionId,
       emailVerifie: true,
       actif: true,
     },
@@ -72,12 +157,17 @@ exports.getAgents = async (institutionId) => {
 
 // Activer ou désactiver un compte
 exports.toggleActif = async (userId) => {
-  const user = await prisma.utilisateur.findUnique({ where: { id: userId } });
+  const user = await prisma.utilisateur.findUnique({
+    where: { id: userId },
+    select: { id: true, actif: true, nom: true, prenom: true },
+  });
+
   if (!user) {
     const err = new Error("Utilisateur introuvable");
     err.statusCode = 404;
     throw err;
   }
+
   return prisma.utilisateur.update({
     where: { id: userId },
     data: { actif: !user.actif },
@@ -100,6 +190,8 @@ exports.configurerInstitution = async (institutionId, data) => {
       tamponDirecteurUrl: data.tamponDirecteurUrl || undefined,
       tamponDirecteurAdjointUrl: data.tamponDirecteurAdjointUrl || undefined,
       logoUrl: data.logoUrl || undefined,
+      description: data.description || undefined,
+      sigle: data.sigle ? normalize(data.sigle) : undefined,
     },
   });
 };
@@ -128,17 +220,64 @@ exports.getStatistiques = async (institutionId) => {
   };
 };
 
+// ✅ Institutions (avec seed + counts fiables)
 exports.getInstitutions = async () => {
-  return prisma.institution.findMany({
-    include: {
-      _count: {
-        select: {
-          utilisateurs: { where: { role: { not: "ETUDIANT" } } },
-          demandes: true,
-        },
-      },
+  // 1) seed si besoin
+  await ensureSeedInstitutions();
+
+  // 2) fetch institutions
+  const institutions = await prisma.institution.findMany({
+    orderBy: { sigle: "asc" },
+    select: {
+      id: true,
+      nom: true,
+      sigle: true,
+      logoUrl: true,
+      directeurNom: true,
+      directeurTitre: true,
+      directeurAdjointNom: true,
+      directeurAdjointTitre: true,
+      signatureDirecteurUrl: true,
+      signatureDirecteurAdjointUrl: true,
+      tamponDirecteurUrl: true,
+      tamponDirecteurAdjointUrl: true,
+      createdAt: true,
+      updatedAt: true,
     },
   });
+
+  // 3) counts (agents + demandes) proprement
+  const ids = institutions.map((i) => i.id);
+
+  const agentsCounts = await prisma.utilisateur.groupBy({
+    by: ["institutionId"],
+    where: {
+      institutionId: { in: ids },
+      role: { not: "ETUDIANT" },
+    },
+    _count: { _all: true },
+  });
+
+  const demandesCounts = await prisma.demande.groupBy({
+    by: ["institutionId"],
+    where: { institutionId: { in: ids } },
+    _count: { _all: true },
+  });
+
+  const mapAgents = new Map(
+    agentsCounts.map((x) => [x.institutionId, x._count._all])
+  );
+  const mapDemandes = new Map(
+    demandesCounts.map((x) => [x.institutionId, x._count._all])
+  );
+
+  return institutions.map((inst) => ({
+    ...inst,
+    _count: {
+      utilisateurs: mapAgents.get(inst.id) || 0, // ici = agents (non ETUDIANT)
+      demandes: mapDemandes.get(inst.id) || 0,
+    },
+  }));
 };
 
 // ✅ SLA evolution basé sur Demande.deliveredAt
@@ -157,7 +296,7 @@ exports.getSlaEvolution = async ({ days, institutionCode, docType }) => {
   // filtre institution (sigle -> id)
   if (institutionCode !== "ALL") {
     const inst = await prisma.institution.findFirst({
-      where: { sigle: institutionCode },
+      where: { sigle: normalize(institutionCode) },
       select: { id: true },
     });
     if (!inst) {
@@ -166,8 +305,7 @@ exports.getSlaEvolution = async ({ days, institutionCode, docType }) => {
     where.institutionId = inst.id;
   }
 
-  // filtre docType (adapte au vrai champ)
-  // Dans ton Demande: typeDocument ✅
+  // filtre docType
   if (docType !== "ALL") {
     where.typeDocument = docType;
   }
@@ -197,7 +335,8 @@ exports.getSlaEvolution = async ({ days, institutionCode, docType }) => {
     if (!b) continue;
 
     b.total += 1;
-    const duration = new Date(dem.deliveredAt).getTime() - new Date(dem.createdAt).getTime();
+    const duration =
+      new Date(dem.deliveredAt).getTime() - new Date(dem.createdAt).getTime();
     if (duration <= MS_48H) b.ok += 1;
   }
 
@@ -213,14 +352,142 @@ exports.getSlaEvolution = async ({ days, institutionCode, docType }) => {
 
   let delta = 0;
   if (days >= 20) {
-    const last10 = series.slice(-10).filter((x) => typeof x.value === "number");
-    const prev10 = series.slice(-20, -10).filter((x) => typeof x.value === "number");
-    const avg = (arr) => (arr.length ? arr.reduce((a, x) => a + x.value, 0) / arr.length : 0);
+    const last10 = series
+      .slice(-10)
+      .filter((x) => typeof x.value === "number");
+    const prev10 = series
+      .slice(-20, -10)
+      .filter((x) => typeof x.value === "number");
+    const avg = (arr) =>
+      arr.length ? arr.reduce((a, x) => a + x.value, 0) / arr.length : 0;
     delta = Math.round(avg(last10) - avg(prev10));
   }
 
   return {
     kpis: { sla: current, slaTarget: 80, deltaSla: delta },
     series,
+  };
+};
+
+exports.getDashboard = async () => {
+  await ensureSeedInstitutions();
+
+  const now = new Date();
+  const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  // ===== KPIs globaux =====
+  const [totalDemandes, demandesEnAttente, docsCeMois, agentsActifs] = await Promise.all([
+    prisma.demande.count(),
+    prisma.demande.count({ where: { statut: "SOUMISE" } }),
+    prisma.document.count({ where: { createdAt: { gte: startMonth, lt: nextMonth } } }),
+    prisma.utilisateur.count({
+      where: { role: { not: "ETUDIANT" }, actif: true },
+    }),
+  ]);
+
+  // ===== Institutions =====
+  const institutions = await prisma.institution.findMany({
+    orderBy: { sigle: "asc" },
+    select: { id: true, sigle: true, nom: true },
+  });
+
+  const ids = institutions.map((i) => i.id);
+
+  // pending
+  const pending = await prisma.demande.groupBy({
+    by: ["institutionId"],
+    where: { institutionId: { in: ids }, statut: "SOUMISE" },
+    _count: { _all: true },
+  });
+
+  // traitees = DISPONIBLE + REJETEE + ANNULEE (tu peux ajuster)
+  const traitees = await prisma.demande.groupBy({
+    by: ["institutionId"],
+    where: {
+      institutionId: { in: ids },
+      statut: { in: ["DISPONIBLE", "REJETEE", "ANNULEE"] },
+    },
+    _count: { _all: true },
+  });
+
+  // agents actifs
+  const agents = await prisma.utilisateur.groupBy({
+    by: ["institutionId"],
+    where: {
+      institutionId: { in: ids },
+      role: { not: "ETUDIANT" },
+      actif: true,
+    },
+    _count: { _all: true },
+  });
+
+  const mapPending = new Map(pending.map((x) => [x.institutionId, x._count._all]));
+  const mapTraitees = new Map(traitees.map((x) => [x.institutionId, x._count._all]));
+  const mapAgents = new Map(agents.map((x) => [x.institutionId, x._count._all]));
+
+  const parInstitution = institutions.map((inst) => ({
+    id: inst.id,
+    code: inst.sigle,
+    nom: inst.nom,
+    attente: mapPending.get(inst.id) || 0,
+    traitees: mapTraitees.get(inst.id) || 0,
+    agents: mapAgents.get(inst.id) || 0,
+  }));
+
+  // ===== Activité système (approx) =====
+  const [lastAgent, lastDoc, lastDemande, lastInstitution] = await Promise.all([
+    prisma.utilisateur.findFirst({
+      where: { role: { not: "ETUDIANT" } },
+      orderBy: { createdAt: "desc" },
+      select: { prenom: true, nom: true, institution: { select: { sigle: true } }, createdAt: true },
+    }),
+    prisma.document.findFirst({
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true, demande: { select: { institution: { select: { sigle: true } } } } },
+    }),
+    prisma.demande.findFirst({
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true, institution: { select: { sigle: true } }, id: true },
+    }),
+    prisma.institution.findFirst({
+      orderBy: { updatedAt: "desc" },
+      select: { sigle: true, updatedAt: true },
+    }),
+  ]);
+
+  const activity = [
+    lastAgent && {
+      title: "Nouvel agent ajouté",
+      sub: `${lastAgent.prenom} ${lastAgent.nom} • ${lastAgent.institution?.sigle || ""}`.trim(),
+      ts: lastAgent.createdAt,
+    },
+    lastInstitution && {
+      title: "Institution mise à jour",
+      sub: `${lastInstitution.sigle || ""}`.trim(),
+      ts: lastInstitution.updatedAt,
+    },
+    lastDoc && {
+      title: "Document généré",
+      sub: `${lastDoc.demande?.institution?.sigle || ""}`.trim(),
+      ts: lastDoc.createdAt,
+    },
+    lastDemande && {
+      title: "Nouvelle demande créée",
+      sub: `${lastDemande.institution?.sigle || ""} • ${lastDemande.id.slice(0, 8)}`,
+      ts: lastDemande.createdAt,
+    },
+  ].filter(Boolean);
+
+  return {
+    kpis: {
+      totalDemandes,
+      demandesEnAttente,
+      docsCeMois,
+      agentsActifs,
+      nbInstitutions: institutions.length,
+    },
+    parInstitution,
+    activity,
   };
 };

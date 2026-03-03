@@ -1,4 +1,3 @@
-// backend/src/modules/auth/auth.service.js
 require("dotenv").config();
 const prisma = require("../../config/prisma");
 const bcrypt = require("bcryptjs");
@@ -9,15 +8,17 @@ const emailService = require("../../services/email.service");
 const normalize = (v) => String(v || "").trim().toUpperCase();
 
 const REQUIRE_EMAIL_VERIFICATION =
-  String(process.env.REQUIRE_EMAIL_VERIFICATION ?? "true").toLowerCase() !== "false";
+  String(process.env.REQUIRE_EMAIL_VERIFICATION ?? "true").toLowerCase() !==
+  "false";
 
-// ✅ Token JWT
+// ✅ Token JWT (on ajoute institutionCode)
 const genToken = (user) =>
   jwt.sign(
     {
       id: user.id,
       role: user.role,
-      institutionId: user.institutionId,
+      institutionId: user.institutionId ?? null,
+      institutionCode: user.institution?.sigle || null,
       service: user.service ?? null,
     },
     process.env.JWT_SECRET,
@@ -33,11 +34,7 @@ async function resolveInstitutionId({ institutionId, institutionSigle }) {
 
   const inst = await prisma.institution.findFirst({
     where: {
-      OR: [
-        { id: value },
-        { sigle },
-        { nom: { equals: value, mode: "insensitive" } },
-      ],
+      OR: [{ id: value }, { sigle }, { nom: { equals: value, mode: "insensitive" } }],
     },
     select: { id: true, nom: true, sigle: true },
   });
@@ -69,6 +66,7 @@ exports.register = async ({
     err.statusCode = 400;
     throw err;
   }
+
   if (password.length < 8) {
     const err = new Error("Mot de passe trop court (minimum 8 caractères).");
     err.statusCode = 400;
@@ -77,7 +75,11 @@ exports.register = async ({
 
   const cleanEmail = String(email).trim().toLowerCase();
 
-  const existing = await prisma.utilisateur.findUnique({ where: { email: cleanEmail } });
+  const existing = await prisma.utilisateur.findUnique({
+    where: { email: cleanEmail },
+    select: { id: true },
+  });
+
   if (existing) {
     const err = new Error("Cet email est déjà utilisé");
     err.statusCode = 400;
@@ -89,6 +91,7 @@ exports.register = async ({
       where: { numeroEtudiant: String(numeroEtudiant).trim() },
       select: { id: true },
     });
+
     if (already) {
       const err = new Error("Ce numéro étudiant est déjà utilisé.");
       err.statusCode = 400;
@@ -100,6 +103,15 @@ exports.register = async ({
     institutionId,
     institutionSigle,
   });
+
+  // ✅ Institution obligatoire (MVP multi-institutions)
+  if (!resolvedInstitutionId) {
+    const err = new Error(
+      "Institution obligatoire. Fournis institutionId ou institutionSigle (IFRI/EPAC/FSS)."
+    );
+    err.statusCode = 400;
+    throw err;
+  }
 
   const hash = await bcrypt.hash(password, 12);
 
@@ -127,7 +139,10 @@ exports.register = async ({
 
   if (REQUIRE_EMAIL_VERIFICATION) {
     try {
-      await emailService.sendVerificationEmail(created.email, created.tokenVerification);
+      await emailService.sendVerificationEmail(
+        created.email,
+        created.tokenVerification
+      );
     } catch (e) {
       console.log("[EMAIL SKIPPED]", e.message);
     }
@@ -179,7 +194,9 @@ exports.login = async ({ email, password }) => {
 
   const token = genToken(user);
 
-  // ✅ On renvoie ce dont le front a besoin (profil + header)
+  const institutionCode = user.institution?.sigle || null;
+
+  // ✅ Le front reçoit tout pour adapter l'UI directement
   return {
     token,
     user: {
@@ -190,6 +207,7 @@ exports.login = async ({ email, password }) => {
       role: user.role,
       service: user.service,
       institutionId: user.institutionId,
+      institutionCode,
       numeroEtudiant: user.numeroEtudiant,
       filiere: user.filiere,
       niveau: user.niveau,
@@ -202,6 +220,7 @@ exports.verifyEmail = async (token) => {
   const user = await prisma.utilisateur.findFirst({
     where: { tokenVerification: token },
   });
+
   if (!user) {
     const err = new Error("Token invalide");
     err.statusCode = 400;
@@ -219,10 +238,15 @@ exports.verifyEmail = async (token) => {
 exports.requestPasswordReset = async (email) => {
   const cleanEmail = String(email || "").trim().toLowerCase();
 
-  const user = await prisma.utilisateur.findUnique({ where: { email: cleanEmail } });
+  const user = await prisma.utilisateur.findUnique({
+    where: { email: cleanEmail },
+    select: { id: true, email: true },
+  });
+
   if (!user) return { message: "Si cet email existe, un lien a été envoyé." };
 
   const token = crypto.randomBytes(32).toString("hex");
+
   await prisma.utilisateur.update({
     where: { id: user.id },
     data: {
@@ -243,6 +267,7 @@ exports.requestPasswordReset = async (email) => {
 exports.resetPassword = async (token, newPassword) => {
   const user = await prisma.utilisateur.findFirst({
     where: { tokenResetPassword: token, tokenResetExpiry: { gt: new Date() } },
+    select: { id: true },
   });
 
   if (!user) {
@@ -258,6 +283,7 @@ exports.resetPassword = async (token, newPassword) => {
   }
 
   const hash = await bcrypt.hash(newPassword, 12);
+
   await prisma.utilisateur.update({
     where: { id: user.id },
     data: { password: hash, tokenResetPassword: null, tokenResetExpiry: null },

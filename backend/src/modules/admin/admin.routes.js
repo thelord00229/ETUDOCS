@@ -24,4 +24,8 @@ router.get("/model-notes", auth, role("SUPER_ADMIN"), (req, res) => {
 // ✅ SLA Analytics (même middleware que le reste)
 router.get("/analytics/sla", auth, role("SUPER_ADMIN"), ctrl.getSlaEvolution);
 
+router.get("/dashboard", auth, role("SUPER_ADMIN"), ctrl.getDashboard);
+
+router.use("/analytics", require("./admin.analytics.routes"));
+
 module.exports = router;

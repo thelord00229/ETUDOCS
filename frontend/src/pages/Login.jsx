@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import logo from "../assets/logo.png";
+import { login as apiLogin, setSession, clearSession } from "../services/api";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
@@ -174,7 +175,8 @@ const css = `
 `;
 
 const TABS = ["Étudiant", "Agent", "Admin"];
-const INSTITUTIONS = ["IFRI", "EPAC", "FSS"];
+
+const normalizeCode = (v) => String(v || "").trim().toUpperCase();
 
 export default function Login() {
   const [active, setActive] = useState(0);
@@ -187,11 +189,43 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // ✅ institutions dynamiques
+  const [institutions, setInstitutions] = useState([]);
+  const [instLoading, setInstLoading] = useState(false);
+
   const isEtudiant = active === 0;
   const isAgent = active === 1;
   const isAdmin = active === 2;
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+  useEffect(() => {
+    const loadInstitutions = async () => {
+      setInstLoading(true);
+      try {
+        const res = await fetch(`${API_URL}/api/institutions`);
+        const data = await res.json().catch(() => []);
+        if (Array.isArray(data) && data.length) {
+          const codes = data.map((x) => normalizeCode(x.sigle)).filter(Boolean);
+          const unique = Array.from(new Set(codes));
+          setInstitutions(unique);
+
+          if (!unique.includes(normalizeCode(institution))) {
+            setInstitution(unique[0] || "IFRI");
+          }
+        } else {
+          setInstitutions(["IFRI", "EPAC", "FSS"]);
+        }
+      } catch (e) {
+        console.error("[Login] institutions load error:", e);
+        setInstitutions(["IFRI", "EPAC", "FSS"]);
+      } finally {
+        setInstLoading(false);
+      }
+    };
+    loadInstitutions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [API_URL]);
 
   const routeForUser = (user) => {
     const role = user?.role;
@@ -223,41 +257,88 @@ export default function Login() {
     return true;
   };
 
+  const selectedInstitution = useMemo(
+    () => normalizeCode(institution),
+    [institution]
+  );
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+
     if (!email || !password) {
       setError("Veuillez renseigner l'email et le mot de passe.");
       return;
     }
+
     setLoading(true);
+
     try {
-      const res = await fetch(`${API_URL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      // ✅ Nettoyage session précédente (important si on change de compte)
+      clearSession();
+
+      // ✅ utilise le service (=> setSession auto)
+      const data = await apiLogin({
+        email: String(email).trim(),
+        password,
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data?.message || "Connexion impossible");
-        return;
-      }
-      localStorage.removeItem("etudocs_token");
-      localStorage.removeItem("etudocs_user");
-      localStorage.setItem("etudocs_token", data.token);
-      localStorage.setItem("etudocs_user", JSON.stringify(data.user));
-      console.log("[LOGIN OK]", { role: data.user?.role, user: data.user });
-      const role = data.user?.role;
+
+      const role = data?.user?.role;
+
+      // ✅ vérifie onglet AVANT de continuer
       if (!isRoleAllowedForTab(role)) {
+        // on supprime ce qui a été stocké par apiLogin
+        clearSession();
         setError(
           `Vous êtes connecté en tant que ${role}, mais vous êtes sur le mauvais onglet.`
         );
         return;
       }
+
+      // ✅ filtre institution pour ETUDIANT/AGENT
+      if (isEtudiant || isAgent) {
+        const userInst =
+          normalizeCode(data?.user?.institutionCode) ||
+          normalizeCode(data?.user?.institution?.sigle) ||
+          normalizeCode(data?.user?.institutionId);
+
+        if (userInst && selectedInstitution && userInst !== selectedInstitution) {
+          clearSession();
+          setError(
+            `Ce compte appartient à l'institution ${userInst}. Veuillez sélectionner ${userInst} pour continuer.`
+          );
+          return;
+        }
+      }
+
+      // ✅ garantie d'écriture du code institution (si backend ne renvoie pas institutionCode)
+      const instCode =
+        normalizeCode(data?.user?.institutionCode) ||
+        normalizeCode(data?.user?.institution?.sigle) ||
+        normalizeCode(data?.user?.institutionId) ||
+        selectedInstitution ||
+        "";
+
+      if (instCode) {
+        // setSession déjà fait, mais on renforce le code si besoin
+        setSession({ token: data?.token, user: data?.user });
+      }
+
+      console.log("[LOGIN OK]", {
+        role: data?.user?.role,
+        inst: instCode,
+        user: data?.user,
+      });
+
       const target = routeForUser(data.user);
       window.location.href = target;
     } catch (err) {
-      setError("Erreur réseau (backend éteint ?)");
+      const msg = String(err?.message || "");
+      if (msg === "UNAUTHORIZED") {
+        setError("Session expirée. Veuillez vous reconnecter.");
+      } else {
+        setError(err?.message || "Erreur réseau (backend éteint ?)");
+      }
     } finally {
       setLoading(false);
     }
@@ -268,7 +349,6 @@ export default function Login() {
       <style>{css}</style>
 
       {/* Logo */}
-      
       <a href="/" className="brand">
         <img src={logo} alt="EtuDocs logo" className="brand__logo" />
         <span className="brand__name">EtuDocs</span>
@@ -284,7 +364,10 @@ export default function Login() {
               key={t}
               type="button"
               className={`tab${active === i ? " active" : ""}`}
-              onClick={() => { setActive(i); setError(""); }}
+              onClick={() => {
+                setActive(i);
+                setError("");
+              }}
             >
               {t}
             </button>
@@ -299,10 +382,12 @@ export default function Login() {
                 <select
                   value={institution}
                   onChange={(e) => setInstitution(e.target.value)}
-                  disabled={loading}
+                  disabled={loading || instLoading}
                 >
-                  {INSTITUTIONS.map((i) => (
-                    <option key={i}>{i}</option>
+                  {(institutions.length ? institutions : ["IFRI", "EPAC", "FSS"]).map((i) => (
+                    <option key={i} value={i}>
+                      {i}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -317,13 +402,16 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder={isEtudiant ? "etudiant@test.com" : "votre.email@example.com"}
               disabled={loading}
+              autoComplete="email"
             />
           </div>
 
           <div className="field">
             <div className="field__row">
               <label>Mot de passe</label>
-              <a href="#" className="forgot">Mot de passe oublié ?</a>
+              <a href="/forgot-password" className="forgot">
+                Mot de passe oublié ?
+              </a>
             </div>
             <input
               type={showPass ? "text" : "password"}
@@ -331,7 +419,23 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               disabled={loading}
+              autoComplete="current-password"
             />
+          </div>
+
+          {/* toggle showPass */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: -6 }}>
+            <input
+              id="showpass"
+              type="checkbox"
+              checked={showPass}
+              onChange={(e) => setShowPass(e.target.checked)}
+              disabled={loading}
+              style={{ width: 16, height: 16 }}
+            />
+            <label htmlFor="showpass" style={{ margin: 0, cursor: "pointer" }}>
+              Afficher le mot de passe
+            </label>
           </div>
 
           {error && (

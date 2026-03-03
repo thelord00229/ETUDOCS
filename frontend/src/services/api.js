@@ -8,12 +8,85 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
    SESSION / TOKEN
 ================================ */
 export const getToken = () =>
-  localStorage.getItem("etudocs_token") || localStorage.getItem("token");
+  localStorage.getItem("etudocs_token") ||
+  sessionStorage.getItem("etudocs_token") ||
+  localStorage.getItem("token") ||
+  sessionStorage.getItem("token");
+
+export const getStoredUser = () => {
+  const raw =
+    localStorage.getItem("etudocs_user") ||
+    sessionStorage.getItem("etudocs_user");
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+const normalizeInst = (v) => String(v || "").trim().toUpperCase();
+
+export const getInstitutionCode = () => {
+  // Priorité au user stocké
+  const u = getStoredUser();
+
+  const code =
+    normalizeInst(u?.institutionCode) ||
+    normalizeInst(u?.institution?.sigle) ||
+    normalizeInst(u?.institutionId);
+
+  if (code) return code;
+
+  // fallback: si tu stockes juste le code
+  const stored =
+    normalizeInst(localStorage.getItem("etudocs_institution")) ||
+    normalizeInst(sessionStorage.getItem("etudocs_institution"));
+
+  return stored || null;
+};
+
+export const setSession = ({ token, user }) => {
+  if (token) {
+    localStorage.setItem("etudocs_token", token);
+    sessionStorage.setItem("etudocs_token", token);
+
+    // compat si ancien code
+    localStorage.setItem("token", token);
+    sessionStorage.setItem("token", token);
+  }
+
+  if (user) {
+    const serialized = JSON.stringify(user);
+    localStorage.setItem("etudocs_user", serialized);
+    sessionStorage.setItem("etudocs_user", serialized);
+
+    // Très pratique pour l'UI multi-institutions
+    const code =
+      normalizeInst(user?.institutionCode) ||
+      normalizeInst(user?.institution?.sigle) ||
+      normalizeInst(user?.institutionId) ||
+      null;
+
+    if (code) {
+      localStorage.setItem("etudocs_institution", code);
+      sessionStorage.setItem("etudocs_institution", code);
+    }
+  }
+};
 
 export const clearSession = () => {
+  // localStorage
   localStorage.removeItem("etudocs_token");
   localStorage.removeItem("token");
   localStorage.removeItem("etudocs_user");
+  localStorage.removeItem("etudocs_institution");
+
+  // sessionStorage
+  sessionStorage.removeItem("etudocs_token");
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("etudocs_user");
+  sessionStorage.removeItem("etudocs_institution");
 };
 
 /* ================================
@@ -130,6 +203,21 @@ const apiBlob = async (endpoint, { headers } = {}) => {
 /* ================================
    AUTH
 ================================ */
+export const login = async ({ email, password }) => {
+  const data = await apiRequest("/api/auth/login", {
+    method: "POST",
+    body: { email, password },
+  });
+
+  // Attendu: { token, user }
+  if (data?.token) setSession({ token: data.token, user: data.user });
+
+  return data;
+};
+
+export const register = async (payload) =>
+  apiRequest("/api/auth/register", { method: "POST", body: payload });
+
 export const getMe = async () => {
   const token = getToken();
   if (!token) throw new Error("UNAUTHORIZED");
@@ -141,7 +229,14 @@ export const getMe = async () => {
   if (res.status === 401) return handleUnauthorized();
   if (!res.ok) throw new Error("SERVER_ERROR");
 
-  return res.json();
+  const me = await res.json();
+
+  // ✅ Mise à jour du cache session (utile après refresh)
+  if (me) {
+    setSession({ token, user: me });
+  }
+
+  return me;
 };
 
 /* ================================
@@ -152,7 +247,7 @@ export const getDemandes = async () => apiRequest("/api/demandes");
 export const getDemandeById = async (id) => apiRequest(`/api/demandes/${id}`);
 
 export const getStatsSG = () =>
-    api.get("api/demandes/stats/secretaire-general").then(r => r.data);
+  api.get("/api/demandes/stats/secretaire-general").then((r) => r.data);
 
 export const avancerDemande = async (id, action, commentaire = "") => {
   const body = { action };
@@ -179,7 +274,9 @@ export const submitDemande = async ({
 
   // Compat: ton backend parse "semestres" (array) mais tu envoyais "semestre"
   if (Array.isArray(semestres)) {
-    semestres.forEach((s) => form.append("semestres", String(s).replace("S", "")));
+    semestres.forEach((s) =>
+      form.append("semestres", String(s).replace("S", ""))
+    );
   } else if (semestre) {
     form.append("semestres", String(semestre));
   }
@@ -187,7 +284,8 @@ export const submitDemande = async ({
   if (CIP) form.append("CIP", CIP);
   if (QUITTANCE) form.append("QUITTANCE", QUITTANCE);
   if (ACTE_NAISSANCE) form.append("ACTE_NAISSANCE", ACTE_NAISSANCE);
-  if (JUSTIFICATIF_INSCRIPTION) form.append("JUSTIFICATIF_INSCRIPTION", JUSTIFICATIF_INSCRIPTION);
+  if (JUSTIFICATIF_INSCRIPTION)
+    form.append("JUSTIFICATIF_INSCRIPTION", JUSTIFICATIF_INSCRIPTION);
 
   return apiForm("/api/demandes", form, { method: "POST" });
 };
@@ -210,7 +308,6 @@ export const downloadDocument = async (reference, filename) => {
   a.remove();
   window.URL.revokeObjectURL(url);
 };
-
 
 export const deleteDocument = async (reference) =>
   apiRequest(`/api/documents/${reference}`, { method: "DELETE" });

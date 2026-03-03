@@ -1,5 +1,5 @@
 // frontend/src/components/DashboardEtudiant/DashboardLayout.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Sidebar from "./Sidebar.jsx";
 import TopBar from "./Topbar.jsx";
 import { getDemandes } from "../../services/api";
@@ -42,18 +42,41 @@ function saveDismissed(ids) {
   localStorage.setItem(NOTIF_KEY, JSON.stringify(ids));
 }
 
+const normalizeInst = (v) => String(v || "").trim().toUpperCase();
+
+function getInstitutionCodeFromUser(user) {
+  // priorité : user.institution.sigle
+  const sigle = normalizeInst(user?.institution?.sigle);
+  if (sigle) return sigle;
+
+  // fallback : parfois on stocke le code dans institutionId par erreur
+  const maybeCode = normalizeInst(user?.institutionId);
+  if (["IFRI", "EPAC", "FSS"].includes(maybeCode)) return maybeCode;
+
+  // fallback localStorage (défini au login)
+  const stored = normalizeInst(localStorage.getItem("etudocs_institution"));
+  if (stored) return stored;
+
+  return "IFRI";
+}
+
 export default function DashboardLayout({ children }) {
   const user = getUser();
+
   const prenom = user.prenom || "";
   const nom = user.nom || "";
   const fullName = `${prenom} ${nom}`.trim() || "Étudiant";
 
   // ✅ source fiable
   const email = user.email || "";
-  const initials = `${prenom[0] || ""}${nom[0] || ""}`.toUpperCase() || "EU";
+  const initials =
+    `${prenom[0] || ""}${nom[0] || ""}`.toUpperCase() || "EU";
 
   // ✅ TU VEUX TOUJOURS L'EMAIL
   const meta = email;
+
+  // ✅ institution code pour adapter branding
+  const instCode = useMemo(() => getInstitutionCodeFromUser(user), [user]);
 
   const [notifications, setNotifications] = useState([]);
 
@@ -100,12 +123,16 @@ export default function DashboardLayout({ children }) {
   return (
     <div className="dash-layout">
       <style>{css}</style>
-      <Sidebar />
+
+      {/* ✅ on passe l'institution pour branding */}
+      <Sidebar institution={instCode} />
+
       <div className="dash-main">
         <TopBar
           name={fullName}
           meta={meta}
           initials={initials}
+          institution={instCode}
           notifications={notifications}
           onDeleteNotif={handleDelete}
           onClearAllNotifs={handleClearAll}

@@ -15,7 +15,11 @@ const css = `
     text-decoration: none;
   }
   .sa-brand__logo {
-    height: 38px; width: auto; object-fit: contain;
+    height: 48px; width: auto; object-fit: contain; /* ✅ agrandi : 38px → 48px */
+  }
+  .sa-brand__name {
+    font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.1rem; color: #1a2744;
+    letter-spacing: -.01em;
   }
   .sa-nav { flex: 1; padding: 0 12px; display: flex; flex-direction: column; gap: 2px; }
   .sa-nav__link {
@@ -104,8 +108,10 @@ export default function SALayout({ children }) {
       <style>{css}</style>
 
       <aside className="sa-sidebar">
+        {/* ✅ Logo agrandi + nom EtuDocs ajouté */}
         <a href="/superadmin" className="sa-brand">
           <img src={logo} alt="EtuDocs" className="sa-brand__logo" />
+          <span className="sa-brand__name">EtuDocs</span>
         </a>
 
         <nav className="sa-nav">

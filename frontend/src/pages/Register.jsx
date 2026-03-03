@@ -1,5 +1,5 @@
 // src/pages/Register/Register.jsx
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import logo from "../assets/logo.png";
 
 const css = `
@@ -200,41 +200,55 @@ const NIVEAUX = [
   "Doctorat 1ère année", "Doctorat 2ème année", "Doctorat 3ème année",
 ];
 
-const INSTITUTIONS = [
+// ✅ Filieres (MVP local)
+const FILIERES = {
+  IFRI: [
+    "Génie Logiciel (GL)",
+    "Intelligence Artificielle (IA)",
+    "Sécurité Informatique (SI)",
+    "Systèmes Embarqués et Internet des Objets (SE-IoT)",
+    "Internet et Multimédia (IM)",
+  ],
+  EPAC: [
+    "Génie Civil (GC)",
+    "Génie Électrique (GE)",
+    "Génie Informatique et Télécommunication (GIT)",
+    "Génie Mécanique et Énergétique (GME)",
+    "Génie Chimique - Procédés (GC-P)",
+    "Maintenance Biomédicale et Hospitalière (MBH)",
+    "Génie Biomédical (GBM)",
+    "Machinisme Agricole (MA)",
+  ],
+  FSS: [
+    "Médecine",
+    "Pharmacie",
+    "Kinésithérapie",
+    "Nutrition et diététique",
+    "Assistance sociale",
+  ],
+};
+
+const normalizeCode = (v) => String(v || "").trim().toUpperCase();
+
+const FALLBACK_INSTITUTIONS = [
   { value: "IFRI", label: "IFRI - Institut de Formation et de Recherche en Informatique" },
   { value: "EPAC", label: "EPAC - École Polytechnique d'Abomey-Calavi" },
   { value: "FSS",  label: "FSS - Faculté des Sciences de la Santé" },
 ];
 
-const FILIERES = {
-  IFRI: ["Génie Logiciel (GL)", "Intelligence Artificielle (IA)", "Sécurité Informatique (SI)", "Systèmes Embarqués et Internet des Objets (SE-IoT)", "Internet et Multimédia (IM)"],
-  EPAC: ["Génie Civil (GC)", "Génie Électrique (GE)", "Génie Informatique et Télécommunication (GIT)", "Génie Mécanique et Énergétique (GME)", "Génie Chimique - Procédés (GC-P)", "Maintenance Biomédicale et Hospitalière (MBH)", "Génie Biomédical (GBM)", "Machinisme Agricole (MA)"],
-  FSS:  ["Médecine", "Pharmacie", "Kinésithérapie", "Nutrition et diététique", "Assistance sociale"],
-};
-
 const CheckIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-       stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="20 6 9 17 4 12"/>
+    stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12" />
   </svg>
 );
 
 const InfoIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-       stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"/>
-    <line x1="12" y1="8" x2="12" y2="12"/>
-    <line x1="12" y1="16" x2="12.01" y2="16"/>
-  </svg>
-);
-
-const DocIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-       stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-    <polyline points="14 2 14 8 20 8"/>
-    <line x1="16" y1="13" x2="8" y2="13"/>
-    <line x1="16" y1="17" x2="8" y2="17"/>
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
   </svg>
 );
 
@@ -245,6 +259,10 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [okMsg, setOkMsg] = useState("");
+
+  // ✅ Institutions dynamiques
+  const [institutions, setInstitutions] = useState(FALLBACK_INSTITUTIONS);
+  const [instLoading, setInstLoading] = useState(false);
 
   // Étape 1
   const [numEtudiant, setNumEtudiant] = useState("");
@@ -259,11 +277,50 @@ export default function Register() {
   const [filiere, setFiliere] = useState("");
   const [niveau, setNiveau] = useState("");
 
+  useEffect(() => {
+    const loadInstitutions = async () => {
+      setInstLoading(true);
+      try {
+        const res = await fetch(`${API_URL}/api/institutions`);
+        const data = await res.json().catch(() => []);
+        if (Array.isArray(data) && data.length) {
+          const mapped = data
+            .map((x) => {
+              const code = normalizeCode(x.sigle);
+              if (!code) return null;
+              return {
+                value: code,
+                label: `${code} - ${x.nom}`,
+              };
+            })
+            .filter(Boolean);
+
+          setInstitutions(mapped.length ? mapped : FALLBACK_INSTITUTIONS);
+
+          // ✅ auto-select si vide ou invalide
+          setInstitution((prev) => {
+            const p = normalizeCode(prev);
+            const exists = mapped.some((m) => m.value === p);
+            return exists ? p : (mapped[0]?.value || "IFRI");
+          });
+        } else {
+          setInstitutions(FALLBACK_INSTITUTIONS);
+          setInstitution((prev) => normalizeCode(prev) || "IFRI");
+        }
+      } catch (e) {
+        console.error("[Register] institutions load error:", e);
+        setInstitutions(FALLBACK_INSTITUTIONS);
+        setInstitution((prev) => normalizeCode(prev) || "IFRI");
+      } finally {
+        setInstLoading(false);
+      }
+    };
+    loadInstitutions();
+  }, [API_URL]);
+
   const filieresDisponibles = useMemo(() => FILIERES[institution] || [], [institution]);
 
-  const passwordMismatch = useMemo(() => {
-    return confirm.length > 0 && password !== confirm;
-  }, [password, confirm]);
+  const passwordMismatch = useMemo(() => confirm.length > 0 && password !== confirm, [password, confirm]);
 
   const goStep2 = (e) => {
     e.preventDefault();
@@ -317,15 +374,14 @@ export default function Register() {
       return;
     }
 
+    // ✅ Payload propre: on envoie sigle => backend resolveInstitutionId()
     const payload = {
       numeroEtudiant: String(numEtudiant).trim(),
       prenom: String(prenom).trim(),
       nom: String(nom).trim(),
       email: String(email).trim().toLowerCase(),
       password,
-      institution,
-      institutionSigle: institution,
-      institutionId: institution,
+      institutionSigle: normalizeCode(institution), // ex: "IFRI"/"EPAC"/"FSS"
       filiere: String(filiere).trim(),
       niveau,
     };
@@ -429,7 +485,6 @@ export default function Register() {
               <span className="hint">Votre numéro d'identification étudiant</span>
             </div>
 
-            {/* ✅ CHANGEMENT : Nom complet -> Prénom(s) + Nom */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div className="field">
                 <label>Prénom(s) *</label>
@@ -522,16 +577,16 @@ export default function Register() {
                 <select
                   value={institution}
                   onChange={(e) => {
-                    setInstitution(e.target.value);
-                    setFiliere(""); // ✅ reset filière
+                    setInstitution(normalizeCode(e.target.value));
+                    setFiliere("");
                   }}
                   required
-                  disabled={loading}
+                  disabled={loading || instLoading}
                 >
                   <option value="" disabled>
-                    Sélectionnez votre institution
+                    {instLoading ? "Chargement..." : "Sélectionnez votre institution"}
                   </option>
-                  {INSTITUTIONS.map((i) => (
+                  {(institutions.length ? institutions : FALLBACK_INSTITUTIONS).map((i) => (
                     <option key={i.value} value={i.value}>
                       {i.label}
                     </option>
@@ -540,7 +595,6 @@ export default function Register() {
               </div>
             </div>
 
-            {/* ✅ CHANGEMENT : Filière input -> select dynamique */}
             <div className="field">
               <label>Filière *</label>
               <div className="select-wrap">
@@ -551,9 +605,7 @@ export default function Register() {
                   disabled={loading || !institution}
                 >
                   <option value="" disabled>
-                    {institution
-                      ? "Sélectionnez votre filière"
-                      : "Choisissez d'abord une institution"}
+                    {institution ? "Sélectionnez votre filière" : "Choisissez d'abord une institution"}
                   </option>
                   {filieresDisponibles.map((f) => (
                     <option key={f} value={f}>
@@ -586,12 +638,7 @@ export default function Register() {
             </div>
 
             <div className="btn-row">
-              <button
-                type="button"
-                className="btn-outline"
-                onClick={goBack}
-                disabled={loading}
-              >
+              <button type="button" className="btn-outline" onClick={goBack} disabled={loading}>
                 Retour
               </button>
               <button type="submit" className="btn-green" disabled={loading}>

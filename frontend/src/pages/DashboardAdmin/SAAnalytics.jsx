@@ -13,8 +13,6 @@ import {
   ReferenceLine,
 } from "recharts";
 
-
-
 const css = `
   .sa-ana-topbar {
     display:flex; align-items:center; justify-content:space-between; gap:16px;
@@ -230,13 +228,48 @@ const css = `
     font-weight: 800;
     color: #0f172a;
   }
+
+  /* ✅ logo */
+  .hm-logo {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex: 0 0 auto;
+  }
+  .hm-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display:block;
+  }
+  .hm-fallback {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #1d4ed8;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: .8rem;
+    flex: 0 0 auto;
+  }
+
   .hm-cell {
     border-radius: 10px;
     border: 1px solid #e2e8f0;
     padding: 7px 10px;
     min-width: 80px;
     position: relative;
- }
+  }
   .hm-cell .v {
     font-family: 'Sora', sans-serif;
     font-weight: 900;
@@ -244,12 +277,11 @@ const css = `
     display:flex; align-items:baseline; gap:6px;
     font-size: .95rem;
   }
-  .hm-cell .v small { color: #64748b; font-weight: 700; font-size: .8rem; }
   .hm-cell .p {
     margin-top: 4px;
     font-size: .75rem;
     color: #64748b;
- }
+  }
   .hm-eff { background: rgba(22,163,74,.08); border-color: rgba(22,163,74,.18); }
   .hm-mod { background: rgba(245,158,11,.10); border-color: rgba(245,158,11,.22); }
   .hm-risk { background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.20); }
@@ -327,129 +359,17 @@ const css = `
     color: #1d4ed8;
   }
 
-  /* bottom charts */
+  /* ✅ bottom charts : maintenant 1 seule colonne */
   .sa-ana-bottom {
     display:grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 16px;
     margin-bottom: 16px;
   }
-  .toggle {
-    display:inline-flex;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    overflow:hidden;
-    margin-left: auto;
-  }
-  .toggle button {
-    border:none;
-    padding: 8px 10px;
-    background:#fff;
-    cursor:pointer;
-    font-weight: 900;
-    color:#64748b;
-    font-size:.85rem;
-  }
-  .toggle button.active {
-    background: rgba(29,78,216,.08);
-    color: #1d4ed8;
-  }
 
-  .stack-wrap { margin-top: 14px; }
-  .stack-row {
-    display:flex; align-items:center; gap: 12px;
-    margin-bottom: 12px;
-  }
-  .stack-row .name {
-    width: 70px;
-    font-family:'Sora', sans-serif;
-    font-weight: 900;
-    color:#0f172a;
-    font-size:.9rem;
-  }
-  .stack {
-    flex:1;
-    height: 14px;
-    border-radius: 999px;
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
-    overflow:hidden;
-    display:flex;
-  }
-  .seg { height:100%; }
-  .seg-slow { background: rgba(239,68,68,.75) !important; }
-  .stack-row .tot {
-    width: 70px;
-    text-align:right;
-    font-family:'Sora', sans-serif;
-    font-weight: 900;
-    color:#0f172a;
-    font-size:.88rem;
-  }
-  .legend-mini {
-    display:flex; gap: 10px; flex-wrap: wrap;
-    color:#64748b; font-size:.8rem; margin-top: 12px;
-  }
-  .legend-mini span { display:flex; align-items:center; gap:8px; }
-  .chip { width:10px; height:10px; border-radius:3px; display:inline-block; border: 1px solid rgba(15,23,42,.08); }
-
-  .aging-top {
-    display:flex; align-items:center; justify-content:space-between; gap:12px;
-    margin-bottom: 10px;
-  }
-  .crit {
-    display:flex; align-items:center; gap:10px;
-    border: 1px solid rgba(239,68,68,.25);
-    background: rgba(239,68,68,.08);
-    color: #991b1b;
-    padding: 8px 10px;
-    border-radius: 12px;
-    font-weight: 900;
-    font-family: 'Sora', sans-serif;
-    font-size: .9rem;
-  }
-  .bars {
-    display:flex; gap: 12px; align-items:flex-end;
-    height: 160px;
-    margin-top: 8px;
-    padding: 10px 4px 0 4px;
-  }
-  .bar {
-    flex: 1;
-    border-radius: 12px 12px 10px 10px;
-    border: 1px solid #e2e8f0;
-    background: rgba(29,78,216,.10);
-    position: relative;
-    min-width: 70px;
-  }
-  .bar small {
-    position:absolute;
-    bottom:-26px;
-    left:50%;
-    transform: translateX(-50%);
-    font-size:.78rem;
-    color:#64748b;
-    white-space: nowrap;
-  }
-  .bar .val {
-    position:absolute;
-    top:-22px;
-    left:50%;
-    transform: translateX(-50%);
-    font-size:.8rem;
-    color:#0f172a;
-    font-weight: 900;
-    font-family: 'Sora', sans-serif;
-    white-space: nowrap;
-  }
-  .bar.red { background: rgba(239,68,68,.14); border-color: rgba(239,68,68,.22); }
-
-  .sa-ana-wide {
-    grid-column: 1 / -1;
-  }
+  .sa-ana-wide { grid-column: 1 / -1; }
 
   /* SLA evolution */
-  .line-wrap { margin-top: 8px; }
   .line-meta {
     display:flex; align-items:baseline; justify-content:space-between; gap:12px;
     margin-top: 6px;
@@ -484,6 +404,8 @@ function hmClass(p90) {
   return "hm-cell hm-risk";
 }
 
+const normalize = (v) => String(v || "").trim().toUpperCase();
+
 function miniIcon(kind) {
   const common = {
     width: 18,
@@ -494,14 +416,7 @@ function miniIcon(kind) {
     strokeLinecap: "round",
     strokeLinejoin: "round",
   };
-  const stroke =
-    kind === "blue"
-      ? "#1d4ed8"
-      : kind === "orange"
-      ? "#d97706"
-      : kind === "red"
-      ? "#ef4444"
-      : "#16a34a";
+  const stroke = "#0f172a";
   if (kind === "clock") {
     return (
       <svg {...common} stroke={stroke}>
@@ -527,7 +442,6 @@ function miniIcon(kind) {
       </svg>
     );
   }
-  // default: chart
   return (
     <svg {...common} stroke={stroke}>
       <path d="M3 3v18h18" />
@@ -537,83 +451,45 @@ function miniIcon(kind) {
 }
 
 export default function SAAnalytics() {
-  // UI-only filters
   const [period, setPeriod] = useState("30");
   const [inst, setInst] = useState("ALL");
   const [doc, setDoc] = useState("ALL");
-  const [metric, setMetric] = useState("P90");
+
   const [slaSeries, setSlaSeries] = useState([]);
   const [slaKpis, setSlaKpis] = useState({ sla: 0, slaTarget: 80, deltaSla: 0 });
   const [loadingSla, setLoadingSla] = useState(false);
   const [errorSla, setErrorSla] = useState("");
 
-  // Mock “analytics” data (brancher API plus tard)
+  const [radar, setRadar] = useState({ institutions: [], steps: [], heatmap: {} });
+  const [radarLoading, setRadarLoading] = useState(false);
+  const [radarError, setRadarError] = useState("");
+
+  const [instMeta, setInstMeta] = useState({});
+  const [logoFailed, setLogoFailed] = useState({});
+
+  const [kpis, setKpis] = useState({
+    avgTimeH: 0,
+    sla: 0,
+    slaTarget: 80,
+    overdue: 0,
+    active: 0,
+    deltaAvg: 0,
+    deltaSla: 0,
+    deltaOverdue: 0,
+    deltaActive: 0,
+  });
+  const [loadingKpis, setLoadingKpis] = useState(false);
+  const [errorKpis, setErrorKpis] = useState("");
+
+  const BASE_URL =
+    (api?.defaults?.baseURL && String(api.defaults.baseURL)) ||
+    import.meta.env.VITE_API_URL ||
+    "http://localhost:5000";
+
   const data = useMemo(() => {
     const institutions = ["IFRI", "EPAC", "FSS"];
     const steps = ["N1", "N2", "N3", "N4", "N5", "N6"];
 
-    const heatmap = {
-      IFRI: {
-        N1: { p90: 4.2, pending: 12 },
-        N2: { p90: 8.5, pending: 18 },
-        N3: { p90: 18.3, pending: 34 },
-        N4: { p90: 6.1, pending: 15 },
-        N5: { p90: 3.8, pending: 8 },
-        N6: { p90: 2.1, pending: 5 },
-      },
-      EPAC: {
-        N1: { p90: 3.8, pending: 8 },
-        N2: { p90: 6.2, pending: 11 },
-        N3: { p90: 12.1, pending: 19 },
-        N4: { p90: 7.3, pending: 22 },
-        N5: { p90: 4.2, pending: 12 },
-        N6: { p90: 2.5, pending: 6 },
-      },
-      FSS: {
-        N1: { p90: 3.2, pending: 10 },
-        N2: { p90: 5.8, pending: 14 },
-        N3: { p90: 9.7, pending: 16 },
-        N4: { p90: 5.9, pending: 13 },
-        N5: { p90: 3.5, pending: 9 },
-        N6: { p90: 1.9, pending: 4 },
-      },
-    };
-
-    // “Lead time breakdown” (hours per step), plus slowest highlighted
-    const breakdown = {
-      IFRI: { N1: 6, N2: 10, N3: 22, N4: 8, N5: 5, N6: 3 },
-      EPAC: { N1: 5, N2: 8, N3: 14, N4: 10, N5: 6, N6: 4 },
-      FSS: { N1: 4, N2: 7, N3: 11, N4: 7, N5: 5, N6: 3 },
-    };
-
-    // Aging
-    const aging = [
-      { k: "0–24h", v: 52, color: "blue" },
-      { k: "24–48h", v: 63, color: "blue" },
-      { k: "48–72h", v: 19, color: "blue" },
-      { k: ">72h", v: 13, color: "red" },
-    ];
-
-    // SLA evolution (% under 48h)
-    const slaSeries = [
-      { date: "01 Feb", value: 72 },
-      { date: "03 Feb", value: 71 },
-      { date: "05 Feb", value: 73 },
-      { date: "07 Feb", value: 74 },
-      { date: "09 Feb", value: 72 },
-      { date: "11 Feb", value: 75 },
-      { date: "13 Feb", value: 76 },
-      { date: "15 Feb", value: 74 },
-      { date: "17 Feb", value: 77 },
-      { date: "19 Feb", value: 76 },
-      { date: "21 Feb", value: 78 },
-      { date: "23 Feb", value: 79 },
-      { date: "25 Feb", value: 77 },
-      { date: "27 Feb", value: 78 },
-      { date: "01 Mar", value: 78 },
-    ];
-
-    // KPIs
     const kpis = {
       avgTimeH: 36,
       sla: 78,
@@ -653,85 +529,163 @@ export default function SAAnalytics() {
       },
     ];
 
-    return { institutions, steps, heatmap, breakdown, aging, slaSeries, kpis, insights };
+    return { institutions, steps, kpis, insights };
   }, []);
 
-  const criticalInstitutions = useMemo(() => {
-    // mock rule: if any stage p90 > 12 => “risk”
-    const risky = data.institutions.filter((ins) => {
-      const stages = data.steps.map((s) => data.heatmap[ins][s]?.p90 ?? 0);
-      return stages.some((v) => v > 12);
-    });
-    return risky;
-  }, [data]);
+  useEffect(() => {
+    let alive = true;
 
-  const criticalBottlenecks = useMemo(() => {
-    // count cells >12
-    let n = 0;
-    for (const ins of data.institutions) {
-      for (const s of data.steps) {
-        if ((data.heatmap[ins][s]?.p90 ?? 0) > 12) n += 1;
+    const loadRadar = async () => {
+      setRadarLoading(true);
+      setRadarError("");
+      try {
+        const res = await api.get("/api/admin/analytics/radar", {
+          params: { institution: inst, docType: doc },
+        });
+        if (!alive) return;
+        setRadar(res.data || { institutions: [], steps: [], heatmap: {} });
+      } catch (e) {
+        if (!alive) return;
+        setRadarError("Impossible de charger le radar");
+      } finally {
+        if (alive) setRadarLoading(false);
       }
-    }
-    return n;
-  }, [data]);
+    };
 
-  const maxAging = useMemo(() => Math.max(...data.aging.map((x) => x.v), 1), [data]);
-  const criticalCount = useMemo(() => data.aging.find((x) => x.k === ">72h")?.v ?? 0, [data]);
+    loadRadar();
+    const t = setInterval(loadRadar, 15000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [inst, doc]);
 
-  const breakdownLegend = useMemo(() => {
-    // simple palette (stable)
-    return {
-      N1: "rgba(29,78,216,.30)",
-      N2: "rgba(29,78,216,.40)",
-      N3: "rgba(29,78,216,.55)",
-      N4: "rgba(29,78,216,.25)",
-      N5: "rgba(29,78,216,.35)",
-      N6: "rgba(29,78,216,.20)",
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        const res = await api.get("/api/institutions");
+        const list = Array.isArray(res.data) ? res.data : [];
+        const m = {};
+        for (const it of list) {
+          const sigle = normalize(it.sigle);
+          if (!sigle) continue;
+          m[sigle] = { sigle, nom: it.nom, logoUrl: it.logoUrl || null };
+        }
+        if (!alive) return;
+        setInstMeta(m);
+      } catch {
+        if (!alive) return;
+        setInstMeta({});
+      }
+    })();
+
+    return () => {
+      alive = false;
     };
   }, []);
 
   useEffect(() => {
     let alive = true;
 
+    const loadKpis = async () => {
+      setLoadingKpis(true);
+      setErrorKpis("");
+      try {
+        const { data } = await api.get("/api/admin/analytics/kpis", {
+          params: { days: Number(period), institution: inst, docType: doc },
+        });
+        if (!alive) return;
+        setKpis(data?.kpis || {});
+      } catch (e) {
+        if (!alive) return;
+        setErrorKpis("Impossible de charger les KPIs");
+      } finally {
+        if (alive) setLoadingKpis(false);
+      }
+    };
+
+    loadKpis();
+    const t = setInterval(loadKpis, 15000); // ✅ 15s
+    return () => {
+      alive = false;
+      clearInterval(t);
+  };
+}, [period, inst, doc]);
+
+  const getLogoSrc = (sigle) => {
+    const s = normalize(sigle);
+    const meta = instMeta[s];
+    if (meta?.logoUrl) return meta.logoUrl;
+    return `${BASE_URL}/assets/logos/${s}.png`;
+  };
+
+  const criticalInstitutions = useMemo(() => {
+    const institutions = radar.institutions.length ? radar.institutions : data.institutions;
+    const steps = radar.steps.length ? radar.steps : data.steps;
+
+    return institutions.filter((ins) => {
+      const stages = steps.map((s) => radar.heatmap?.[ins]?.[s]?.p90 ?? 0);
+      return stages.some((v) => v > 12);
+    });
+  }, [radar, data]);
+
+  const criticalBottlenecks = useMemo(() => {
+    const institutions = radar.institutions.length ? radar.institutions : data.institutions;
+    const steps = radar.steps.length ? radar.steps : data.steps;
+
+    let n = 0;
+    for (const ins of institutions) {
+      for (const s of steps) {
+        if ((radar.heatmap?.[ins]?.[s]?.p90 ?? 0) > 12) n += 1;
+      }
+    }
+    return n;
+  }, [radar, data]);
+
+  useEffect(() => {
+    let alive = true;
+
     const run = async () => {
-        setLoadingSla(true);
-        setErrorSla("");
-        try {
-        const days = 20; // ou period->7/30/90 mais toi tu veux 20 pour le graphe
-        const institution = inst; // "ALL" ou IFRI/EPAC/FSS
-        const docType = doc; // "ALL"/...
+      setLoadingSla(true);
+      setErrorSla("");
+      try {
+        const days = 20;
+        const institution = inst;
+        const docType = doc;
 
         const { data } = await api.get("/api/admin/analytics/sla", {
-            params: { days, institution, docType },
+          params: { days, institution, docType },
         });
 
         if (!alive) return;
 
         const series = (data.series || []).map((x) => ({
-            date: new Date(x.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
-            value: x.value,
+          date: new Date(x.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
+          value: x.value,
         }));
 
         setSlaSeries(series);
         setSlaKpis(data.kpis || { sla: 0, slaTarget: 80, deltaSla: 0 });
-        } catch (e) {
+      } catch {
         if (!alive) return;
         setErrorSla("Impossible de charger l'évolution SLA");
-        } finally {
+      } finally {
         if (alive) setLoadingSla(false);
-        }
+      }
     };
 
     run();
-    return () => { alive = false; };
-    }, [inst, doc]);
+    return () => {
+      alive = false;
+    };
+  }, [inst, doc]);
 
   return (
     <SALayout>
       <style>{css}</style>
 
-      {/* Header */}
       <div className="sa-ana-topbar">
         <div className="sa-ana-title">
           <h2>Tableau analytique</h2>
@@ -772,31 +726,20 @@ export default function SAAnalytics() {
         </div>
       </div>
 
-      {/* System status strip */}
       <div className="sa-ana-status" role="status" aria-live="polite">
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#9a3412"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9a3412" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
           <line x1="12" y1="9" x2="12" y2="13" />
           <line x1="12" y1="17" x2="12.01" y2="17" />
         </svg>
         <strong>Statut système : Risque modéré</strong>
-
         <div className="pill">
           <span>{criticalInstitutions.length} institution(s) à risque</span>
           <span>{criticalBottlenecks} goulot(s) critique(s)</span>
         </div>
       </div>
 
-      {/* KPI row */}
+      {/* KPI row (inchangé) */}
       <div className="sa-ana-kpis">
         <div className="sa-ana-card">
           <div className="sa-ana-kpi-top">
@@ -819,7 +762,7 @@ export default function SAAnalytics() {
               {miniIcon("chart")}
             </div>
             <div style={{ color: slaKpis.deltaSla >= 0 ? "#15803d" : "#b91c1c", fontWeight: 900 }}>
-                {slaKpis.deltaSla >= 0 ? "↗" : "↘"} {Math.abs(slaKpis.deltaSla)}% vs période précédente
+              {slaKpis.deltaSla >= 0 ? "↗" : "↘"} {Math.abs(slaKpis.deltaSla)}% vs période précédente
             </div>
           </div>
 
@@ -874,83 +817,70 @@ export default function SAAnalytics() {
       {/* Main: heatmap + right insights */}
       <div className="sa-ana-main">
         <div className="sa-ana-card radar-card">
-            <h3 className="sa-ana-section-title">Radar des goulots</h3>
-            <p className="sa-ana-section-sub">
-                Temps maximum habituel observé par étape
-            </p>
+          <h3 className="sa-ana-section-title">Radar des goulots</h3>
+          {radarLoading && <div style={{ color:"#64748b", fontSize: ".85rem", marginBottom: 8 }}>Mise à jour…</div>}
+          {radarError && <div style={{ color:"crimson", fontSize: ".85rem", marginBottom: 8 }}>{radarError}</div>}
+          <p className="sa-ana-section-sub">Temps maximum habituel observé par étape</p>
 
-            <div className="radar-content">
-                <table className="hm" aria-label="Heatmap performance workflow">
-                <thead>
-                    <tr>
-                    <th>Institution</th>
-                    {data.steps.map((s) => (
-                        <th key={s}>{s}</th>
-                    ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {data.institutions.map((ins) => (
-                    <tr key={ins}>
-                        <td>
-                        <div className="inst">
-                            <span
-                            style={{
-                                width: 28,
-                                height: 28,
-                                borderRadius: 8,
-                                border: "1px solid #e2e8f0",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                background: "#f8fafc",
-                                color: "#1d4ed8",
-                                fontWeight: 900,
-                                fontSize: ".8rem"
-                            }}
-                            >
+          <div className="radar-content">
+            <table className="hm" aria-label="Heatmap performance workflow">
+              <thead>
+                <tr>
+                  <th>Institution</th>
+                  {(radar.steps.length ? radar.steps : data.steps).map((s) => (
+                    <th key={s}>{s}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(radar.institutions.length ? radar.institutions : data.institutions).map((ins) => (
+                  <tr key={ins}>
+                    <td>
+                      <div className="inst">
+                        {!logoFailed[ins] ? (
+                          <span className="hm-logo" title={instMeta[ins]?.nom || ins}>
+                            <img
+                              src={getLogoSrc(ins)}
+                              alt={`${ins} logo`}
+                              onError={() => setLogoFailed((p) => ({ ...p, [ins]: true }))}
+                            />
+                          </span>
+                        ) : (
+                          <span className="hm-fallback" title={instMeta[ins]?.nom || ins}>
                             {ins.slice(0, 2)}
-                            </span>
-                            {ins}
-                        </div>
+                          </span>
+                        )}
+                        {ins}
+                      </div>
+                    </td>
+
+                    {(radar.steps.length ? radar.steps : data.steps).map((s) => {
+                      const cell = radar.heatmap?.[ins]?.[s] || { p90: 0, pending: 0 };
+                      return (
+                        <td key={s}>
+                          <div
+                            className={hmClass(cell.p90)}
+                            title={`${ins} ${s} — ${fmtH(cell.p90)} — ${cell.pending} en attente`}
+                          >
+                            <div className="v">{fmtH(cell.p90)}</div>
+                            <div className="p">{cell.pending} en attente</div>
+                          </div>
                         </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-                        {data.steps.map((s) => {
-                        const cell = data.heatmap[ins][s];
-                        return (
-                            <td key={s}>
-                            <div
-                                className={hmClass(cell.p90)}
-                                title={`${ins} ${s} — ${fmtH(cell.p90)} — ${cell.pending} en attente`}
-                            >
-                                <div className="v">
-                                {fmtH(cell.p90)}
-                                </div>
-                                <div className="p">
-                                {cell.pending} en attente
-                                </div>
-                            </div>
-                            </td>
-                        );
-                        })}
-                    </tr>
-                    ))}
-                </tbody>
-                </table>
-
-                <div className="hm-legend" aria-label="Légende heatmap">
-                <span>
-                    <i className="dot dot-eff" /> Traitement rapide (&lt; 6h)
-                </span>
-                <span>
-                    <i className="dot dot-mod" /> Traitement modéré (6–12h)
-                </span>
-                <span>
-                    <i className="dot dot-risk" /> Traitement lent (&gt; 12h)
-                </span>
-                </div>
+            <div className="hm-legend" aria-label="Légende heatmap">
+              <span><i className="dot dot-eff" /> Traitement rapide (&lt; 6h)</span>
+              <span><i className="dot dot-mod" /> Traitement modéré (6–12h)</span>
+              <span><i className="dot dot-risk" /> Traitement lent (&gt; 12h)</span>
             </div>
+          </div>
         </div>
+
         <div className="sa-ana-card">
           <div className="ins-title">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -981,135 +911,15 @@ export default function SAAnalytics() {
           </div>
 
           <div className="quick" aria-label="Actions rapides">
-            <button className="btn btn-primary" type="button">
-              Exporter un rapport
-            </button>
-            <button className="btn" type="button">
-              Alertes (bientôt)
-            </button>
-            <button className="btn" type="button">
-              Détails par institution
-            </button>
+            <button className="btn btn-primary" type="button">Exporter un rapport (bientôt)</button>
+            <button className="btn" type="button">Alertes (bientôt)</button>
+            <button className="btn" type="button">Détails par institution (bientôt)</button>
           </div>
         </div>
       </div>
 
-      {/* Bottom charts */}
+      {/* ✅ Bottom : uniquement SLA */}
       <div className="sa-ana-bottom">
-        <div className="sa-ana-card">
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div>
-              <h3 className="sa-ana-section-title" style={{ marginBottom: 2 }}>
-                Décomposition du délai par institution
-              </h3>
-              <p className="sa-ana-section-sub" style={{ marginBottom: 0 }}>
-                Temps total décomposé par étapes (l’étape la plus lente est en rouge)
-              </p>
-            </div>
-            <div className="toggle" role="tablist" aria-label="Choix métrique">
-              <button
-                className={metric === "P50" ? "active" : ""}
-                onClick={() => setMetric("P50")}
-                type="button"
-                role="tab"
-                aria-selected={metric === "P50"}
-              >
-                Médiane (P50)
-              </button>
-              <button
-                className={metric === "P90" ? "active" : ""}
-                onClick={() => setMetric("P90")}
-                type="button"
-                role="tab"
-                aria-selected={metric === "P90"}
-              >
-                P90
-              </button>
-            </div>
-          </div>
-
-          <div className="stack-wrap">
-            {data.institutions.map((ins) => {
-              const v = data.breakdown[ins];
-              const total = data.steps.reduce((acc, s) => acc + (v[s] || 0), 0);
-              const slowestStep = data.steps.reduce(
-                (best, s) => (v[s] > (v[best] || 0) ? s : best),
-                data.steps[0]
-              );
-
-              return (
-                <div className="stack-row" key={ins}>
-                  <div className="name">{ins}</div>
-                  <div className="stack" aria-label={`Décomposition ${ins}`}>
-                    {data.steps.map((s) => {
-                      const w = total > 0 ? (v[s] / total) * 100 : 0;
-                      const isSlow = s === slowestStep;
-                      return (
-                        <div
-                          key={s}
-                          className={`seg ${isSlow ? "seg-slow" : ""}`}
-                          style={{ width: `${w}%`, background: breakdownLegend[s] }}
-                          title={`${ins} ${s} : ${v[s]}h`}
-                        />
-                      );
-                    })}
-                  </div>
-                  <div className="tot">{Math.round(total)}h</div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="legend-mini" aria-label="Légende étapes">
-            {data.steps.map((s) => (
-              <span key={s}>
-                <i className="chip" style={{ background: breakdownLegend[s] }} />
-                {s}
-              </span>
-            ))}
-            <span>
-              <i className="chip" style={{ background: "rgba(239,68,68,.75)" }} /> plus lent
-            </span>
-          </div>
-        </div>
-
-        <div className="sa-ana-card">
-          <div className="aging-top">
-            <div>
-              <h3 className="sa-ana-section-title" style={{ marginBottom: 2 }}>
-                Répartition de l’ancienneté
-              </h3>
-              <p className="sa-ana-section-sub" style={{ marginBottom: 0 }}>
-                Demandes actives par tranche de traitement
-              </p>
-            </div>
-            <div className="crit" title="Demandes au-delà de 72h">
-              {criticalCount} critiques (&gt;72h)
-            </div>
-          </div>
-
-          <div className="bars" aria-label="Histogramme ancienneté">
-            {data.aging.map((x) => {
-              const h = Math.max(8, (x.v / maxAging) * 140);
-              return (
-                <div
-                  key={x.k}
-                  className={`bar ${x.k === ">72h" ? "red" : ""}`}
-                  style={{ height: `${h}px` }}
-                  title={`${x.k}: ${x.v} demandes`}
-                >
-                  <div className="val">{x.v}</div>
-                  <small>{x.k}</small>
-                </div>
-              );
-            })}
-          </div>
-
-          <div style={{ marginTop: 40, color: "#64748b", fontSize: ".82rem" }}>
-            &gt;72h = risque de dépasser 48h
-          </div>
-        </div>
-
         <div className="sa-ana-card sa-ana-wide">
           <h3 className="sa-ana-section-title" style={{ marginBottom: 2 }}>
             Évolution conformité SLA
@@ -1118,10 +928,6 @@ export default function SAAnalytics() {
             Pourcentage de demandes livrées &lt; 48h (période sélectionnée)
           </p>
 
-          {/* ✅ FIX IMPORTANT :
-              - defs doit être DANS le LineChart (pas dans ResponsiveContainer)
-              - Area doit être DANS le LineChart (pas à côté)
-          */}
           <div style={{ height: 260, marginTop: 10 }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={slaSeries} margin={{ top: 10, right: 60, left: 0, bottom: 10 }}>
@@ -1136,7 +942,6 @@ export default function SAAnalytics() {
                 <XAxis dataKey="date" tickMargin={8} />
                 <YAxis domain={[65, 85]} tickMargin={8} />
 
-                {/* Ligne cible */}
                 <ReferenceLine
                   y={slaKpis.slaTarget}
                   stroke="#ef4444"
@@ -1145,8 +950,6 @@ export default function SAAnalytics() {
                 />
 
                 <Tooltip formatter={(val) => [`${val}%`, "Conformité"]} labelFormatter={(label) => label} />
-
-                {/* Dégradé sous la courbe */}
                 <Area type="monotone" dataKey="value" stroke="none" fill="url(#slaFill)" />
 
                 <Line
@@ -1169,6 +972,9 @@ export default function SAAnalytics() {
             </div>
             <div style={{ color: "#15803d", fontWeight: 900 }}>↗ +6,0% vs période précédente</div>
           </div>
+
+          {loadingSla && <div style={{ marginTop: 10, color: "#64748b" }}>Chargement…</div>}
+          {errorSla && <div style={{ marginTop: 10, color: "crimson" }}>{errorSla}</div>}
         </div>
       </div>
     </SALayout>

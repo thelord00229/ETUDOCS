@@ -128,21 +128,43 @@ const css = `
 function fmtTime(ts) {
   try {
     const d = new Date(ts);
-    return d.toLocaleString("fr-FR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleString("fr-FR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   } catch {
     return "";
   }
 }
 
+function makeInitials(nom, prenom) {
+  const a = String(prenom || "").trim()[0] || "";
+  const b = String(nom || "").trim()[0] || "";
+  const s = (a + b).toUpperCase();
+  return s || "??";
+}
+
+function getStoredUser() {
+  try {
+    const raw =
+      localStorage.getItem("etudocs_user") ||
+      sessionStorage.getItem("etudocs_user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * notifications: [{ id, message, createdAt }]
- * onDelete(id)
- * onClearAll()
+ * Props recommandées:
+ *  - user: objet renvoyé par /me ou login
+ *  - notifications: [{ id, message, createdAt }]
  */
 export default function TopBar({
-  name = "Koffi AGUEH",
-  meta = "20220001 • IFRI",
-  initials = "KA",
+  user = null,
   notifications = [],
   onDeleteNotif = () => {},
   onClearAllNotifs = () => {},
@@ -150,7 +172,31 @@ export default function TopBar({
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
-  const notifCount = useMemo(() => (Array.isArray(notifications) ? notifications.length : 0), [notifications]);
+  const notifCount = useMemo(
+    () => (Array.isArray(notifications) ? notifications.length : 0),
+    [notifications]
+  );
+
+  // ✅ user fallback depuis localStorage si non fourni
+  const computedUser = useMemo(() => {
+    return user || getStoredUser() || null;
+  }, [user]);
+
+  const name = useMemo(() => {
+    const nom = computedUser?.nom || "";
+    const prenom = computedUser?.prenom || "";
+    const full = `${prenom} ${nom}`.trim();
+    return full || "Utilisateur";
+  }, [computedUser]);
+
+  const initials = useMemo(() => {
+    return makeInitials(computedUser?.nom, computedUser?.prenom);
+  }, [computedUser]);
+
+  // ✅ META: uniquement EMAIL comme tu veux
+  const meta = useMemo(() => {
+    return computedUser?.email || "";
+  }, [computedUser]);
 
   // fermer si clic dehors
   useEffect(() => {
@@ -174,10 +220,18 @@ export default function TopBar({
             onClick={() => setOpen((v) => !v)}
             aria-label="Notifications"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
             {notifCount > 0 && <span className="topbar__badge" />}
           </button>
@@ -192,7 +246,11 @@ export default function TopBar({
                     type="button"
                     onClick={() => onClearAllNotifs()}
                     disabled={notifCount === 0}
-                    style={notifCount === 0 ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
+                    style={
+                      notifCount === 0
+                        ? { opacity: 0.5, cursor: "not-allowed" }
+                        : undefined
+                    }
                   >
                     Tout supprimer
                   </button>
@@ -216,13 +274,21 @@ export default function TopBar({
                         onClick={() => onDeleteNotif(n.id)}
                         aria-label="Supprimer"
                       >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M3 6h18"/>
-                          <path d="M8 6V4h8v2"/>
-                          <path d="M19 6l-1 14H6L5 6"/>
-                          <path d="M10 11v6"/>
-                          <path d="M14 11v6"/>
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M3 6h18" />
+                          <path d="M8 6V4h8v2" />
+                          <path d="M19 6l-1 14H6L5 6" />
+                          <path d="M10 11v6" />
+                          <path d="M14 11v6" />
                         </svg>
                       </button>
                     </div>

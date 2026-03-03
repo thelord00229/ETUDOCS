@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import SALayout from "../../components/DashboardAdmin/SALayout.jsx";
 import SAStatCard from "../../components/DashboardAdmin/SAStatCard.jsx";
 import SAInstBadge from "../../components/DashboardAdmin/SAInstBadge.jsx";
-import { getStatistiques } from "../../services/admin.service";
+import { getDashboard } from "../../services/admin.service";
 
 const css = `
   .sa-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
@@ -28,192 +28,187 @@ const css = `
   }
 `;
 
-const STATS = [
-    {
-        label: "Total demandes", value: "448", sub: "Toutes institutions",
-        accentColor: "#1a2744", iconBg: "#eff6ff",
-        icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-    },
-    {
-        label: "Demandes en attente", value: "25", sub: "↗ Toutes institutions",
-        accentColor: "#f59e0b", iconBg: "#fffbeb",
-        icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-    },
-    {
-        label: "Documents ce mois", value: "448", sub: "Février 2026",
-        accentColor: "#16a34a", iconBg: "#f0fdf4",
-        icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
-    },
-    {
-        label: "Agents actifs", value: "16", sub: "3 institutions",
-        accentColor: "#3b82f6", iconBg: "#eff6ff",
-        icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/></svg>
-    },
-];
-
-const INSTS = [
-    { code: "IFRI", attente: 8,  traitees: 147, agents: 5 },
-    { code: "EPAC", attente: 12, traitees: 203, agents: 7 },
-    { code: "FSS",  attente: 5,  traitees: 98,  agents: 4 },
-];
-
-const ACTIVITY = [
-    { title: "Nouvel agent ajouté",           sub: "Marie TOSSA • IFRI",           time: "Il y a 5 min" },
-    { title: "Signature mise à jour",         sub: "EPAC • Nouveau directeur",     time: "Il y a 30 min" },
-    { title: "Import de données académiques", sub: "FSS • 234 étudiants importés", time: "Il y a 1h" },
-    { title: "Nouvelle demande validée",      sub: "IFRI • REQ-2026-00142",        time: "Il y a 2h" },
-];
-
 export default function SADashboard() {
-    const [stats, setStats] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState(null); // {kpis, parInstitution}
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const res = await getStatistiques();
-                setStats(res.data);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchStats();
-    }, []);
+  useEffect(() => {
+    const fetchAll = async () => {
+      setLoading(true);
+      try {
+        const res = await getDashboard();
+        setStats(res.data);
+      } catch (err) {
+        console.error(err);
+        setStats(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
+  }, []);
 
-    const statCards = stats ? [
+  const statCards = stats
+    ? [
         {
-            label: "Total demandes",
-            value: stats.total,
-            sub: "Toutes institutions",
-            accentColor: "#1a2744",
-            iconBg: "#eff6ff",
-            icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          label: "Total demandes",
+          value: stats.kpis?.totalDemandes ?? 0,
+          sub: "Toutes institutions",
+          accentColor: "#1a2744",
+          iconBg: "#eff6ff",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+          ),
         },
         {
-            label: "Demandes en attente",
-            value: stats.parStatut?.find(s => s.statut === "SOUMISE")?.count || 0,
-            sub: "↗ Toutes institutions",
-            accentColor: "#f59e0b",
-            iconBg: "#fffbeb",
-            icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          label: "Demandes en attente",
+          value: stats.kpis?.demandesEnAttente ?? 0,
+          sub: "Toutes institutions",
+          accentColor: "#f59e0b",
+          iconBg: "#fffbeb",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          ),
         },
         {
-            label: "Documents générés",
-            value: stats.disponibles,
-            sub: "Ce mois",
-            accentColor: "#16a34a",
-            iconBg: "#f0fdf4",
-            icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+          label: "Documents générés",
+          value: stats.kpis?.docsCeMois ?? 0,
+          sub: "Ce mois",
+          accentColor: "#16a34a",
+          iconBg: "#f0fdf4",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+            </svg>
+          ),
         },
         {
-            label: "Agents actifs",
-            value: "?", // à récupérer plus tard
-            sub: "3 institutions",
-            accentColor: "#3b82f6",
-            iconBg: "#eff6ff",
-            icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/></svg>
-        }
-    ] : [];
+          label: "Agents actifs",
+          value: stats.kpis?.agentsActifs ?? 0,
+          sub: "Toutes institutions",
+          accentColor: "#3b82f6",
+          iconBg: "#eff6ff",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0" />
+            </svg>
+          ),
+        },
+      ]
+    : [];
 
-    return (
-        <SALayout>
-            <style>{css}</style>
+  return (
+    <SALayout>
+      <style>{css}</style>
 
-            <div>
-                <h2 className="sa-page-title">Tableau de bord Super Admin</h2>
-                <p className="sa-page-sub">Vue d'ensemble de toutes les institutions</p>
+      <div>
+        <h2 className="sa-page-title">Tableau de bord Super Admin</h2>
+        <p className="sa-page-sub">Vue d'ensemble de toutes les institutions</p>
+      </div>
+
+      {loading ? (
+        <div>Chargement...</div>
+      ) : !stats ? (
+        <div style={{ padding: 16, color: "#dc2626" }}>
+          Impossible de charger les statistiques.
+        </div>
+      ) : (
+        <>
+          <div className="sa-stats-grid">
+            {statCards.map((s, i) => (
+              <SAStatCard key={i} {...s} />
+            ))}
+          </div>
+
+          <div className="sa-2col">
+            <div className="sa-card">
+              <div className="sa-card__title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a2744" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
+                </svg>
+                Par institution
+              </div>
+
+              <table className="inst-tbl">
+                <thead>
+                  <tr>
+                    <th>Institution</th>
+                    <th>En attente</th>
+                    <th>Traitées</th>
+                    <th>Agents</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(stats.parInstitution || []).map((row) => (
+                    <tr key={row.code}>
+                      <td>
+                        <div className="td-inst-name">
+                          <SAInstBadge code={row.code} size="md" />
+                          {row.code}
+                        </div>
+                      </td>
+                      <td>
+                        <span className="num-orange">{row.attente}</span>
+                      </td>
+                      <td>
+                        <span className="num-green">{row.traitees}</span>
+                      </td>
+                      <td>{row.agents}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
-            {loading ? (
-                <div>Chargement...</div>
-            ) : (
-                <>
-                    <div className="sa-stats-grid">
-                        {statCards.map((s, i) => <SAStatCard key={i} {...s} />)}
-                    </div>
-
-                    <div className="sa-2col">
-                        <div className="sa-card">
-                            <div className="sa-card__title">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a2744" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
-                                </svg>
-                                Par institution
-                            </div>
-                            <table className="inst-tbl">
-                                <thead>
-                                    <tr>
-                                        <th>Institution</th>
-                                        <th>En attente</th>
-                                        <th>Traitées</th>
-                                        <th>Agents</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td><div className="td-inst-name"><SAInstBadge code="IFRI" size="md" />IFRI</div></td>
-                                        <td><span className="num-orange">8</span></td>
-                                        <td><span className="num-green">147</span></td>
-                                        <td>5</td>
-                                    </tr>
-                                    <tr>
-                                        <td><div className="td-inst-name"><SAInstBadge code="EPAC" size="md" />EPAC</div></td>
-                                        <td><span className="num-orange">12</span></td>
-                                        <td><span className="num-green">203</span></td>
-                                        <td>7</td>
-                                    </tr>
-                                    <tr>
-                                        <td><div className="td-inst-name"><SAInstBadge code="FSS" size="md" />FSS</div></td>
-                                        <td><span className="num-orange">5</span></td>
-                                        <td><span className="num-green">98</span></td>
-                                        <td>4</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div className="sa-card">
-                            <div className="sa-card__title">Activité système</div>
-                            <div className="activity-list">
-                                <div className="activity-item">
-                                    <div className="activity-dot" />
-                                    <div>
-                                        <div className="activity-title">Nouvel agent ajouté</div>
-                                        <div className="activity-sub">Marie TOSSA • IFRI</div>
-                                        <div className="activity-time">Il y a 5 min</div>
-                                    </div>
-                                </div>
-                                <div className="activity-item">
-                                    <div className="activity-dot" />
-                                    <div>
-                                        <div className="activity-title">Signature mise à jour</div>
-                                        <div className="activity-sub">EPAC • Nouveau directeur</div>
-                                        <div className="activity-time">Il y a 30 min</div>
-                                    </div>
-                                </div>
-                                <div className="activity-item">
-                                    <div className="activity-dot" />
-                                    <div>
-                                        <div className="activity-title">Import de données académiques</div>
-                                        <div className="activity-sub">FSS • 234 étudiants importés</div>
-                                        <div className="activity-time">Il y a 1h</div>
-                                    </div>
-                                </div>
-                                <div className="activity-item">
-                                    <div className="activity-dot" />
-                                    <div>
-                                        <div className="activity-title">Nouvelle demande validée</div>
-                                        <div className="activity-sub">IFRI • REQ-2026-00142</div>
-                                        <div className="activity-time">Il y a 2h</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
-        </SALayout>
-    );
+            {/* Activité système : tu peux la garder statique pour l’instant */}
+            <div className="sa-card">
+              <div className="sa-card__title">Activité système</div>
+              <div className="activity-list">
+                <div className="activity-item">
+                  <div className="activity-dot" />
+                  <div>
+                    <div className="activity-title">Nouvel agent ajouté</div>
+                    <div className="activity-sub">—</div>
+                    <div className="activity-time">—</div>
+                  </div>
+                </div>
+                <div className="activity-item">
+                  <div className="activity-dot" />
+                  <div>
+                    <div className="activity-title">Signature mise à jour</div>
+                    <div className="activity-sub">—</div>
+                    <div className="activity-time">—</div>
+                  </div>
+                </div>
+                <div className="activity-item">
+                  <div className="activity-dot" />
+                  <div>
+                    <div className="activity-title">Import de données académiques</div>
+                    <div className="activity-sub">—</div>
+                    <div className="activity-time">—</div>
+                  </div>
+                </div>
+                <div className="activity-item">
+                  <div className="activity-dot" />
+                  <div>
+                    <div className="activity-title">Nouvelle demande validée</div>
+                    <div className="activity-sub">—</div>
+                    <div className="activity-time">—</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </SALayout>
+  );
 }
