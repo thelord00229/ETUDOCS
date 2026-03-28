@@ -301,6 +301,15 @@ function ModalAddAgent({ onClose, onSubmit, loading, institutions }) {
     onSubmit(form);
   };
 
+  // ✅ CORRECTION : Liste des rôles sans ETUDIANT ni SUPER_ADMIN
+  const AGENT_ROLES = [
+    "SECRETAIRE_ADJOINT",
+    "SECRETAIRE_GENERAL",
+    "CHEF_DIVISION",
+    "DIRECTEUR_ADJOINT",
+    "DIRECTEUR",
+  ];
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
@@ -350,7 +359,8 @@ function ModalAddAgent({ onClose, onSubmit, loading, institutions }) {
               onChange={(e) => set("role", e.target.value)}
             >
               <option value="">-- Choisir --</option>
-              {ROLES.map((r) => (
+              {/* ✅ CORRECTION : On utilise AGENT_ROLES à la place de ROLES */}
+              {AGENT_ROLES.map((r) => (
                 <option key={r} value={r}>
                   {r.replace(/_/g, " ")}
                 </option>
@@ -432,8 +442,12 @@ export default function SAAgents() {
     setLoading(true);
     try {
       const res = await getAgents();
-      // On exclut le SUPER_ADMIN de l'affichage
-      setAgents(res.data.filter((a) => a.role !== "SUPER_ADMIN"));
+      // ✅ CORRECTION : On exclut SUPER_ADMIN et ETUDIANT de l'affichage
+      setAgents(
+        res.data.filter(
+          (a) => a.role !== "SUPER_ADMIN" && a.role !== "ETUDIANT"
+        )
+      );
     } catch (err) {
       console.error(err);
       alert("Erreur lors du chargement des agents");
