@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import logo from "../assets/logo.png";
 import { login as apiLogin, setSession, clearSession } from "../services/api";
 
@@ -11,7 +11,6 @@ const css = `
     --navy:     #1a2744;
     --navy-dk:  #0f1a33;
     --gold:     #f5a623;
-    --gold-lt:  #fbbf4a;
     --white:    #ffffff;
     --g50:      #f8fafc;
     --g100:     #f1f5f9;
@@ -20,7 +19,6 @@ const css = `
     --g400:     #94a3b8;
     --g600:     #475569;
     --g700:     #334155;
-    --blue-link:#1a2744;
   }
 
   html, body, #root {
@@ -37,7 +35,6 @@ const css = `
     padding: 48px 16px 60px;
   }
 
-  /* LOGO */
   .brand {
     display: flex;
     align-items: center;
@@ -46,20 +43,15 @@ const css = `
     margin-bottom: 40px;
   }
   .brand__logo {
-    width: 62px;
-    height: 62px;
-    object-fit: contain;
-    border-radius: 16px;
+    width: 62px; height: 62px;
+    object-fit: contain; border-radius: 16px;
   }
   .brand__name {
     font-family: 'Sora', sans-serif;
-    font-weight: 800;
-    font-size: 1.9rem;
-    color: var(--navy);
-    letter-spacing: -0.5px;
+    font-weight: 800; font-size: 1.9rem;
+    color: var(--navy); letter-spacing: -0.5px;
   }
 
-  /* CARD */
   .card {
     background: var(--white);
     border-radius: 20px;
@@ -78,31 +70,14 @@ const css = `
     text-align: center; margin-bottom: 32px;
   }
 
-  /* TABS */
-  .tabs {
-    display: grid; grid-template-columns: repeat(3, 1fr);
-    background: var(--g100); border-radius: 12px;
-    padding: 4px; gap: 2px; margin-bottom: 28px;
-  }
-  .tab {
-    font-family: 'Sora', sans-serif; font-size: 0.9rem; font-weight: 600;
-    color: var(--g600); background: none; border: none; cursor: pointer;
-    padding: 10px 0; border-radius: 9px;
-    transition: background .2s, color .2s, box-shadow .2s;
-  }
-  .tab.active {
-    background: var(--white); color: var(--navy);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-  .tab:hover:not(.active) { color: var(--navy); }
-
-  /* FORM */
   .form { display: flex; flex-direction: column; gap: 18px; }
 
   .field { display: flex; flex-direction: column; gap: 6px; }
   .field__row {
-    display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
+    display: flex; align-items: center;
+    justify-content: space-between; margin-bottom: 6px;
   }
+
   label {
     font-size: 0.9rem; font-weight: 500; color: var(--g700);
   }
@@ -112,28 +87,20 @@ const css = `
   }
   .forgot:hover { opacity: 1; text-decoration: underline; }
 
-  input, select {
+  input {
     width: 100%; padding: 12px 14px;
     border: 1.5px solid var(--g200); border-radius: 10px;
     font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: var(--g700);
     background: var(--g50);
     transition: border-color .2s, box-shadow .2s;
-    outline: none; appearance: none;
+    outline: none;
   }
-  input:focus, select:focus {
+  input:focus {
     border-color: var(--navy); background: var(--white);
     box-shadow: 0 0 0 3px rgba(26,39,68,0.08);
   }
   input::placeholder { color: var(--g300); }
 
-  .select-wrap { position: relative; }
-  .select-wrap::after {
-    content: '▾'; position: absolute; right: 14px; top: 50%;
-    transform: translateY(-50%); color: var(--g400); pointer-events: none; font-size: 1rem;
-  }
-  .select-wrap select { cursor: pointer; padding-right: 36px; }
-
-  /* SUBMIT */
   .btn-submit {
     width: 100%; padding: 14px;
     background: var(--navy); color: var(--white);
@@ -148,15 +115,13 @@ const css = `
     box-shadow: 0 6px 20px rgba(26,39,68,0.25);
   }
   .btn-submit:disabled {
-    opacity: .75;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
+    opacity: .75; cursor: not-allowed;
+    transform: none; box-shadow: none;
   }
 
-  /* FOOTER CARD */
   .card__footer {
-    border-top: 1px solid var(--g200); margin-top: 24px; padding-top: 20px;
+    border-top: 1px solid var(--g200);
+    margin-top: 24px; padding-top: 20px;
     text-align: center; font-size: 0.9rem; color: var(--g600);
   }
   .card__footer a { color: var(--navy); font-weight: 600; text-decoration: none; }
@@ -169,98 +134,33 @@ const css = `
   }
   .back:hover { color: var(--navy); }
 
-  /* FADE ANIM */
-  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+  @keyframes fadeIn {
+    from { opacity:0; transform:translateY(6px); }
+    to   { opacity:1; transform:none; }
+  }
   .form { animation: fadeIn .25s ease; }
 `;
 
-const TABS = ["Étudiant", "Agent", "Admin"];
-
-const normalizeCode = (v) => String(v || "").trim().toUpperCase();
+const routeForUser = (user) => {
+  const role = user?.role;
+  if (role === "ETUDIANT")            return "/dashboardEtu";
+  if (role === "SUPER_ADMIN")         return "/superadmin";
+  if (role === "SECRETAIRE_ADJOINT")  return "/dashboardsa";
+  if (role === "SECRETAIRE_GENERAL")  return "/dashboardsg";
+  if (role === "CHEF_DIVISION") {
+    return user?.service === "SCOLARITE" ? "/dashboardsc" : "/dashboardce";
+  }
+  if (role === "DIRECTEUR_ADJOINT")   return "/dashboardda";
+  if (role === "DIRECTEUR")           return "/dashboarddi";
+  return "/dashboardsa";
+};
 
 export default function Login() {
-  const [active, setActive] = useState(0);
-  const [institution, setInstitution] = useState("IFRI");
-  const [showPass, setShowPass] = useState(false);
-
-  const [email, setEmail] = useState("");
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  // ✅ institutions dynamiques
-  const [institutions, setInstitutions] = useState([]);
-  const [instLoading, setInstLoading] = useState(false);
-
-  const isEtudiant = active === 0;
-  const isAgent = active === 1;
-  const isAdmin = active === 2;
-
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
-  useEffect(() => {
-    const loadInstitutions = async () => {
-      setInstLoading(true);
-      try {
-        const res = await fetch(`${API_URL}/api/institutions`);
-        const data = await res.json().catch(() => []);
-        if (Array.isArray(data) && data.length) {
-          const codes = data.map((x) => normalizeCode(x.sigle)).filter(Boolean);
-          const unique = Array.from(new Set(codes));
-          setInstitutions(unique);
-
-          if (!unique.includes(normalizeCode(institution))) {
-            setInstitution(unique[0] || "IFRI");
-          }
-        } else {
-          setInstitutions(["IFRI", "EPAC", "FSS"]);
-        }
-      } catch (e) {
-        console.error("[Login] institutions load error:", e);
-        setInstitutions(["IFRI", "EPAC", "FSS"]);
-      } finally {
-        setInstLoading(false);
-      }
-    };
-    loadInstitutions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [API_URL]);
-
-  const routeForUser = (user) => {
-    const role = user?.role;
-    if (role === "ETUDIANT") return "/dashboardEtu";
-    if (role === "SUPER_ADMIN") return "/superadmin";
-    if (role === "SECRETAIRE_ADJOINT") return "/dashboardsa";
-    if (role === "SECRETAIRE_GENERAL") return "/dashboardsg";
-    if (role === "CHEF_DIVISION") {
-      const service = user?.service;
-      if (service === "SCOLARITE") return "/dashboardsc";
-      return "/dashboardce";
-    }
-    if (role === "DIRECTEUR_ADJOINT") return "/dashboardda";
-    if (role === "DIRECTEUR") return "/dashboarddi";
-    return "/dashboardsa";
-  };
-
-  const isRoleAllowedForTab = (role) => {
-    if (isEtudiant) return role === "ETUDIANT";
-    if (isAdmin) return role === "SUPER_ADMIN";
-    if (isAgent)
-      return [
-        "SECRETAIRE_ADJOINT",
-        "SECRETAIRE_GENERAL",
-        "CHEF_DIVISION",
-        "DIRECTEUR_ADJOINT",
-        "DIRECTEUR",
-      ].includes(role);
-    return true;
-  };
-
-  const selectedInstitution = useMemo(
-    () => normalizeCode(institution),
-    [institution]
-  );
+  const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -272,66 +172,15 @@ export default function Login() {
     }
 
     setLoading(true);
-
     try {
-      // ✅ Nettoyage session précédente (important si on change de compte)
       clearSession();
-
-      // ✅ utilise le service (=> setSession auto)
       const data = await apiLogin({
         email: String(email).trim(),
         password,
       });
 
-      const role = data?.user?.role;
-
-      // ✅ vérifie onglet AVANT de continuer
-      if (!isRoleAllowedForTab(role)) {
-        // on supprime ce qui a été stocké par apiLogin
-        clearSession();
-        setError(
-          `Vous êtes connecté en tant que ${role}, mais vous êtes sur le mauvais onglet.`
-        );
-        return;
-      }
-
-      // ✅ filtre institution pour ETUDIANT/AGENT
-      if (isEtudiant || isAgent) {
-        const userInst =
-          normalizeCode(data?.user?.institutionCode) ||
-          normalizeCode(data?.user?.institution?.sigle) ||
-          normalizeCode(data?.user?.institutionId);
-
-        if (userInst && selectedInstitution && userInst !== selectedInstitution) {
-          clearSession();
-          setError(
-            `Ce compte appartient à l'institution ${userInst}. Veuillez sélectionner ${userInst} pour continuer.`
-          );
-          return;
-        }
-      }
-
-      // ✅ garantie d'écriture du code institution (si backend ne renvoie pas institutionCode)
-      const instCode =
-        normalizeCode(data?.user?.institutionCode) ||
-        normalizeCode(data?.user?.institution?.sigle) ||
-        normalizeCode(data?.user?.institutionId) ||
-        selectedInstitution ||
-        "";
-
-      if (instCode) {
-        // setSession déjà fait, mais on renforce le code si besoin
-        setSession({ token: data?.token, user: data?.user });
-      }
-
-      console.log("[LOGIN OK]", {
-        role: data?.user?.role,
-        inst: instCode,
-        user: data?.user,
-      });
-
-      const target = routeForUser(data.user);
-      window.location.href = target;
+      setSession({ token: data?.token, user: data?.user });
+      window.location.href = routeForUser(data.user);
     } catch (err) {
       const msg = String(err?.message || "");
       if (msg === "UNAUTHORIZED") {
@@ -348,7 +197,6 @@ export default function Login() {
     <div className="page">
       <style>{css}</style>
 
-      {/* Logo */}
       <a href="/" className="brand">
         <img src={logo} alt="EtuDocs logo" className="brand__logo" />
         <span className="brand__name">EtuDocs</span>
@@ -358,49 +206,14 @@ export default function Login() {
         <h1 className="card__title">Connexion</h1>
         <p className="card__sub">Accédez à votre espace personnel</p>
 
-        <div className="tabs">
-          {TABS.map((t, i) => (
-            <button
-              key={t}
-              type="button"
-              className={`tab${active === i ? " active" : ""}`}
-              onClick={() => {
-                setActive(i);
-                setError("");
-              }}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-
-        <form className="form" key={active} onSubmit={handleLogin}>
-          {(isEtudiant || isAgent) && (
-            <div className="field">
-              <label>Institution</label>
-              <div className="select-wrap">
-                <select
-                  value={institution}
-                  onChange={(e) => setInstitution(e.target.value)}
-                  disabled={loading || instLoading}
-                >
-                  {(institutions.length ? institutions : ["IFRI", "EPAC", "FSS"]).map((i) => (
-                    <option key={i} value={i}>
-                      {i}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
+        <form className="form" onSubmit={handleLogin}>
           <div className="field">
             <label>Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder={isEtudiant ? "etudiant@test.com" : "votre.email@example.com"}
+              placeholder="votre.email@example.com"
               disabled={loading}
               autoComplete="email"
             />
@@ -423,7 +236,6 @@ export default function Login() {
             />
           </div>
 
-          {/* toggle showPass */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: -6 }}>
             <input
               id="showpass"
@@ -447,12 +259,10 @@ export default function Login() {
           </button>
         </form>
 
-        {isEtudiant && (
-          <div className="card__footer">
-            Vous n'avez pas encore de compte ?{" "}
-            <a href="/register">Créer un compte</a>
-          </div>
-        )}
+        <div className="card__footer">
+          Vous n'avez pas encore de compte ?{" "}
+          <a href="/register">Créer un compte</a>
+        </div>
       </div>
 
       <a href="/" className="back">← Retour à l'accueil</a>
