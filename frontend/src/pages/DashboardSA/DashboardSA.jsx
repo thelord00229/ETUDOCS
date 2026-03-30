@@ -581,8 +581,6 @@ function ModalMotDePasse({ onClose, onSuccess }) {
 
 /* ─── Modal vérification demande ─────────────────────── */
 function ModalVerifier({ demande, onClose, onSuccess }) {
-  const [step, setStep] = useState("actions");
-  const [motif, setMotif] = useState("");
   const [loading, setLoading] = useState(false);
 
   if (!demande) return null;
@@ -598,20 +596,6 @@ function ModalVerifier({ demande, onClose, onSuccess }) {
       onClose();
     } catch (e) {
       onSuccess(e?.message || "Erreur lors de la transmission", true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCorrection = async () => {
-    if (!motif.trim()) return;
-    setLoading(true);
-    try {
-      await avancerDemande(demande.id, "DEMANDER_CORRECTION", motif.trim());
-      onSuccess("Correction demandée à l'étudiant ✓");
-      onClose();
-    } catch (e) {
-      onSuccess(e?.message || "Erreur", true);
     } finally {
       setLoading(false);
     }
@@ -669,40 +653,21 @@ function ModalVerifier({ demande, onClose, onSuccess }) {
               ))}
             </div>
           )}
-
-          {step === "correction" && (
-            <div>
-              <div className="sa-pieces-label">Motif de la correction demandée</div>
-              <textarea
-                className="sa-correction-area"
-                placeholder="Ex : La quittance est illisible. Merci de soumettre une version claire."
-                value={motif}
-                onChange={(e) => setMotif(e.target.value)}
-                autoFocus
-              />
-            </div>
-          )}
         </div>
 
         <div className="sa-modal__footer">
-          {step === "actions" ? (
-            <div className="sa-btn-row">
-              <button className="sa-btn sa-btn--ghost" onClick={onClose}>Fermer</button>
-              <button className="sa-btn sa-btn--warn" onClick={() => setStep("correction")} disabled={!peutTransmettre}>
-                ⚠ Correction
-              </button>
-              <button className="sa-btn sa-btn--primary" onClick={handleTransmettre} disabled={loading || !peutTransmettre}>
-                {loading ? "Envoi…" : "Transmettre au SG →"}
-              </button>
-            </div>
-          ) : (
-            <div className="sa-btn-row">
-              <button className="sa-btn sa-btn--ghost" onClick={() => setStep("actions")} disabled={loading}>← Retour</button>
-              <button className="sa-btn sa-btn--warn" onClick={handleCorrection} disabled={loading || !motif.trim()}>
-                {loading ? "Envoi…" : "Envoyer la correction"}
-              </button>
-            </div>
-          )}
+          <div className="sa-btn-row">
+            <button className="sa-btn sa-btn--ghost" onClick={onClose}>
+              Fermer
+            </button>
+            <button
+              className="sa-btn sa-btn--primary"
+              onClick={handleTransmettre}
+              disabled={loading || !peutTransmettre}
+            >
+              {loading ? "Envoi…" : "Transmettre au SG →"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
