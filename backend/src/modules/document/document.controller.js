@@ -2,6 +2,7 @@ const prisma = require("../../config/prisma");
 const path = require("path");
 const fs = require("fs");
 const asyncHandler = require("../../utils/asyncHandler");
+const { assertPermission, getNextStatut } = require("../../utils/workflow");
 
 const DEFAULT_MAX_DOWNLOADS = 3;
 const UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
@@ -170,15 +171,7 @@ exports.verifier = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * ✅ Avancer par référence
- * Route: POST /api/documents/:reference/avancer
- * Body: { "action": "APPROUVER" | "REJETER" }
- *
- * IMPORTANT:
- * - Ton modèle Document n'a PAS de champ "statut"
- * - Le statut du workflow est sur Demande.statut
- */
+
 exports.avancerParReference = asyncHandler(async (req, res) => {
   const { reference } = req.params;
   const action = String(req.body?.action || "").trim().toUpperCase();
@@ -211,44 +204,16 @@ exports.avancerParReference = asyncHandler(async (req, res) => {
     return res.status(403).json({ message: "Accès refusé" });
   }
 
-  // On avance le workflow sur Demande.statut
+  
   const currentStatut = doc.demande.statut;
-  let nextStatut = null;
 
-  if (action === "REJETER") {
-    // DA / Directeur / Super admin peuvent rejeter
-    if (!["DIRECTEUR_ADJOINT", "DIRECTEUR", "SUPER_ADMIN"].includes(userRole)) {
-      return res.status(403).json({ message: "Rôle non autorisé" });
-    }
-    nextStatut = "REJETEE";
-  } else {
-    // APPROUVER
-    if (userRole === "DIRECTEUR_ADJOINT") {
-      // DA signe après génération
-      if (currentStatut !== "DOCUMENT_GENERE") {
-        return res.status(400).json({
-          message: "La demande n'est pas au stade 'DOCUMENT_GENERE' (DA).",
-        });
-      }
-      nextStatut = "ATTENTE_SIGNATURE_DIRECTEUR";
-    } else if (userRole === "DIRECTEUR") {
-      // Directeur signe après DA
-      if (currentStatut !== "ATTENTE_SIGNATURE_DIRECTEUR") {
-        return res.status(400).json({
-          message:
-            "La demande n'est pas au stade 'ATTENTE_SIGNATURE_DIRECTEUR' (Directeur).",
-        });
-      }
-      nextStatut = "DISPONIBLE";
-    } else if (userRole === "SUPER_ADMIN") {
-      // Super admin : avance “intelligemment”
-      if (currentStatut === "DOCUMENT_GENERE") nextStatut = "ATTENTE_SIGNATURE_DIRECTEUR";
-      else if (currentStatut === "ATTENTE_SIGNATURE_DIRECTEUR") nextStatut = "DISPONIBLE";
-      else nextStatut = "DISPONIBLE";
-    } else {
-      return res.status(403).json({ message: "Rôle non autorisé" });
-    }
+  try {
+    assertPermission({ role: userRole, statutActuel: currentStatut, action });
+  } catch (e) {
+    return res.status(403).json({ message: e.message });
   }
+
+  const nextStatut = getNextStatut({ role: userRole, statutActuel: currentStatut, action });
 
   const updated = await prisma.$transaction(async (tx) => {
     // 1) update demande
