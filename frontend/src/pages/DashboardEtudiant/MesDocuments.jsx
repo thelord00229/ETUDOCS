@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
-import { getDemandes, downloadDocument } from "../../services/api";
+import { getDemandes, downloadDocument, previewDocumentBlob } from "../../services/api";
 
 const MAX_DL = 3;
-const COUNTDOWN_SEC = 10;
 
 const css = `
   .docs-title { font-family:'Sora',sans-serif; font-weight:800; font-size:1.5rem; color:#1a2744; margin-bottom:4px; }
@@ -11,112 +10,100 @@ const css = `
 
   .docs-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
 
-  /* ── CARD ── */
   .doc-file-card {
-    background:#fff; border:1.5px solid #e2e8f0; border-radius:14px; padding:22px;
-    display:flex; flex-direction:column; gap:12px;
+    background:#fff; border:1.5px solid #e2e8f0; border-radius:14px;
+    overflow:hidden; display:flex; flex-direction:column;
     border-top:4px solid #16a34a;
-    transition:box-shadow .2s, transform .2s, opacity .4s, max-height .5s;
-    overflow:hidden;
+    transition:box-shadow .2s, transform .2s;
   }
   .doc-file-card:hover { box-shadow:0 8px 24px rgba(0,0,0,.08); transform:translateY(-2px); }
+  .doc-file-card.exhausted { border-top-color:#f5a623; }
 
-  /* Destruction animation */
-  .doc-file-card.destroying {
-    border-top-color:#ef4444;
-    animation: cardDestroy 0.5s ease forwards;
+  .doc-thumb {
+    width:100%; height:160px;
+    background:#f1f5f9; position:relative; overflow:hidden;
+    border-bottom:1px solid #e2e8f0;
   }
-  @keyframes cardDestroy {
-    0%   { opacity:1; transform:scale(1); }
-    60%  { opacity:.3; transform:scale(.97); }
-    100% { opacity:0; transform:scale(.93); max-height:0; padding:0; margin:0; border:0; }
+  .doc-thumb iframe {
+    width:100%; height:400px;
+    border:none; pointer-events:none;
+  }
+  .doc-thumb__overlay {
+    position:absolute; inset:0;
+    background:linear-gradient(to bottom, transparent 50%, rgba(248,250,252,.7) 100%);
+  }
+  .doc-thumb__fallback {
+    width:100%; height:100%;
+    display:flex; align-items:center; justify-content:center;
   }
 
-  .doc-file-title { font-family:'Sora',sans-serif; font-weight:700; font-size:1rem; color:#1a2744; }
-  .doc-file-meta  { display:flex; align-items:center; gap:6px; font-size:.82rem; color:#94a3b8; }
+  .doc-card-bottom { padding:12px 14px; display:flex; flex-direction:column; gap:10px; }
 
-  /* ── PIPS ── */
-  .dl-counter { display:flex; align-items:center; gap:8px; font-size:.8rem; color:#475569; }
-  .dl-counter__pips { display:flex; gap:5px; }
+  .doc-card-row {
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+  }
+  .doc-file-name {
+    font-family:'Sora',sans-serif; font-weight:700;
+    font-size:.82rem; color:#1a2744;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    flex:1; min-width:0;
+  }
+  .doc-file-date { font-size:.75rem; color:#94a3b8; margin-top:1px; }
+
+  .dl-pips { display:flex; align-items:center; gap:4px; flex-shrink:0; }
   .dl-pip {
-    width:11px; height:11px; border-radius:50%;
-    background:#e2e8f0;
-    transition: background .4s, transform .3s;
+    width:9px; height:9px; border-radius:50%;
+    background:#e2e8f0; transition:background .4s, transform .3s;
   }
-  .dl-pip.pip-1 { background:#16a34a; } /* vert */
-  .dl-pip.pip-2 { background:#eab308; } /* jaune */
-  .dl-pip.pip-3 { background:#ef4444; } /* rouge */
-  .dl-pip.pip-pulse { animation: pipPulse .5s ease; }
+  .dl-pip.pip-1 { background:#16a34a; }
+  .dl-pip.pip-2 { background:#eab308; }
+  .dl-pip.pip-3 { background:#ef4444; }
+  .dl-pip.pip-pulse { animation:pipPulse .5s ease; }
   @keyframes pipPulse {
-    0%   { transform: scale(1); }
-    50%  { transform: scale(1.5); }
-    100% { transform: scale(1); }
+    0%   { transform:scale(1); }
+    50%  { transform:scale(1.6); }
+    100% { transform:scale(1); }
   }
 
-  /* ── COUNTDOWN BAR ── */
-  .countdown-wrap {
-    display:flex; flex-direction:column; gap:6px;
-    padding:12px 14px;
-    background:#fff5f5; border:1.5px solid #fecaca;
-    border-radius:10px;
-    animation: fadeInUp .3s ease;
-  }
-  @keyframes fadeInUp {
-    from { opacity:0; transform:translateY(6px); }
-    to   { opacity:1; transform:translateY(0); }
-  }
-  .countdown-top {
-    display:flex; align-items:center; justify-content:space-between;
-  }
-  .countdown-label {
-    display:flex; align-items:center; gap:6px;
-    font-size:.78rem; font-weight:700; color:#ef4444;
-  }
-  .countdown-sec {
-    font-family:'Sora',sans-serif; font-weight:800;
-    font-size:1.1rem; color:#ef4444;
-    min-width:28px; text-align:right;
-  }
-  .countdown-bar-track {
-    width:100%; height:6px; border-radius:999px;
-    background:#fee2e2; overflow:hidden;
-  }
-  .countdown-bar-fill {
-    height:100%; border-radius:999px;
-    background: linear-gradient(90deg, #f87171, #ef4444);
-    transition: width 1s linear;
-  }
-  .countdown-msg {
-    font-size:.75rem; color:#94a3b8; text-align:center;
-  }
-
-  /* ── BUTTONS ── */
   .btn-dl {
-    flex:1; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    width:100%; display:inline-flex; align-items:center; justify-content:center; gap:7px;
     background:#16a34a; color:#fff; border:none; border-radius:8px;
-    font-family:'Sora',sans-serif; font-weight:700; font-size:.85rem;
-    padding:10px 16px; cursor:pointer; transition:background .2s;
+    font-family:'Sora',sans-serif; font-weight:700; font-size:.82rem;
+    padding:10px 14px; cursor:pointer; transition:background .2s;
   }
   .btn-dl:hover { background:#15803d; }
   .btn-dl:disabled { opacity:.7; cursor:not-allowed; }
 
-  /* ── QR BANNER ── */
+  .btn-pay {
+    width:100%; display:inline-flex; align-items:center; justify-content:center; gap:7px;
+    background:#fff7ed; color:#c2410c;
+    border:1.5px solid #fed7aa; border-radius:8px;
+    font-family:'Sora',sans-serif; font-weight:700; font-size:.82rem;
+    padding:10px 14px; cursor:pointer; transition:background .2s;
+  }
+  .btn-pay:hover { background:#ffedd5; }
+
   .qr-banner {
     background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:14px;
-    padding:20px 24px; display:flex; align-items:flex-start; gap:16px;
-    margin-top:18px;
+    padding:16px 20px; display:flex; align-items:center; gap:14px;
+    margin-top:8px;
   }
-  .qr-banner__icon { width:44px; height:44px; border-radius:12px; background:#16a34a; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
-  .qr-banner__title { font-family:'Sora',sans-serif; font-weight:700; color:#16a34a; margin-bottom:4px; }
-  .qr-banner__text  { font-size:.85rem; color:#475569; line-height:1.6; }
+  .qr-banner__icon {
+    width:38px; height:38px; border-radius:10px; background:#16a34a;
+    flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  }
+  .qr-banner__title { font-family:'Sora',sans-serif; font-weight:700; font-size:.88rem; color:#16a34a; margin-bottom:2px; }
+  .qr-banner__text  { font-size:.8rem; color:#475569; line-height:1.5; }
 
   .state-box { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:18px 20px; color:#475569; }
   .state-error { color:#dc2626; }
 
+  @keyframes spin { to { transform:rotate(360deg); } }
   @media (max-width:1000px) { .docs-grid { grid-template-columns:repeat(2,1fr); } }
   @media (max-width:640px)  { .docs-grid { grid-template-columns:1fr; } }
 `;
 
+/* ── Helpers ── */
 const labelType = (t) => {
   if (t === "RELEVE_NOTES") return "Relevé de notes";
   if (t === "ATTESTATION_INSCRIPTION") return "Attestation d'inscription";
@@ -126,7 +113,9 @@ const labelType = (t) => {
 const formatDate = (iso) => {
   if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+    return new Date(iso).toLocaleDateString("fr-FR", {
+      day: "2-digit", month: "short", year: "numeric",
+    });
   } catch { return "—"; }
 };
 
@@ -136,82 +125,31 @@ const safeTime = (iso) => {
   return Number.isFinite(t) ? t : 0;
 };
 
-/* ── Pips colorés ────────────────────────────────────────── */
-function DlCounter({ count, pulseLast }) {
-  const c = Math.max(0, Math.min(MAX_DL, count || 0));
-  const pipColor = (i) => {
-    if (i >= c) return "";          // gris (non utilisé)
-    if (i === 0) return "pip-1";    // vert
-    if (i === 1) return "pip-2";    // jaune
-    return "pip-3";                 // rouge
-  };
-  return (
-    <div className="dl-counter">
-      <div className="dl-counter__pips">
-        {Array.from({ length: MAX_DL }, (_, i) => (
-          <div
-            key={i}
-            className={`dl-pip ${pipColor(i)} ${pulseLast && i === c - 1 ? "pip-pulse" : ""}`}
-          />
-        ))}
-      </div>
-      <span>{c}/{MAX_DL} téléchargement{c > 1 ? "s" : ""}</span>
-    </div>
-  );
-}
+/* ── DocCard ── */
+function DocCard({ doc, onDownload }) {
+  const [downloading, setDownloading] = useState(false);
+  const [localCount, setLocalCount]   = useState(doc.downloadCount ?? 0);
+  const [pulseLast, setPulseLast]     = useState(false);
+  const [previewUrl, setPreviewUrl]   = useState(null);
 
-/* ── Countdown bar ────────────────────────────────────────── */
-function CountdownBar({ onDone }) {
-  const [sec, setSec] = useState(COUNTDOWN_SEC);
-  const timerRef = useRef(null);
+  const exhausted = localCount >= MAX_DL;
 
   useEffect(() => {
-    timerRef.current = setInterval(() => {
-      setSec((s) => {
-        if (s <= 1) {
-          clearInterval(timerRef.current);
-          onDone();
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timerRef.current);
-  }, []);
-
-  const pct = (sec / COUNTDOWN_SEC) * 100;
-
-  return (
-    <div className="countdown-wrap">
-      <div className="countdown-top">
-        <div className="countdown-label">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-          Limite atteinte
-        </div>
-        <div className="countdown-sec">{sec}s</div>
-      </div>
-      <div className="countdown-bar-track">
-        <div className="countdown-bar-fill" style={{ width: `${pct}%` }} />
-      </div>
-      <div className="countdown-msg">Ce document sera retiré dans {sec} seconde{sec > 1 ? "s" : ""}</div>
-    </div>
-  );
-}
-
-/* ── DocCard ─────────────────────────────────────────────── */
-function DocCard({ doc, onDownload, onDestroyed }) {
-  const [downloading, setDownloading] = useState(false);
-  const [localCount, setLocalCount] = useState(doc.downloadCount ?? 0);
-  const [pulseLast, setPulseLast] = useState(false);
-  const [destroying, setDestroying] = useState(false);
-  const [hidden, setHidden] = useState(false);
-
-  const expired = localCount >= MAX_DL;
+    let objectUrl = null;
+    (async () => {
+      try {
+        const blob = await previewDocumentBlob(doc.reference);
+        objectUrl = URL.createObjectURL(blob);
+        setPreviewUrl(objectUrl);
+      } catch {
+        setPreviewUrl(null);
+      }
+    })();
+    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [doc.reference]);
 
   const handleDl = async () => {
-    if (expired || downloading) return;
+    if (exhausted || downloading) return;
     try {
       setDownloading(true);
       await onDownload(doc.reference);
@@ -226,57 +164,102 @@ function DocCard({ doc, onDownload, onDestroyed }) {
     }
   };
 
-  const handleCountdownDone = () => {
-    setDestroying(true);
-    // après la durée de l'animation CSS (0.5s) → retirer du DOM
-    setTimeout(() => {
-      setHidden(true);
-      onDestroyed?.(doc.id);
-    }, 500);
+  const handlePay = () => {
+    alert("Redirection vers le paiement — à intégrer.");
   };
 
-  if (hidden) return null;
+  const pipColor = (i) => {
+    if (i >= localCount) return "";
+    if (i === 0) return "pip-1";
+    if (i === 1) return "pip-2";
+    return "pip-3";
+  };
 
   return (
-    <div className={`doc-file-card${destroying ? " destroying" : ""}`}>
-      <div className="doc-file-title">{doc.title}</div>
-      <div className="doc-file-meta">{doc.date}</div>
-      <div className="doc-file-meta">{doc.reference}</div>
+    <div className={`doc-file-card${exhausted ? " exhausted" : ""}`}>
 
-      <DlCounter count={localCount} pulseLast={pulseLast} />
+      <div className="doc-thumb">
+        {previewUrl ? (
+          <iframe
+            src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+            title={doc.title}
+          />
+        ) : (
+          <div className="doc-thumb__fallback">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+              stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+          </div>
+        )}
+        <div className="doc-thumb__overlay" />
+      </div>
 
-      {expired ? (
-        <CountdownBar onDone={handleCountdownDone} />
-      ) : (
-        <button className="btn-dl" disabled={downloading} onClick={handleDl} type="button">
-          {downloading
-            ? <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation:"spin 1s linear infinite" }}>
+      <div className="doc-card-bottom">
+        <div className="doc-card-row">
+          <div style={{ flex:1, minWidth:0 }}>
+            <div className="doc-file-name">{doc.title}</div>
+            <div className="doc-file-date">{doc.date}</div>
+          </div>
+          <div className="dl-pips">
+            {Array.from({ length: MAX_DL }, (_, i) => (
+              <div
+                key={i}
+                className={`dl-pip ${pipColor(i)} ${pulseLast && i === localCount - 1 ? "pip-pulse" : ""}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {exhausted ? (
+          <button className="btn-pay" onClick={handlePay} type="button">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+              <line x1="1" y1="10" x2="23" y2="10"/>
+            </svg>
+            Renouveler l'accès
+          </button>
+        ) : (
+          <button className="btn-dl" disabled={downloading} onClick={handleDl} type="button">
+            {downloading ? (
+              <>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  style={{ animation:"spin 1s linear infinite" }}>
                   <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
                 </svg>
                 Téléchargement…
               </>
-            : <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            ) : (
+              <>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                   <polyline points="7 10 12 15 17 10"/>
                   <line x1="12" y1="15" x2="12" y2="3"/>
                 </svg>
                 Télécharger
               </>
-          }
-        </button>
-      )}
+            )}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
-/* ── Page principale ─────────────────────────────────────── */
+/* ── Page principale ── */
 export default function MesDocuments() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState("");
   const [demandes, setDemandes] = useState([]);
-  const [destroyed, setDestroyed] = useState(new Set());
+
+  const reloadDemandes = async () => {
+    const list = await getDemandes();
+    setDemandes(Array.isArray(list) ? list : []);
+  };
 
   useEffect(() => {
     (async () => {
@@ -289,15 +272,19 @@ export default function MesDocuments() {
 
   const docs = useMemo(() => {
     return demandes
-      .filter((d) => d?.statut === "DISPONIBLE" && Array.isArray(d?.documents) && d.documents.length > 0)
+      .filter((d) =>
+        d?.statut === "DISPONIBLE" &&
+        Array.isArray(d?.documents) &&
+        d.documents.length > 0
+      )
       .flatMap((d) =>
         (d.documents || [])
           .filter((doc) => doc?.reference)
           .map((doc) => {
             const iso = doc.createdAt || d.updatedAt || d.createdAt || null;
             const sem =
-              typeof doc.reference === "string" && doc.reference.includes("-S1-") ? " • Semestre 1"
-              : typeof doc.reference === "string" && doc.reference.includes("-S2-") ? " • Semestre 2"
+              doc.reference?.includes("-S1-") ? " · Semestre 1"
+              : doc.reference?.includes("-S2-") ? " · Semestre 2"
               : "";
             return {
               id: `${d.id}-${doc.reference}`,
@@ -309,33 +296,21 @@ export default function MesDocuments() {
             };
           })
       )
-      .sort((a, b) => b.ts - a.ts)
-      .filter((d) => d.downloadCount < MAX_DL && !destroyed.has(d.id));
-  }, [demandes, destroyed]);
-
-  const reloadDemandes = async () => {
-    const list = await getDemandes();
-    setDemandes(Array.isArray(list) ? list : []);
-  };
+      .sort((a, b) => b.ts - a.ts);
+  }, [demandes]);
 
   const handleDownload = async (reference) => {
     await downloadDocument(reference);
     await reloadDemandes();
   };
 
-  const handleDestroyed = (id) => {
-    setDestroyed((prev) => new Set([...prev, id]));
-  };
-
   return (
     <DashboardLayout>
-      <style>{css}
-        {`@keyframes spin { to { transform:rotate(360deg); } }`}
-      </style>
+      <style>{css}</style>
 
       <div>
         <h2 className="docs-title">Mes documents</h2>
-        <p className="docs-sub">Téléchargez et vérifiez vos documents certifiés</p>
+        <p className="docs-sub">Téléchargez vos documents certifiés</p>
       </div>
 
       {loading && <div className="state-box">Chargement des documents…</div>}
@@ -346,32 +321,31 @@ export default function MesDocuments() {
           {docs.length === 0 ? (
             <div className="state-box">
               Aucun document disponible pour le moment.<br />
-              (Les documents apparaissent ici dès qu'une demande passe au statut <b>DISPONIBLE</b>.)
+              Vos documents apparaissent ici dès qu'une demande est validée.
             </div>
           ) : (
             <div className="docs-grid">
               {docs.map((d) => (
-                <DocCard
-                  key={d.id}
-                  doc={d}
-                  onDownload={handleDownload}
-                  onDestroyed={handleDestroyed}
-                />
+                <DocCard key={d.id} doc={d} onDownload={handleDownload} />
               ))}
             </div>
           )}
 
           <div className="qr-banner">
             <div className="qr-banner__icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-                <rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3z"/><path d="M17 17h4"/><path d="M17 21v-4"/>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7"/>
+                <rect x="14" y="3" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/>
+                <path d="M14 14h3v3h-3z"/>
+                <path d="M17 17h4"/><path d="M17 21v-4"/>
               </svg>
             </div>
             <div>
               <div className="qr-banner__title">Documents certifiés avec QR code</div>
               <div className="qr-banner__text">
-                Chaque document téléchargé contient un QR code unique permettant de vérifier son authenticité.
+                Chaque document contient un QR code unique permettant de vérifier son authenticité.
               </div>
             </div>
           </div>

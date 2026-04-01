@@ -6,11 +6,12 @@ const role = require("../../middlewares/role.middleware");
 // Download: propriétaire uniquement, incrémente le compteur
 router.get("/download/:reference", auth, ctrl.telecharger);
 
-// Preview: agents seulement, inline sans toucher au compteur
+
 router.get(
   "/preview/:reference",
   auth,
   role(
+    "ETUDIANT",
     "DIRECTEUR_ADJOINT",
     "DIRECTEUR",
     "SECRETAIRE_GENERAL",

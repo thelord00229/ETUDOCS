@@ -1,19 +1,8 @@
-const path = require("path");
 const fs = require("fs");
 const asyncHandler = require("../../utils/asyncHandler");
 const documentService = require("./document.service");
+const { toSafeAbsolutePath } = require("../../utils/fileUtils");
 
-const UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
-
-function toSafeAbsolutePath(filePath) {
-  if (!filePath) return null;
-  const normalized = String(filePath).replace(/\\/g, "/");
-  const abs = path.isAbsolute(normalized)
-    ? path.resolve(normalized)
-    : path.resolve(process.cwd(), normalized);
-  if (!abs.startsWith(UPLOADS_DIR)) return null;
-  return abs;
-}
 
 exports.telecharger = asyncHandler(async (req, res) => {
   const { reference } = req.params;
