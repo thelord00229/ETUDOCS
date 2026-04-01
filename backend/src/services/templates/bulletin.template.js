@@ -549,8 +549,8 @@ html, body {
       <div class="univ-name">Université d'Abomey-Calavi</div>
       <div class="ifri-name">${institutionNom || "Institut de Formation et de Recherche en Informatique"}</div>
       <hr class="header-sep">
-      <div class="header-addr">BP: 526 COTONOU &nbsp;—&nbsp; TÉL : (+229) 55-028-070</div>
-      <div class="header-web">Site web : https://www.ifri-uac.bj &nbsp;—&nbsp; Courriel : contact@ifri.uac.bj</div>
+      <div class="header-addr">${payload.adresse || ""}</div>
+      <div class="header-web">Site web : ${payload.siteWeb || ""} &nbsp;—&nbsp; Courriel : ${payload.email || ""}</div>
     </div>
     ${logoInstSrc}
   </div>
@@ -573,17 +573,17 @@ html, body {
       <div class="info-row">
         <span class="info-lbl">Domaine</span>
         <span class="info-sep">:</span>
-        <span class="info-val">Sciences et Technologies</span>
+        <span class="info-val">${payload.domaine || "Sciences et Technologies"}</span>
       </div>
       <div class="info-row">
         <span class="info-lbl">Grade</span>
         <span class="info-sep">:</span>
-        <span class="info-val">Licence</span>
+        <span class="info-val">${payload.grade || "Licence"}</span>
       </div>
       <div class="info-row">
         <span class="info-lbl">Mention</span>
         <span class="info-sep">:</span>
-        <span class="info-val">Informatique</span>
+        <span class="info-val">${payload.mention || "—"}</span>
       </div>
       <div class="info-row">
         <span class="info-lbl">Spécialité</span>
