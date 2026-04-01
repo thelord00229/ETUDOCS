@@ -1,4 +1,5 @@
 const prisma = require("../../config/prisma");
+const { toSafeAbsolutePath } = require("../../utils/fileUtils");
 const { assertPermission, getNextStatut } = require("../../modules/workflow/workflow");
 
 /**
@@ -66,12 +67,18 @@ async function preview(reference) {
 /**
  * Suppression — efface le document en base (le fichier est supprimé dans le controller).
  */
-async function supprimer(reference) {
+async function supprimer(reference, userId, userRole) {
   const doc = await getDocumentByReference(reference);
-  if (!doc) return null;
+  if (!doc) return { error: { code: 404, message: "Document introuvable" } };
 
+  if (doc.demande.utilisateurId !== userId && userRole !== "SUPER_ADMIN") {
+    return { error: { code: 403, message: "Accès refusé" } };
+  }
+
+  const absPath = toSafeAbsolutePath(doc.urlPdf);
   await prisma.document.delete({ where: { id: doc.id } });
-  return doc;
+
+  return { absPath };
 }
 
 /**

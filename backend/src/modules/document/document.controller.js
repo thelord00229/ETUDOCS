@@ -41,19 +41,15 @@ exports.preview = asyncHandler(async (req, res) => {
 
 exports.supprimer = asyncHandler(async (req, res) => {
   const { reference } = req.params;
-  const doc = await documentService.getDocumentByReference(reference);
 
-  if (!doc) return res.status(404).json({ message: "Document introuvable" });
+  const result = await documentService.supprimer(reference, req.user.id, req.user.role);
 
-  if (doc.demande.utilisateurId !== req.user.id && req.user.role !== "SUPER_ADMIN") {
-    return res.status(403).json({ message: "Accès refusé" });
+  if (result?.error) {
+    return res.status(result.error.code).json({ message: result.error.message });
   }
 
-  const absPath = toSafeAbsolutePath(doc.urlPdf);
-  await documentService.supprimer(reference);
-
-  if (absPath && fs.existsSync(absPath)) {
-    try { fs.unlinkSync(absPath); } catch {}
+  if (result.absPath && fs.existsSync(result.absPath)) {
+    try { fs.unlinkSync(result.absPath); } catch {}
   }
 
   res.json({ success: true, message: "Document supprimé" });
