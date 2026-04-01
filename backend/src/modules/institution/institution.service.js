@@ -1,8 +1,4 @@
-// backend/src/routes/institution.routes.js
-const express = require("express");
-const router = express.Router();
-
-const prisma = require("../config/prisma");
+const prisma = require("../../config/prisma");
 
 const normalize = (v) => String(v || "").trim().toUpperCase();
 
@@ -39,7 +35,6 @@ async function ensureSeedInstitutions() {
       data: toCreate.map((x) => ({
         sigle: x.sigle,
         nom: x.nom,
-        // ❌ description supprimé — champ inexistant dans schema.prisma
       })),
       skipDuplicates: true,
     });
@@ -49,33 +44,22 @@ async function ensureSeedInstitutions() {
         data: {
           sigle: x.sigle,
           nom: x.nom,
-          // ❌ description supprimé
         },
       });
     }
   }
 }
 
-// GET /api/institutions
-router.get("/", async (req, res, next) => {
-  try {
-    await ensureSeedInstitutions();
+exports.getInstitutions = async () => {
+  await ensureSeedInstitutions();
 
-    const institutions = await prisma.institution.findMany({
-      select: {
-        id: true,
-        nom: true,
-        sigle: true,
-        logoUrl: true,
-        // ❌ description supprimé — champ inexistant dans schema.prisma
-      },
-      orderBy: { sigle: "asc" },
-    });
-
-    return res.json(institutions);
-  } catch (e) {
-    return next(e);
-  }
-});
-
-module.exports = router;
+  return prisma.institution.findMany({
+    select: {
+      id: true,
+      nom: true,
+      sigle: true,
+      logoUrl: true,
+    },
+    orderBy: { sigle: "asc" },
+  });
+};

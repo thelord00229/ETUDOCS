@@ -1,5 +1,5 @@
 const prisma = require("../../config/prisma");
-const { assertPermission, getNextStatut } = require("../../utils/workflow");
+const { assertPermission, getNextStatut } = require("../../modules/workflow/workflow");
 
 /**
  * Requête partagée — récupère un document avec sa demande.

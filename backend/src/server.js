@@ -25,8 +25,8 @@ app.use("/api/demandes", require("./modules/demande/demande.routes"));
 app.use("/api/documents", require("./modules/document/document.routes"));
 app.use("/api/admin", require("./modules/admin/admin.routes"));
 app.use("/api/utilisateurs", require("./modules/utilisateur/utilisateur.routes"));
-app.use("/api/agents", require("./routes/agent.routes"));
-app.use("/api/institutions", require("./routes/institution.routes"));
+app.use("/api/agents", require("./modules/agent/agent.routes"));
+app.use("/api/institutions", require("./modules/institution/institution.routes"));
 
 // Public verify (QR)
 app.use("/verify", require("./modules/verify/verify.routes"));

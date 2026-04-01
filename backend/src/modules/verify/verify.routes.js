@@ -1,6 +1,6 @@
-const router = require('express').Router();
-const { verifier } = require('../document/document.controller');
+const router = require("express").Router();
+const verifyController = require("./verify.controller");
 
-router.get('/:reference', verifier);
+router.get("/:reference", verifyController.verifier);
 
 module.exports = router;
