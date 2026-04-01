@@ -1,7 +1,7 @@
 // src/modules/demande/demande.service.js
 
 const prisma = require("../../config/prisma");
-const { assertPermission, getNextStatut } = require("../../utils/workflow");
+const { assertPermission, getNextStatut } = require("../../modules/workflow/workflow");
 const emailService = require("../../services/email.service");
 
 const normalizeField = (v) => String(v || "").trim().toUpperCase();
