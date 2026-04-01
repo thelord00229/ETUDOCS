@@ -330,9 +330,18 @@ function Sidebar({ onLogout }) {
     <aside className="agent-sidebar">
       <NavLink to="/dashboardsc" className="agent-sidebar__brand">
         <div className="agent-sidebar__brand-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
           </svg>
         </div>
         EtuDocs <span className="agent-sidebar__brand-tag">Agent</span>
@@ -341,22 +350,46 @@ function Sidebar({ onLogout }) {
       <nav className="agent-sidebar__nav">
         {NAV.map((n) => (
           <NavLink
-            key={n.to} to={n.to} end
-            className={({ isActive }) => "agent-sidebar__link" + (isActive ? " active" : "")}
+            key={n.to}
+            to={n.to}
+            end
+            className={({ isActive }) =>
+              "agent-sidebar__link" + (isActive ? " active" : "")
+            }
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="currentColor">
-              <path d={n.d}/>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              stroke="currentColor"
+            >
+              <path d={n.d} />
             </svg>
             {n.label}
           </NavLink>
         ))}
       </nav>
 
-      <button className="agent-sidebar__logout" onClick={onLogout} type="button">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+      <button
+        className="agent-sidebar__logout"
+        onClick={onLogout}
+        type="button"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
         </svg>
         Déconnexion
       </button>
@@ -372,13 +405,19 @@ function Topbar({ user }) {
     return s || "CS";
   }, [user]);
 
-  const name = user ? `${user.prenom || ""} ${user.nom || ""}`.trim() : "Chef Scolarité";
+  const name = user
+    ? `${user.prenom || ""} ${user.nom || ""}`.trim()
+    : "Chef Scolarité";
 
   return (
     <header className="agent-topbar">
       <div className="agent-topbar__role">Chef Div. Scolarité — IFRI</div>
       <div className="agent-topbar__right">
-        <button className="agent-topbar__notif" type="button" aria-label="Notifications">
+        <button
+          className="agent-topbar__notif"
+          type="button"
+          aria-label="Notifications"
+        >
           <svg
             width="22"
             height="22"
@@ -536,12 +575,22 @@ export default function DashboardCS() {
     const rejetees = Number(base.rejetees ?? 0);
     const attenteDirecteur = Number(base.attenteDirecteur ?? 0);
 
-    return { aTraiter, enTraitement, documentGenere, generes: documentGenere, rejetees, attenteDirecteur };
+    return {
+      aTraiter,
+      enTraitement,
+      documentGenere,
+      generes: documentGenere,
+      rejetees,
+      attenteDirecteur,
+    };
   };
 
   const charger = async () => {
     try {
-      const [data, st] = await Promise.all([getDemandes(), getChefDivisionStats()]);
+      const [data, st] = await Promise.all([
+        getDemandes(),
+        getChefDivisionStats(),
+      ]);
       const list = Array.isArray(data) ? data : data?.demandes ?? [];
       setDemandes(list);
       setStats(normalizeStats(st));
@@ -562,7 +611,12 @@ export default function DashboardCS() {
         name: p.typePiece,
         fileName: p.nom,
         url: p.url,
-        status: p.statut === "VALIDEE" ? "valid" : p.statut === "REJETEE" ? "reject" : null,
+        status:
+          p.statut === "VALIDEE"
+            ? "valid"
+            : p.statut === "REJETEE"
+            ? "reject"
+            : null,
         comment: p.commentaire || "",
       }));
 
@@ -587,8 +641,13 @@ export default function DashboardCS() {
       return;
     }
     const safe = String(raw).replace(/\\/g, "/");
-    const fullUrl = `${API_BASE}/${safe.startsWith("/") ? safe.slice(1) : safe}`;
-    setPreview({ url: encodeURI(fullUrl), name: piece.fileName || piece.name || "Document" });
+    const fullUrl = `${API_BASE}/${
+      safe.startsWith("/") ? safe.slice(1) : safe
+    }`;
+    setPreview({
+      url: encodeURI(fullUrl),
+      name: piece.fileName || piece.name || "Document",
+    });
   };
 
   const setPieceComment = (id, comment) => {
@@ -609,26 +668,43 @@ export default function DashboardCS() {
     setPieceBusy(id);
 
     try {
-      await validerPiece(id, status === "valid" ? "VALIDEE" : "REJETEE", comment);
+      await validerPiece(
+        id,
+        status === "valid" ? "VALIDEE" : "REJETEE",
+        comment
+      );
     } catch (e) {
       console.error(e);
       // revert
-      setPieces((prev) => prev.map((p) => (p.id === id ? { ...p, status: null } : p)));
+      setPieces((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, status: null } : p))
+      );
       alert("Échec validation pièce.");
     } finally {
       setPieceBusy(null);
     }
   };
 
-  const allValidated = useMemo(() => pieces.every((p) => p.status === "valid"), [pieces]);
-  const anyRejected = useMemo(() => pieces.some((p) => p.status === "reject"), [pieces]);
-  const allDecided = useMemo(() => pieces.every((p) => p.status !== null), [pieces]);
+  const allValidated = useMemo(
+    () => pieces.every((p) => p.status === "valid"),
+    [pieces]
+  );
+  const anyRejected = useMemo(
+    () => pieces.some((p) => p.status === "reject"),
+    [pieces]
+  );
+  const allDecided = useMemo(
+    () => pieces.every((p) => p.status !== null),
+    [pieces]
+  );
 
   const handleGenerate = async () => {
     if (!selected?.id) return;
     try {
       await avancerDemande(selected.id, "GENERER_DOCUMENT");
-      setGeneratedRef(selected.ref || selected.id?.substring(0, 8)?.toUpperCase() || "—");
+      setGeneratedRef(
+        selected.ref || selected.id?.substring(0, 8)?.toUpperCase() || "—"
+      );
       await charger();
       setModal(null);
       setView("success");
@@ -662,7 +738,9 @@ export default function DashboardCS() {
     if (!q) return demandes;
 
     return demandes.filter((d) => {
-      const nom = `${d?.utilisateur?.nom || ""} ${d?.utilisateur?.prenom || ""}`.toLowerCase();
+      const nom = `${d?.utilisateur?.nom || ""} ${
+        d?.utilisateur?.prenom || ""
+      }`.toLowerCase();
       const ref = String(d?.ref || d?.id || "").toLowerCase();
       const mat = String(d?.utilisateur?.numeroEtudiant || "").toLowerCase();
       return nom.includes(q) || ref.includes(q) || mat.includes(q);
@@ -681,9 +759,15 @@ export default function DashboardCS() {
             <div className="agent-page-header">
               <div>
                 <h2 className="agent-page-title">Division de la Scolarité</h2>
-                <p className="agent-page-sub">Validez les pièces et générez les attestations d'inscription.</p>
+                <p className="agent-page-sub">
+                  Validez les pièces et générez les attestations d'inscription.
+                </p>
               </div>
-              <button className="btn-actualiser" onClick={charger} type="button">
+              <button
+                className="btn-actualiser"
+                onClick={charger}
+                type="button"
+              >
                 <svg
                   width="16"
                   height="16"
@@ -789,7 +873,10 @@ export default function DashboardCS() {
                 },
               ].map((s, i) => (
                 <div className="agent-stat-card" key={i}>
-                  <div className="agent-stat-card__icon" style={{ background: s.bg }}>
+                  <div
+                    className="agent-stat-card__icon"
+                    style={{ background: s.bg }}
+                  >
                     {s.icon}
                   </div>
                   <div>
@@ -842,14 +929,20 @@ export default function DashboardCS() {
                 </thead>
                 <tbody>
                   {filtered.map((d) => {
-                    const nom = `${d.utilisateur?.nom || ""} ${d.utilisateur?.prenom || ""}`.trim() || "—";
+                    const nom =
+                      `${d.utilisateur?.nom || ""} ${
+                        d.utilisateur?.prenom || ""
+                      }`.trim() || "—";
                     const num = d.utilisateur?.numeroEtudiant || "—";
                     const { label, urgent } = delaiLabel(d.createdAt);
 
                     return (
                       <tr key={d.id}>
                         <td className="td-ref">
-                          {(d.ref || d.id || "").toString().substring(0, 8).toUpperCase()}
+                          {(d.ref || d.id || "")
+                            .toString()
+                            .substring(0, 8)
+                            .toUpperCase()}
                         </td>
                         <td>
                           <div className="td-etudiant-name">{nom}</div>
@@ -858,13 +951,21 @@ export default function DashboardCS() {
                         <td className="td-doc">Attestation d'inscription</td>
                         <td className="td-date">{formatDate(d.createdAt)}</td>
                         <td>
-                          <span className={urgent ? "td-delai-urgent" : "td-delai-ok"}>
+                          <span
+                            className={
+                              urgent ? "td-delai-urgent" : "td-delai-ok"
+                            }
+                          >
                             {label}
                             {urgent ? " ⚠" : ""}
                           </span>
                         </td>
                         <td style={{ textAlign: "right" }}>
-                          <button className="btn-traiter" onClick={() => openTraitement(d)} type="button">
+                          <button
+                            className="btn-traiter"
+                            onClick={() => openTraitement(d)}
+                            type="button"
+                          >
                             <svg
                               width="13"
                               height="13"
@@ -915,7 +1016,10 @@ export default function DashboardCS() {
         <Sidebar onLogout={logout} />
         <div className="agent-main">
           <Topbar user={user} />
-          <div className="agent-content" style={{ maxWidth: 580, margin: "60px auto" }}>
+          <div
+            className="agent-content"
+            style={{ maxWidth: 580, margin: "60px auto" }}
+          >
             <div className="success-card">
               <div className="success-icon">
                 <svg
@@ -933,11 +1037,22 @@ export default function DashboardCS() {
               </div>
               <div className="success-title">Attestation générée !</div>
               <div className="success-sub">
-                L'attestation d'inscription a été générée et transmise au Directeur Adjoint pour signature.
+                L'attestation d'inscription a été générée et transmise au
+                Directeur Adjoint pour signature.
               </div>
               <div className="success-ref">{generatedRef}</div>
-              <div style={{ marginTop: 24, display: "flex", justifyContent: "center" }}>
-                <button className="btn-traiter" onClick={() => setView("dashboard")} type="button">
+              <div
+                style={{
+                  marginTop: 24,
+                  display: "flex",
+                  justifyContent: "center",
+                }}
+              >
+                <button
+                  className="btn-traiter"
+                  onClick={() => setView("dashboard")}
+                  type="button"
+                >
                   ← Retour au tableau de bord
                 </button>
               </div>
@@ -949,7 +1064,9 @@ export default function DashboardCS() {
 
   // ── TRAITEMENT ───────────────────────────────────────
   const nom = selected
-    ? `${selected.utilisateur?.nom || ""} ${selected.utilisateur?.prenom || ""}`.trim() || "—"
+    ? `${selected.utilisateur?.nom || ""} ${
+        selected.utilisateur?.prenom || ""
+      }`.trim() || "—"
     : "—";
 
   return (
@@ -960,7 +1077,14 @@ export default function DashboardCS() {
         <Topbar user={user} />
         <div className="agent-content">
           {/* Back + header */}
-          <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 8 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              marginBottom: 8,
+            }}
+          >
             <button
               className="back-btn"
               type="button"
@@ -978,8 +1102,17 @@ export default function DashboardCS() {
               <h2 className="agent-page-title" style={{ fontSize: "1.3rem" }}>
                 Traitement du dossier
               </h2>
-              <div style={{ fontFamily: "monospace", fontSize: ".8rem", color: "var(--blue)" }}>
-                {(selected?.ref || selected?.id || "").toString().substring(0, 8).toUpperCase()}
+              <div
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: ".8rem",
+                  color: "var(--blue)",
+                }}
+              >
+                {(selected?.ref || selected?.id || "")
+                  .toString()
+                  .substring(0, 8)
+                  .toUpperCase()}
               </div>
             </div>
           </div>
@@ -992,71 +1125,102 @@ export default function DashboardCS() {
                   <div className="panel-title">Informations étudiant</div>
                 </div>
                 <div className="panel-body">
-                    <div className="info-row">
-                        <div className="info-label">Nom complet</div>
-                        <div className="info-value">
-                        {selected?.utilisateur
-                            ? `${selected.utilisateur.nom || ""} ${selected.utilisateur.prenom || ""}`.trim() || "—"
-                            : "—"}
-                        </div>
+                  <div className="info-row">
+                    <div className="info-label">Nom complet</div>
+                    <div className="info-value">
+                      {selected?.utilisateur
+                        ? `${selected.utilisateur.nom || ""} ${
+                            selected.utilisateur.prenom || ""
+                          }`.trim() || "—"
+                        : "—"}
                     </div>
-                    <div className="info-row">
-                        <div className="info-label">N° Étudiant</div>
-                        <div className="info-value">{selected?.utilisateur?.numeroEtudiant || "—"}</div>
+                  </div>
+                  <div className="info-row">
+                    <div className="info-label">N° Étudiant</div>
+                    <div className="info-value">
+                      {selected?.utilisateur?.numeroEtudiant || "—"}
                     </div>
-                    <div className="info-row">
-                        <div className="info-label">Filière / Niveau</div>
-                        <div className="info-value">
-                        {selected?.utilisateur?.filiere
-                            ? `${selected.utilisateur.filiere} — ${selected.utilisateur.niveau || ""}`
-                            : "—"}
-                        </div>
+                  </div>
+                  <div className="info-row">
+                    <div className="info-label">Filière / Niveau</div>
+                    <div className="info-value">
+                      {selected?.utilisateur?.filiere
+                        ? `${selected.utilisateur.filiere} — ${
+                            selected.utilisateur.niveau || ""
+                          }`
+                        : "—"}
                     </div>
-                    <div className="info-row">
-                        <div className="info-label">Institution</div>
-                        <div className="info-value">{selected?.institution?.nom || "IFRI — UAC"}</div>
+                  </div>
+                  <div className="info-row">
+                    <div className="info-label">Institution</div>
+                    <div className="info-value">
+                      {selected?.institution?.nom || "IFRI — UAC"}
                     </div>
-                    <div className="divider-h" />
-                    <div className="info-row">
-                        <div className="info-label">Type de document</div>
-                        <div className="doc-type-pill">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                        </svg>
-                        {selected?.typeDocument === "ATTESTATION_INSCRIPTION" ? "Attestation d'inscription"
-                            : selected?.typeDocument === "RELEVE_NOTES" ? "Relevé de notes"
-                            : selected?.typeDocument || "—"}
-                        </div>
+                  </div>
+                  <div className="divider-h" />
+                  <div className="info-row">
+                    <div className="info-label">Type de document</div>
+                    <div className="doc-type-pill">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                      </svg>
+                      {selected?.typeDocument === "ATTESTATION_INSCRIPTION"
+                        ? "Attestation d'inscription"
+                        : selected?.typeDocument === "RELEVE_NOTES"
+                        ? "Relevé de notes"
+                        : selected?.typeDocument || "—"}
                     </div>
-                    {selected?.typeDocument === "ATTESTATION_INSCRIPTION" && selected?.anneeAcademique && (
-                        <div className="info-row" style={{ marginTop: 10 }}>
+                  </div>
+                  {selected?.typeDocument === "ATTESTATION_INSCRIPTION" &&
+                    selected?.anneeAcademique && (
+                      <div className="info-row" style={{ marginTop: 10 }}>
                         <div className="info-label">Année académique</div>
-                        <div className="info-value" style={{
-                            background:"#f0fdf4", color:"#16a34a", border:"1px solid #bbf7d0",
-                            padding:"5px 12px", borderRadius:7, display:"inline-block", fontWeight:700
-                        }}>
-                            {selected.anneeAcademique}
+                        <div
+                          className="info-value"
+                          style={{
+                            background: "#f0fdf4",
+                            color: "#16a34a",
+                            border: "1px solid #bbf7d0",
+                            padding: "5px 12px",
+                            borderRadius: 7,
+                            display: "inline-block",
+                            fontWeight: 700,
+                          }}
+                        >
+                          {selected.anneeAcademique}
                         </div>
-                        </div>
+                      </div>
                     )}
-                    <div className="divider-h" />
-                    <div className="info-row">
-                        <div className="info-label">Date de soumission</div>
-                        <div className="info-value">
-                        {selected?.createdAt
-                            ? new Date(selected.createdAt).toLocaleDateString("fr-FR", { day:"2-digit", month:"long", year:"numeric" })
-                            : "—"}
-                        </div>
+                  <div className="divider-h" />
+                  <div className="info-row">
+                    <div className="info-label">Date de soumission</div>
+                    <div className="info-value">
+                      {selected?.createdAt
+                        ? new Date(selected.createdAt).toLocaleDateString(
+                            "fr-FR",
+                            { day: "2-digit", month: "long", year: "numeric" }
+                          )
+                        : "—"}
                     </div>
-                    <div className="info-row">
-                        <div className="info-label">Référence</div>
-                        <div className="info-value mono">{selected?.documents?.[0]?.reference || "—"}</div>
+                  </div>
+                  <div className="info-row">
+                    <div className="info-label">Référence</div>
+                    <div className="info-value mono">
+                      {selected?.documents?.[0]?.reference || "—"}
                     </div>
+                  </div>
                 </div>
               </div>
-
-              
             </div>
 
             {/* ── CENTRE — Pièces ── */}
@@ -1069,11 +1233,18 @@ export default function DashboardCS() {
                   marginBottom: 14,
                 }}
               >
-                <div style={{ fontWeight: 700, fontSize: ".95rem", color: "var(--navy)" }}>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: ".95rem",
+                    color: "var(--navy)",
+                  }}
+                >
                   Vérification des pièces
                 </div>
                 <span className="badge blue">
-                  {pieces.filter((p) => p.status === "valid").length}/{pieces.length} validées
+                  {pieces.filter((p) => p.status === "valid").length}/
+                  {pieces.length} validées
                 </span>
               </div>
 
@@ -1094,18 +1265,26 @@ export default function DashboardCS() {
                         <XIcon /> Rejetée
                       </span>
                     )}
-                    {piece.status === null && <span className="badge gray">En attente</span>}
+                    {piece.status === null && (
+                      <span className="badge gray">En attente</span>
+                    )}
                   </div>
 
                   <div className="piece-body">
-                    <button className="btn-preview" onClick={() => openPreview(piece)} type="button">
+                    <button
+                      className="btn-preview"
+                      onClick={() => openPreview(piece)}
+                      type="button"
+                    >
                       <EyeIcon /> Consulter le fichier
                     </button>
 
                     <div className="piece-actions">
                       <button
                         disabled={pieceBusy === piece.id}
-                        className={`btn-valider valid ${piece.status === "valid" ? "selected" : ""}`}
+                        className={`btn-valider valid ${
+                          piece.status === "valid" ? "selected" : ""
+                        }`}
                         onClick={() => setPieceStatus(piece.id, "valid")}
                         type="button"
                       >
@@ -1113,7 +1292,9 @@ export default function DashboardCS() {
                       </button>
                       <button
                         disabled={pieceBusy === piece.id}
-                        className={`btn-valider reject ${piece.status === "reject" ? "selected" : ""}`}
+                        className={`btn-valider reject ${
+                          piece.status === "reject" ? "selected" : ""
+                        }`}
                         onClick={() => setPieceStatus(piece.id, "reject")}
                         type="button"
                       >
@@ -1121,7 +1302,7 @@ export default function DashboardCS() {
                       </button>
                     </div>
 
-                    <textarea
+                    {/* /  <textarea
                       className="comment"
                       rows={2}
                       placeholder={
@@ -1131,13 +1312,16 @@ export default function DashboardCS() {
                       }
                       value={piece.comment || ""}
                       onChange={(e) => setPieceComment(piece.id, e.target.value)}
-                    />
+                    /> */}
                   </div>
                 </div>
               ))}
 
               {allValidated && (
-                <div className="info-box green">✓ Toutes les pièces sont validées. Vous pouvez générer l'attestation.</div>
+                <div className="info-box green">
+                  ✓ Toutes les pièces sont validées. Vous pouvez générer
+                  l'attestation.
+                </div>
               )}
 
               {anyRejected && !allValidated && (
@@ -1149,7 +1333,8 @@ export default function DashboardCS() {
                     border: "1px solid #fca5a5",
                   }}
                 >
-                  ⚠ Une ou plusieurs pièces rejetées. Rejetez la demande avec un motif.
+                  ⚠ Une ou plusieurs pièces rejetées. Rejetez la demande avec un
+                  motif.
                 </div>
               )}
             </div>
@@ -1164,11 +1349,23 @@ export default function DashboardCS() {
                   {pieces.map((p) => (
                     <div
                       key={p.id}
-                      className={`check-item ${p.status === "valid" ? "v" : p.status === "reject" ? "r" : ""}`}
+                      className={`check-item ${
+                        p.status === "valid"
+                          ? "v"
+                          : p.status === "reject"
+                          ? "r"
+                          : ""
+                      }`}
                     >
                       <div className="check-name">{p.name}</div>
                       <div
-                        className={`check-status ${p.status === "valid" ? "v" : p.status === "reject" ? "r" : "p"}`}
+                        className={`check-status ${
+                          p.status === "valid"
+                            ? "v"
+                            : p.status === "reject"
+                            ? "r"
+                            : "p"
+                        }`}
                       >
                         {p.status === "valid" ? (
                           <>
@@ -1227,7 +1424,8 @@ export default function DashboardCS() {
                     type="button"
                     style={{
                       opacity: !allDecided || !anyRejected ? 0.4 : 1,
-                      cursor: !allDecided || !anyRejected ? "not-allowed" : "pointer",
+                      cursor:
+                        !allDecided || !anyRejected ? "not-allowed" : "pointer",
                     }}
                     onClick={() => {
                       if (allDecided && anyRejected) setModal("reject");
@@ -1243,7 +1441,8 @@ export default function DashboardCS() {
                   )}
                   {allValidated && (
                     <div className="info-box green" style={{ marginTop: 4 }}>
-                      Les données d'inscription seront injectées automatiquement.
+                      Les données d'inscription seront injectées
+                      automatiquement.
                     </div>
                   )}
                 </div>
@@ -1261,17 +1460,27 @@ export default function DashboardCS() {
               <SparkleIcon /> Confirmer la génération
             </div>
             <div className="modal-body">
-              Vous allez générer l'attestation d'inscription pour <strong>{nom}</strong>.
+              Vous allez générer l'attestation d'inscription pour{" "}
+              <strong>{nom}</strong>.
               <br />
               <br />
-              Le système injectera automatiquement les données d'inscription (filière, niveau, année académique) dans le
-              template officiel. <strong>Cette action est irréversible.</strong>
+              Le système injectera automatiquement les données d'inscription
+              (filière, niveau, année académique) dans le template officiel.{" "}
+              <strong>Cette action est irréversible.</strong>
             </div>
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => setModal(null)} type="button">
+              <button
+                className="modal-btn cancel"
+                onClick={() => setModal(null)}
+                type="button"
+              >
                 Annuler
               </button>
-              <button className="modal-btn confirm-gen" onClick={handleGenerate} type="button">
+              <button
+                className="modal-btn confirm-gen"
+                onClick={handleGenerate}
+                type="button"
+              >
                 ✓ Confirmer
               </button>
             </div>
@@ -1287,7 +1496,8 @@ export default function DashboardCS() {
               <XIcon /> Rejeter la demande
             </div>
             <div className="modal-body">
-              Rejeter la demande de <strong>{nom}</strong>. L'étudiant sera notifié par email.
+              Rejeter la demande de <strong>{nom}</strong>. L'étudiant sera
+              notifié par email.
             </div>
 
             <div
@@ -1312,11 +1522,28 @@ export default function DashboardCS() {
               }}
             />
 
-            <div style={{ fontSize: ".72rem", color: "var(--muted)", textAlign: "right", marginTop: 3 }}>
+            <div
+              style={{
+                fontSize: ".72rem",
+                color: "var(--muted)",
+                textAlign: "right",
+                marginTop: 3,
+              }}
+            >
               {motif.length}/20 min
             </div>
 
-            {motifError && <div style={{ fontSize: ".75rem", color: "var(--red)", marginTop: 3 }}>{motifError}</div>}
+            {motifError && (
+              <div
+                style={{
+                  fontSize: ".75rem",
+                  color: "var(--red)",
+                  marginTop: 3,
+                }}
+              >
+                {motifError}
+              </div>
+            )}
 
             <div className="modal-actions" style={{ marginTop: 18 }}>
               <button
@@ -1330,7 +1557,11 @@ export default function DashboardCS() {
               >
                 Annuler
               </button>
-              <button className="modal-btn confirm-rej" onClick={handleReject} type="button">
+              <button
+                className="modal-btn confirm-rej"
+                onClick={handleReject}
+                type="button"
+              >
                 ✗ Confirmer le rejet
               </button>
             </div>
@@ -1358,11 +1589,19 @@ export default function DashboardCS() {
                 overflow: "hidden",
               }}
             >
-              <iframe title="preview" src={preview.url} style={{ width: "100%", height: "100%", border: "none" }} />
+              <iframe
+                title="preview"
+                src={preview.url}
+                style={{ width: "100%", height: "100%", border: "none" }}
+              />
             </div>
 
             <div className="modal-actions" style={{ marginTop: 12 }}>
-              <button className="modal-btn cancel" onClick={() => setPreview(null)} type="button">
+              <button
+                className="modal-btn cancel"
+                onClick={() => setPreview(null)}
+                type="button"
+              >
                 Fermer
               </button>
             </div>
