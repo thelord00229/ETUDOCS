@@ -8,52 +8,73 @@ const css = `
   .docs-title { font-family:'Sora',sans-serif; font-weight:800; font-size:1.5rem; color:#1a2744; margin-bottom:4px; }
   .docs-sub   { color:#475569; font-size:.9rem; }
 
-  .docs-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .docs-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
 
+  /* ── CARD ── */
   .doc-file-card {
-    background:#fff; border:1.5px solid #e2e8f0; border-radius:14px;
+    background:#1e2535; border-radius:16px;
     overflow:hidden; display:flex; flex-direction:column;
-    border-top:4px solid #16a34a;
     transition:box-shadow .2s, transform .2s;
+    border:1px solid #2d3748;
   }
-  .doc-file-card:hover { box-shadow:0 8px 24px rgba(0,0,0,.08); transform:translateY(-2px); }
-  .doc-file-card.exhausted { border-top-color:#f5a623; }
+  .doc-file-card:hover { box-shadow:0 8px 32px rgba(0,0,0,.3); transform:translateY(-2px); }
 
+  /* ── MINIATURE ── */
   .doc-thumb {
     width:100%; height:160px;
-    background:#f1f5f9; position:relative; overflow:hidden;
-    border-bottom:1px solid #e2e8f0;
+    background:#161d2e; position:relative; overflow:hidden;
   }
   .doc-thumb iframe {
     width:100%; height:400px;
     border:none; pointer-events:none;
+    opacity:.85;
   }
   .doc-thumb__overlay {
     position:absolute; inset:0;
-    background:linear-gradient(to bottom, transparent 50%, rgba(248,250,252,.7) 100%);
+    background:linear-gradient(to bottom, rgba(30,37,53,.2) 0%, rgba(30,37,53,.75) 100%);
   }
   .doc-thumb__fallback {
     width:100%; height:100%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+    background:#161d2e;
+  }
+  .doc-thumb__fallback-icon {
+    width:52px; height:52px; border-radius:12px;
+    background:#2d3748; display:flex; align-items:center; justify-content:center;
+  }
+  .doc-thumb__fallback-lines { display:flex; flex-direction:column; gap:6px; width:80px; }
+  .doc-thumb__fallback-line {
+    height:6px; border-radius:3px; background:#2d3748;
+  }
+
+  /* Overlay "accès restreint" pour les exhausted */
+  .doc-thumb__lock {
+    position:absolute; inset:0;
+    background:rgba(14,18,28,.75);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  }
+  .doc-thumb__lock-icon {
+    width:40px; height:40px; border-radius:50%;
+    background:rgba(255,255,255,.08);
     display:flex; align-items:center; justify-content:center;
   }
-
-  .doc-card-bottom { padding:12px 14px; display:flex; flex-direction:column; gap:10px; }
-
-  .doc-card-row {
-    display:flex; align-items:center; justify-content:space-between; gap:8px;
+  .doc-thumb__lock-label {
+    font-family:'Sora',sans-serif; font-weight:700; font-size:.65rem;
+    color:rgba(255,255,255,.4); letter-spacing:.12em; text-transform:uppercase;
   }
-  .doc-file-name {
-    font-family:'Sora',sans-serif; font-weight:700;
-    font-size:.82rem; color:#1a2744;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    flex:1; min-width:0;
-  }
-  .doc-file-date { font-size:.75rem; color:#94a3b8; margin-top:1px; }
 
-  .dl-pips { display:flex; align-items:center; gap:4px; flex-shrink:0; }
+  /* ── BAS DE CARTE ── */
+  .doc-card-bottom { padding:14px 16px; display:flex; flex-direction:column; gap:12px; }
+
+  /* ── LIGNE PIPS + BADGE ── */
+  .doc-card-top-row {
+    display:flex; align-items:center; justify-content:space-between;
+  }
+
+  .dl-pips { display:flex; align-items:center; gap:5px; }
   .dl-pip {
     width:9px; height:9px; border-radius:50%;
-    background:#e2e8f0; transition:background .4s, transform .3s;
+    background:#2d3748; transition:background .4s, transform .3s;
   }
   .dl-pip.pip-1 { background:#16a34a; }
   .dl-pip.pip-2 { background:#eab308; }
@@ -65,24 +86,50 @@ const css = `
     100% { transform:scale(1); }
   }
 
+  /* Badges statut */
+  .doc-badge {
+    font-family:'Sora',sans-serif; font-weight:700; font-size:.65rem;
+    padding:3px 10px; border-radius:20px; letter-spacing:.04em;
+  }
+  .doc-badge--valide   { background:rgba(22,163,74,.15); color:#4ade80; border:1px solid rgba(22,163,74,.3); }
+  .doc-badge--expiring { background:rgba(234,179,8,.15);  color:#fbbf24; border:1px solid rgba(234,179,8,.3); }
+  .doc-badge--expired  { background:rgba(239,68,68,.15);  color:#f87171; border:1px solid rgba(239,68,68,.3); }
+
+  /* ── INFOS DOCUMENT ── */
+  .doc-file-name {
+    font-family:'Sora',sans-serif; font-weight:700;
+    font-size:.92rem; color:#f1f5f9;
+  }
+  .doc-file-date { font-size:.78rem; color:#64748b; margin-top:3px; }
+
+  /* ── BUTTONS ── */
   .btn-dl {
-    width:100%; display:inline-flex; align-items:center; justify-content:center; gap:7px;
-    background:#16a34a; color:#fff; border:none; border-radius:8px;
+    width:100%; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    background:#16a34a; color:#fff; border:none; border-radius:9px;
     font-family:'Sora',sans-serif; font-weight:700; font-size:.82rem;
-    padding:10px 14px; cursor:pointer; transition:background .2s;
+    padding:11px 14px; cursor:pointer; transition:background .2s;
   }
   .btn-dl:hover { background:#15803d; }
-  .btn-dl:disabled { opacity:.7; cursor:not-allowed; }
+  .btn-dl:disabled { opacity:.6; cursor:not-allowed; }
 
   .btn-pay {
-    width:100%; display:inline-flex; align-items:center; justify-content:center; gap:7px;
-    background:#fff7ed; color:#c2410c;
-    border:1.5px solid #fed7aa; border-radius:8px;
+    width:100%; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    background:rgba(234,179,8,.12); color:#fbbf24;
+    border:1px solid rgba(234,179,8,.3); border-radius:9px;
     font-family:'Sora',sans-serif; font-weight:700; font-size:.82rem;
-    padding:10px 14px; cursor:pointer; transition:background .2s;
+    padding:11px 14px; cursor:pointer; transition:background .2s;
   }
-  .btn-pay:hover { background:#ffedd5; }
+  .btn-pay:hover { background:rgba(234,179,8,.2); }
 
+  .btn-unavailable {
+    width:100%; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    background:rgba(255,255,255,.04); color:#475569;
+    border:1px solid rgba(255,255,255,.08); border-radius:9px;
+    font-family:'Sora',sans-serif; font-weight:700; font-size:.82rem;
+    padding:11px 14px; cursor:not-allowed;
+  }
+
+  /* ── QR BANNER ── */
   .qr-banner {
     background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:14px;
     padding:16px 20px; display:flex; align-items:center; gap:14px;
@@ -125,6 +172,28 @@ const safeTime = (iso) => {
   return Number.isFinite(t) ? t : 0;
 };
 
+/* ── Fallback miniature ── */
+function ThumbFallback() {
+  return (
+    <div className="doc-thumb__fallback">
+      <div className="doc-thumb__fallback-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+      </div>
+      <div className="doc-thumb__fallback-lines">
+        <div className="doc-thumb__fallback-line" style={{ width:"80px" }}/>
+        <div className="doc-thumb__fallback-line" style={{ width:"60px" }}/>
+        <div className="doc-thumb__fallback-line" style={{ width:"70px" }}/>
+      </div>
+    </div>
+  );
+}
+
 /* ── DocCard ── */
 function DocCard({ doc, onDownload }) {
   const [downloading, setDownloading] = useState(false);
@@ -133,6 +202,13 @@ function DocCard({ doc, onDownload }) {
   const [previewUrl, setPreviewUrl]   = useState(null);
 
   const exhausted = localCount >= MAX_DL;
+
+  // Badge selon état
+  const badge = exhausted
+    ? { label: "Expiré",       cls: "doc-badge--expired"  }
+    : localCount >= MAX_DL - 1
+    ? { label: "Expire bientôt", cls: "doc-badge--expiring" }
+    : { label: "Valide",       cls: "doc-badge--valide"   };
 
   useEffect(() => {
     let objectUrl = null;
@@ -176,8 +252,9 @@ function DocCard({ doc, onDownload }) {
   };
 
   return (
-    <div className={`doc-file-card${exhausted ? " exhausted" : ""}`}>
+    <div className="doc-file-card">
 
+      {/* Miniature */}
       <div className="doc-thumb">
         {previewUrl ? (
           <iframe
@@ -185,23 +262,30 @@ function DocCard({ doc, onDownload }) {
             title={doc.title}
           />
         ) : (
-          <div className="doc-thumb__fallback">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-              stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-            </svg>
-          </div>
+          <ThumbFallback />
         )}
         <div className="doc-thumb__overlay" />
+
+        {/* Overlay cadenas si expiré */}
+        {exhausted && (
+          <div className="doc-thumb__lock">
+            <div className="doc-thumb__lock-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                stroke="rgba(255,255,255,.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <div className="doc-thumb__lock-label">Accès restreint</div>
+          </div>
+        )}
       </div>
 
+      {/* Bas de carte */}
       <div className="doc-card-bottom">
-        <div className="doc-card-row">
-          <div style={{ flex:1, minWidth:0 }}>
-            <div className="doc-file-name">{doc.title}</div>
-            <div className="doc-file-date">{doc.date}</div>
-          </div>
+
+        {/* Pips + badge */}
+        <div className="doc-card-top-row">
           <div className="dl-pips">
             {Array.from({ length: MAX_DL }, (_, i) => (
               <div
@@ -210,16 +294,24 @@ function DocCard({ doc, onDownload }) {
               />
             ))}
           </div>
+          <span className={`doc-badge ${badge.cls}`}>{badge.label}</span>
         </div>
 
+        {/* Nom + date */}
+        <div>
+          <div className="doc-file-name">{doc.title}</div>
+          <div className="doc-file-date">Délivré le : {doc.date}</div>
+        </div>
+
+        {/* Bouton */}
         {exhausted ? (
           <button className="btn-pay" onClick={handlePay} type="button">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-              <line x1="1" y1="10" x2="23" y2="10"/>
+              <path d="M21 12a9 9 0 1 1-1.5-5.1"/>
+              <polyline points="21 3 21 9 15 9"/>
             </svg>
-            Renouveler l'accès
+            Payer à nouveau
           </button>
         ) : (
           <button className="btn-dl" disabled={downloading} onClick={handleDl} type="button">

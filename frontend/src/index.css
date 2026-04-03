@@ -4,12 +4,54 @@
   padding: 0;
 }
 
-html,
-body,
-#root {
+html, body, #root {
   width: 100%;
   min-height: 100vh;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+}
+
+:root {
+  --uac-green:        #2e7d32;
+  --uac-green-dark:   #1b5e20;
+  --uac-green-light:  #43a047;
+  --uac-green-bg:     #f1f8e9;
+  --uac-green-border: #c8e6c9;
+
+  --benin-green:  #008751;
+  --benin-yellow: #fcd116;
+  --benin-red:    #e8112d;
+
+  --uac-red:      #c62828;
+  --white:        #ffffff;
+  --g50:          #f8fafc;
+  --g100:         #f1f5f9;
+  --g200:         #e2e8f0;
+  --g300:         #cbd5e1;
+  --g400:         #94a3b8;
+  --g500:         #64748b;
+  --g600:         #475569;
+  --g700:         #334155;
+  --navy:         #1a2744;
+  --navy-dk:      #0f1a33;
+  --gold:         #f5a623;
+}
+
+/* Bandeau drapeau béninois — en bas */
+body::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(
+    to right,
+    var(--benin-green)  33.33%,
+    var(--benin-yellow) 33.33% 66.66%,
+    var(--benin-red)    66.66%
+  );
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  z-index: 9999;
 }

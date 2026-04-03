@@ -7,20 +7,6 @@ const css = `
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --navy:     #1a2744;
-    --navy-dk:  #0f1a33;
-    --gold:     #f5a623;
-    --white:    #ffffff;
-    --g50:      #f8fafc;
-    --g100:     #f1f5f9;
-    --g200:     #e2e8f0;
-    --g300:     #cbd5e1;
-    --g400:     #94a3b8;
-    --g600:     #475569;
-    --g700:     #334155;
-  }
-
   html, body, #root {
     margin: 0; padding: 0; width: 100%; height: 100%;
     font-family: 'DM Sans', sans-serif;
@@ -28,111 +14,126 @@ const css = `
 
   .page {
     min-height: 100vh;
-    background: linear-gradient(135deg, #eef2f8 0%, #f8fafc 40%, #edf1f7 100%);
+    background: #f4f6f9;
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 48px 16px 60px;
   }
 
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    text-decoration: none;
-    margin-bottom: 40px;
+  /* ── HEADER UAC ── */
+  .uac-header {
+    width: 100%; max-width: 500px;
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e2e8f0;
   }
-  .brand__logo {
-    width: 62px; height: 62px;
-    object-fit: contain; border-radius: 16px;
+  .uac-header__logo {
+    width: 56px; height: 56px; object-fit: contain; border-radius: 10px;
   }
-  .brand__name {
-    font-family: 'Sora', sans-serif;
-    font-weight: 800; font-size: 1.9rem;
-    color: var(--navy); letter-spacing: -0.5px;
+  .uac-header__text { text-align: left; }
+  .uac-header__title {
+    font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.3rem;
+    color: #2e7d32; letter-spacing: -0.3px; line-height: 1.2;
+  }
+  .uac-header__sub {
+    font-size: .78rem; color: #64748b; margin-top: 2px;
+    text-transform: uppercase; letter-spacing: .06em;
   }
 
+  /* ── CARD ── */
   .card {
-    background: var(--white);
-    border-radius: 20px;
-    box-shadow: 0 4px 32px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
-    padding: 40px 44px 36px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
+    padding: 36px 40px 32px;
     width: 100%; max-width: 460px;
+    border-top: 4px solid #2e7d32;
   }
 
   .card__title {
     font-family: 'Sora', sans-serif;
-    font-size: 1.9rem; font-weight: 800;
-    color: var(--navy); text-align: center; margin-bottom: 8px;
+    font-size: 1.5rem; font-weight: 800;
+    color: #1e293b; text-align: center; margin-bottom: 6px;
   }
   .card__sub {
-    color: var(--g400); font-size: 0.95rem;
-    text-align: center; margin-bottom: 32px;
+    color: #94a3b8; font-size: .9rem;
+    text-align: center; margin-bottom: 28px;
   }
 
-  .form { display: flex; flex-direction: column; gap: 18px; }
+  /* ── FORM ── */
+  .form { display: flex; flex-direction: column; gap: 16px; }
 
   .field { display: flex; flex-direction: column; gap: 6px; }
   .field__row {
     display: flex; align-items: center;
-    justify-content: space-between; margin-bottom: 6px;
+    justify-content: space-between; margin-bottom: 4px;
   }
 
-  label {
-    font-size: 0.9rem; font-weight: 500; color: var(--g700);
-  }
+  label { font-size: .88rem; font-weight: 600; color: #334155; }
+
   .forgot {
-    font-size: 0.85rem; color: var(--navy); font-weight: 500;
-    text-decoration: none; opacity: .85;
+    font-size: .82rem; color: #2e7d32; font-weight: 500;
+    text-decoration: none; opacity: .9;
   }
   .forgot:hover { opacity: 1; text-decoration: underline; }
 
   input {
-    width: 100%; padding: 12px 14px;
-    border: 1.5px solid var(--g200); border-radius: 10px;
-    font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: var(--g700);
-    background: var(--g50);
+    width: 100%; padding: 11px 14px;
+    border: 1.5px solid #e2e8f0; border-radius: 9px;
+    font-family: 'DM Sans', sans-serif; font-size: .93rem; color: #334155;
+    background: #f8fafc;
     transition: border-color .2s, box-shadow .2s;
     outline: none;
   }
   input:focus {
-    border-color: var(--navy); background: var(--white);
-    box-shadow: 0 0 0 3px rgba(26,39,68,0.08);
+    border-color: #2e7d32; background: #fff;
+    box-shadow: 0 0 0 3px rgba(46,125,50,0.1);
   }
-  input::placeholder { color: var(--g300); }
+  input::placeholder { color: #cbd5e1; }
 
   .btn-submit {
-    width: 100%; padding: 14px;
-    background: var(--navy); color: var(--white);
-    font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem;
-    border: none; border-radius: 12px; cursor: pointer;
+    width: 100%; padding: 13px;
+    background: #2e7d32; color: #fff;
+    font-family: 'Sora', sans-serif; font-weight: 700; font-size: .95rem;
+    border: none; border-radius: 10px; cursor: pointer;
     transition: background .2s, transform .15s, box-shadow .2s;
     margin-top: 4px;
   }
   .btn-submit:hover {
-    background: #243057;
+    background: #1b5e20;
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(26,39,68,0.25);
+    box-shadow: 0 6px 20px rgba(46,125,50,0.25);
   }
   .btn-submit:disabled {
-    opacity: .75; cursor: not-allowed;
+    opacity: .7; cursor: not-allowed;
     transform: none; box-shadow: none;
   }
 
+  /* ── FOOTER ── */
   .card__footer {
-    border-top: 1px solid var(--g200);
-    margin-top: 24px; padding-top: 20px;
-    text-align: center; font-size: 0.9rem; color: var(--g600);
+    border-top: 1px solid #f1f5f9;
+    margin-top: 20px; padding-top: 18px;
+    text-align: center; font-size: .88rem; color: #64748b;
   }
-  .card__footer a { color: var(--navy); font-weight: 600; text-decoration: none; }
+  .card__footer a { color: #2e7d32; font-weight: 600; text-decoration: none; }
   .card__footer a:hover { text-decoration: underline; }
 
   .back {
-    margin-top: 24px; font-size: 0.9rem; color: var(--g600);
+    margin-top: 20px; font-size: .88rem; color: #94a3b8;
     text-decoration: none; display: flex; align-items: center; gap: 6px;
     transition: color .2s;
   }
-  .back:hover { color: var(--navy); }
+  .back:hover { color: #2e7d32; }
+
+  .powered {
+    margin-top: 12px; font-size: .75rem; color: #cbd5e1;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .powered__dot {
+    width: 5px; height: 5px; border-radius: 50%; background: #2e7d32;
+  }
 
   @keyframes fadeIn {
     from { opacity:0; transform:translateY(6px); }
@@ -165,20 +166,14 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-
     if (!email || !password) {
       setError("Veuillez renseigner l'email et le mot de passe.");
       return;
     }
-
     setLoading(true);
     try {
       clearSession();
-      const data = await apiLogin({
-        email: String(email).trim(),
-        password,
-      });
-
+      const data = await apiLogin({ email: String(email).trim(), password });
       setSession({ token: data?.token, user: data?.user });
       window.location.href = routeForUser(data.user);
     } catch (err) {
@@ -197,10 +192,14 @@ export default function Login() {
     <div className="page">
       <style>{css}</style>
 
-      <a href="/" className="brand">
-        <img src={logo} alt="EtuDocs logo" className="brand__logo" />
-        <span className="brand__name">EtuDocs</span>
-      </a>
+      {/* Header UAC */}
+      <div className="uac-header">
+        <img src={logo} alt="EtuDocs" className="uac-header__logo" />
+        <div className="uac-header__text">
+          <div className="uac-header__title">EtuDocs — UAC</div>
+          <div className="uac-header__sub">Université d'Abomey-Calavi</div>
+        </div>
+      </div>
 
       <div className="card">
         <h1 className="card__title">Connexion</h1>
@@ -236,22 +235,28 @@ export default function Login() {
             />
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: -6 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:-4 }}>
             <input
               id="showpass"
               type="checkbox"
               checked={showPass}
               onChange={(e) => setShowPass(e.target.checked)}
               disabled={loading}
-              style={{ width: 16, height: 16 }}
+              style={{ width:15, height:15, accentColor:"#2e7d32" }}
             />
-            <label htmlFor="showpass" style={{ margin: 0, cursor: "pointer" }}>
+            <label htmlFor="showpass" style={{ margin:0, cursor:"pointer", fontSize:".85rem" }}>
               Afficher le mot de passe
             </label>
           </div>
 
           {error && (
-            <p style={{ color: "crimson", fontSize: "0.9rem" }}>{error}</p>
+            <div style={{
+              background:"#fef2f2", border:"1px solid #fecaca",
+              borderRadius:"8px", padding:"10px 14px",
+              fontSize:".85rem", color:"#dc2626"
+            }}>
+              {error}
+            </div>
           )}
 
           <button className="btn-submit" disabled={loading}>
@@ -266,6 +271,11 @@ export default function Login() {
       </div>
 
       <a href="/" className="back">← Retour à l'accueil</a>
+
+      <div className="powered">
+        <div className="powered__dot" />
+        Plateforme numérique UAC · EtuDocs
+      </div>
     </div>
   );
 }
