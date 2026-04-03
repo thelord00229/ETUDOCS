@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { getDemandes, previewDocumentBlob, getStatsDA, avancerDocument } from "../../services/api";
+import {
+  getDemandes,
+  previewDocumentBlob,
+  getStatsDA,
+  avancerDocument,
+} from "../../services/api";
 import logo from "../../assets/logo.png";
 
 const styles = `
@@ -91,67 +96,394 @@ const styles = `
   .modal-preview-title { font-size: 14px; font-weight: 800; color: var(--navy); display: flex; align-items: center; justify-content: space-between; }
   .modal-body { flex: 1; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
   .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
-  .form-field { display: flex; flex-direction: column; gap: 6px; }
-  .form-label { font-family: "Sora", sans-serif; font-weight: 600; font-size: .78rem; color: #475569; text-transform: uppercase; letter-spacing: .05em; }
-  .form-input { padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 9px; font-family: "DM Sans", sans-serif; font-size: .9rem; color: var(--navy); outline: none; background: #f8fafc; }
-  .form-input:focus { border-color: var(--navy); background: #fff; }
-  .btn-primary { padding: 10px 22px; background: var(--navy); color: #fff; border: none; border-radius: 9px; font-family: "Sora", sans-serif; font-weight: 700; font-size: .88rem; cursor: pointer; }
   .btn-ghost { padding: 10px 18px; background: none; color: #64748b; border: 1.5px solid #e2e8f0; border-radius: 9px; font-family: "DM Sans", sans-serif; font-weight: 500; font-size: .88rem; cursor: pointer; }
+
+  /* ── MODAL MOT DE PASSE (version complète) ── */
+  .pwd-modal-overlay {
+    position: fixed; inset: 0; background: rgba(15,23,42,.5);
+    z-index: 300; display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(3px); padding: 16px;
+  }
+  .pwd-modal {
+    background: #fff; border-radius: 16px; width: 100%; max-width: 420px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.18); overflow: hidden;
+  }
+  .pwd-modal__head {
+    padding: 22px 26px 18px; border-bottom: 1px solid #f1f5f9;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .pwd-modal__title {
+    font-family: "DM Sans", sans-serif; font-weight: 700; font-size: 1.05rem; color: var(--navy);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .pwd-modal__title-icon {
+    width: 36px; height: 36px; border-radius: 10px; background: #eff6ff;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .pwd-modal__close {
+    background: none; border: none; cursor: pointer; color: #94a3b8;
+    font-size: 1.3rem; line-height: 1; padding: 2px; flex-shrink: 0; transition: color .15s;
+  }
+  .pwd-modal__close:hover { color: var(--navy); }
+  .pwd-modal__body { padding: 20px 26px; display: flex; flex-direction: column; gap: 14px; }
+  .pwd-field { display: flex; flex-direction: column; gap: 6px; }
+  .pwd-label { font-family: "DM Sans", sans-serif; font-size: .82rem; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: .04em; }
+  .pwd-input-wrap { position: relative; }
+  .pwd-input {
+    width: 100%; padding: 11px 42px 11px 14px;
+    border: 1.5px solid #e2e8f0; border-radius: 9px;
+    font-family: "DM Sans", sans-serif; font-size: .9rem; color: #334155;
+    outline: none; transition: border-color .2s; box-sizing: border-box;
+  }
+  .pwd-input:focus { border-color: var(--navy); }
+  .pwd-input.error { border-color: var(--danger); }
+  .pwd-eye {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; color: #94a3b8;
+    display: flex; align-items: center; padding: 0; transition: color .15s;
+  }
+  .pwd-eye:hover { color: var(--navy); }
+  .pwd-strength { display: flex; gap: 4px; margin-top: 4px; }
+  .pwd-strength__bar { flex: 1; height: 3px; border-radius: 2px; background: #e2e8f0; transition: background .3s; }
+  .pwd-strength__bar.weak   { background: #ef4444; }
+  .pwd-strength__bar.medium { background: #f5a623; }
+  .pwd-strength__bar.strong { background: #10b981; }
+  .pwd-hint { font-size: .75rem; color: #94a3b8; margin-top: 2px; }
+  .pwd-hint.error { color: #ef4444; }
+  .pwd-modal__footer { padding: 0 26px 22px; }
+  .pwd-btn-row { display: flex; gap: 10px; }
+  .pwd-btn {
+    flex: 1; padding: 11px 16px; border-radius: 9px; border: none;
+    font-family: "DM Sans", sans-serif; font-weight: 700; font-size: .88rem;
+    cursor: pointer; transition: all .2s; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .pwd-btn:disabled { opacity: .55; cursor: not-allowed; }
+  .pwd-btn--ghost { background: #f8fafc; color: #475569; border: 1.5px solid #e2e8f0; }
+  .pwd-btn--ghost:hover:not(:disabled) { border-color: var(--navy); color: var(--navy); }
+  .pwd-btn--primary { background: var(--navy); color: #fff; }
+  .pwd-btn--primary:hover:not(:disabled) { background: var(--accent-blue); }
+
+  /* Toast */
+  .sa-toast {
+    position: fixed; bottom: 28px; right: 28px; z-index: 400;
+    background: var(--navy); color: #fff;
+    padding: 13px 20px; border-radius: 11px;
+    font-family: "DM Sans", sans-serif; font-size: .88rem; font-weight: 500;
+    box-shadow: 0 8px 30px rgba(0,0,0,.2);
+    animation: sa-toast-in .2s ease;
+  }
+  .sa-toast--error { background: var(--danger); }
+  @keyframes sa-toast-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 `;
 
+// ── Icônes ─────────────────────────────────────────────────
 const GridIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-    <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="3" width="7" height="7" />
+    <rect x="14" y="3" width="7" height="7" />
+    <rect x="3" y="14" width="7" height="7" />
+    <rect x="14" y="14" width="7" height="7" />
   </svg>
 );
 const LockIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
   </svg>
 );
 const LogoutIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
   </svg>
 );
 const BellIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
   </svg>
 );
 
-function ModalMotDePasse({ onClose }) {
-  const [current, setCurrent] = useState("");
-  const [next, setNext] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const handleSubmit = () => {
-    if (!current || !next || !confirm) return alert("Tous les champs sont requis");
-    if (next !== confirm) return alert("Les mots de passe ne correspondent pas");
-    alert("Mot de passe modifié avec succès !");
-    onClose();
-  };
+/* ─── Icône œil toggle ───────────────────────────────────── */
+function EyeToggleIcon({ show }) {
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-        <p className="modal-title-txt">Modifier le mot de passe</p>
-        <div className="form-field">
-          <label className="form-label">Mot de passe actuel</label>
-          <input type="password" className="form-input" value={current} onChange={(e) => setCurrent(e.target.value)} />
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {show ? (
+        <>
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+          <line x1="1" y1="1" x2="23" y2="23" />
+        </>
+      ) : (
+        <>
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <circle cx="12" cy="12" r="3" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+/* ─── Indicateur robustesse ──────────────────────────────── */
+function getStrength(pwd) {
+  if (!pwd) return 0;
+  let s = 0;
+  if (pwd.length >= 8) s++;
+  if (/[A-Z]/.test(pwd)) s++;
+  if (/[0-9]/.test(pwd)) s++;
+  if (/[^A-Za-z0-9]/.test(pwd)) s++;
+  return s;
+}
+
+/* ─── Modal Modifier Mot de Passe (version complète) ─────── */
+function ModalMotDePasse({ onClose, onSuccess }) {
+  const [actuel, setActuel] = useState("");
+  const [nouveau, setNouveau] = useState("");
+  const [confirmer, setConfirmer] = useState("");
+  const [showActuel, setShowActuel] = useState(false);
+  const [showNouveau, setShowNouveau] = useState(false);
+  const [showConfirmer, setShowConfirmer] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [erreur, setErreur] = useState("");
+
+  const strength = getStrength(nouveau);
+  const strengthLabel = ["", "Faible", "Faible", "Moyen", "Fort"][strength];
+  const strengthClass =
+    strength <= 2 ? "weak" : strength === 3 ? "medium" : "strong";
+
+  const handleSubmit = async () => {
+    setErreur("");
+    if (!actuel || !nouveau || !confirmer) {
+      setErreur("Tous les champs sont obligatoires.");
+      return;
+    }
+    if (nouveau.length < 8) {
+      setErreur("Le nouveau mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
+    if (nouveau !== confirmer) {
+      setErreur("Les mots de passe ne correspondent pas.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/auth/change-password", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ancienMotDePasse: actuel,
+          nouveauMotDePasse: nouveau,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.message || "Mot de passe actuel incorrect.");
+      }
+      onSuccess("Mot de passe modifié avec succès ✓");
+      onClose();
+    } catch (e) {
+      setErreur(e?.message || "Une erreur est survenue.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="pwd-modal-overlay" onClick={onClose}>
+      <div className="pwd-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="pwd-modal__head">
+          <div className="pwd-modal__title">
+            <div className="pwd-modal__title-icon">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#1d4ed8"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </div>
+            Modifier le mot de passe
+          </div>
+          <button className="pwd-modal__close" onClick={onClose}>
+            ×
+          </button>
         </div>
-        <div className="form-field">
-          <label className="form-label">Nouveau mot de passe</label>
-          <input type="password" className="form-input" value={next} onChange={(e) => setNext(e.target.value)} />
+
+        <div className="pwd-modal__body">
+          {/* Actuel */}
+          <div className="pwd-field">
+            <label className="pwd-label">Mot de passe actuel</label>
+            <div className="pwd-input-wrap">
+              <input
+                type={showActuel ? "text" : "password"}
+                className="pwd-input"
+                placeholder="••••••••"
+                value={actuel}
+                onChange={(e) => setActuel(e.target.value)}
+                autoFocus
+              />
+              <button
+                className="pwd-eye"
+                type="button"
+                onClick={() => setShowActuel((v) => !v)}
+              >
+                <EyeToggleIcon show={showActuel} />
+              </button>
+            </div>
+          </div>
+
+          {/* Nouveau */}
+          <div className="pwd-field">
+            <label className="pwd-label">Nouveau mot de passe</label>
+            <div className="pwd-input-wrap">
+              <input
+                type={showNouveau ? "text" : "password"}
+                className="pwd-input"
+                placeholder="••••••••"
+                value={nouveau}
+                onChange={(e) => setNouveau(e.target.value)}
+              />
+              <button
+                className="pwd-eye"
+                type="button"
+                onClick={() => setShowNouveau((v) => !v)}
+              >
+                <EyeToggleIcon show={showNouveau} />
+              </button>
+            </div>
+            {nouveau && (
+              <>
+                <div className="pwd-strength">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className={`pwd-strength__bar ${
+                        strength >= i ? strengthClass : ""
+                      }`}
+                    />
+                  ))}
+                </div>
+                <div className="pwd-hint">
+                  {strengthLabel} — minimum 8 caractères
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Confirmer */}
+          <div className="pwd-field">
+            <label className="pwd-label">
+              Confirmer le nouveau mot de passe
+            </label>
+            <div className="pwd-input-wrap">
+              <input
+                type={showConfirmer ? "text" : "password"}
+                className={`pwd-input ${
+                  confirmer && confirmer !== nouveau ? "error" : ""
+                }`}
+                placeholder="••••••••"
+                value={confirmer}
+                onChange={(e) => setConfirmer(e.target.value)}
+              />
+              <button
+                className="pwd-eye"
+                type="button"
+                onClick={() => setShowConfirmer((v) => !v)}
+              >
+                <EyeToggleIcon show={showConfirmer} />
+              </button>
+            </div>
+            {confirmer && confirmer !== nouveau && (
+              <div className="pwd-hint error">
+                Les mots de passe ne correspondent pas
+              </div>
+            )}
+          </div>
+
+          {erreur && (
+            <div
+              style={{
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderRadius: "8px",
+                padding: "10px 14px",
+                fontSize: ".85rem",
+                color: "#dc2626",
+              }}
+            >
+              {erreur}
+            </div>
+          )}
         </div>
-        <div className="form-field">
-          <label className="form-label">Confirmer le nouveau mot de passe</label>
-          <input type="password" className="form-input" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
-        </div>
-        <div className="modal-actions">
-          <button className="btn-ghost" onClick={onClose}>Annuler</button>
-          <button className="btn-primary" onClick={handleSubmit}>Enregistrer</button>
+
+        <div className="pwd-modal__footer">
+          <div className="pwd-btn-row">
+            <button
+              className="pwd-btn pwd-btn--ghost"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Annuler
+            </button>
+            <button
+              className="pwd-btn pwd-btn--primary"
+              onClick={handleSubmit}
+              disabled={loading || !actuel || !nouveau || !confirmer}
+            >
+              {loading ? "Enregistrement…" : "Enregistrer"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -162,14 +494,21 @@ export default function DashboardDA() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState(null);
-  const [preview, setPreview] = useState(null); // { url, name }
+  const [preview, setPreview] = useState(null);
   const [showMdp, setShowMdp] = useState(false);
+  const [toast, setToast] = useState(null);
 
-  // ✅ Une ligne par document (pas par demande)
-  const [rows, setRows] = useState([]); // [{ reference, etudiant, typeDocument, semestre, createdAt, statut, demandeId }]
+  const [rows, setRows] = useState([]);
+  const [stats, setStats] = useState({
+    aSigner: 0,
+    signesCeMois: 0,
+    refuses: 0,
+  });
 
-  // ✅ Stats réelles
-  const [stats, setStats] = useState({ aSigner: 0, signesCeMois: 0, refuses: 0 });
+  const showToast = (msg, isError = false) => {
+    setToast({ msg, isError });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   const charger = async () => {
     setLoading(true);
@@ -178,18 +517,18 @@ export default function DashboardDA() {
         getDemandes(),
         getStatsDA(),
       ]);
-
-      const demandes = Array.isArray(demandesData) ? demandesData : (demandesData?.demandes ?? []);
-
-      // ✅ Aplatir : une ligne par document dans chaque demande
+      const demandes = Array.isArray(demandesData)
+        ? demandesData
+        : demandesData?.demandes ?? [];
       const lignes = [];
       for (const d of demandes) {
         const docs = Array.isArray(d.documents) ? d.documents : [];
         if (docs.length === 0) {
-          // demande sans document encore (cas rare)
           lignes.push({
             reference: "—",
-            etudiant: `${d.utilisateur?.prenom ?? ""} ${d.utilisateur?.nom ?? ""}`.trim(),
+            etudiant: `${d.utilisateur?.prenom ?? ""} ${
+              d.utilisateur?.nom ?? ""
+            }`.trim(),
             typeDocument: d.typeDocument,
             semestre: null,
             createdAt: d.createdAt,
@@ -198,12 +537,13 @@ export default function DashboardDA() {
           });
         } else {
           for (const doc of docs) {
-            // Extraire le semestre depuis la référence ex: ETD-2026-IFRI-S1-...
             const sMatch = doc.reference?.match(/-S(\d+)-/);
             const semestre = sMatch ? `S${sMatch[1]}` : null;
             lignes.push({
               reference: doc.reference,
-              etudiant: `${d.utilisateur?.prenom ?? ""} ${d.utilisateur?.nom ?? ""}`.trim(),
+              etudiant: `${d.utilisateur?.prenom ?? ""} ${
+                d.utilisateur?.nom ?? ""
+              }`.trim(),
               typeDocument: d.typeDocument,
               semestre,
               createdAt: d.createdAt,
@@ -213,7 +553,6 @@ export default function DashboardDA() {
           }
         }
       }
-
       setRows(lignes);
       setStats(statsData ?? { aSigner: 0, signesCeMois: 0, refuses: 0 });
     } catch (e) {
@@ -223,19 +562,21 @@ export default function DashboardDA() {
     }
   };
 
-  useEffect(() => { charger(); }, []);
+  useEffect(() => {
+    charger();
+  }, []);
 
   const filtered = useMemo(() => {
     const q = (searchQuery || "").trim().toLowerCase();
     if (!q) return rows;
-    return rows.filter((r) =>
-      (r.reference || "").toLowerCase().includes(q) ||
-      (r.etudiant || "").toLowerCase().includes(q) ||
-      (r.typeDocument || "").toLowerCase().includes(q)
+    return rows.filter(
+      (r) =>
+        (r.reference || "").toLowerCase().includes(q) ||
+        (r.etudiant || "").toLowerCase().includes(q) ||
+        (r.typeDocument || "").toLowerCase().includes(q)
     );
   }, [rows, searchQuery]);
 
-  // ✅ Approuver : on avance la demande (une seule fois peu importe le nb de docs)
   const handleApprouver = async (row) => {
     if (!row?.reference || row.reference === "—") return;
     setBusyId(row.reference);
@@ -249,9 +590,9 @@ export default function DashboardDA() {
     }
   };
 
-  // ✅ Preview : blob inline, non téléchargeable
   const openPreview = async (reference) => {
-    if (!reference || reference === "—") return alert("Aucune référence trouvée.");
+    if (!reference || reference === "—")
+      return alert("Aucune référence trouvée.");
     try {
       const blob = await previewDocumentBlob(reference);
       const url = window.URL.createObjectURL(blob);
@@ -275,26 +616,50 @@ export default function DashboardDA() {
   return (
     <>
       <style>{styles}</style>
-      <div className="layout">
 
+      {/* Toast */}
+      {toast && (
+        <div className={`sa-toast${toast.isError ? " sa-toast--error" : ""}`}>
+          {toast.msg}
+        </div>
+      )}
+
+      {/* Modal mot de passe complet */}
+      {showMdp && (
+        <ModalMotDePasse
+          onClose={() => setShowMdp(false)}
+          onSuccess={(msg) => showToast(msg)}
+        />
+      )}
+
+      <div className="layout">
         <aside className="sidebar">
           <a href="/" className="sidebar-brand">
             <img src={logo} alt="EtuDocs" className="sidebar-brand__logo" />
             <span className="sidebar-brand__name">EtuDocs</span>
           </a>
           <nav className="sidebar-nav">
-            <button className="nav-item active"><GridIcon /> Tableau de bord</button>
-            <button className="nav-item" onClick={() => setShowMdp(true)}><LockIcon /> Modifier mot de passe</button>
+            <button className="nav-item active">
+              <GridIcon /> Tableau de bord
+            </button>
+            <button className="nav-item" onClick={() => setShowMdp(true)}>
+              <LockIcon /> Modifier mot de passe
+            </button>
           </nav>
           <div className="sidebar-divider" />
-          <button className="logout-btn" onClick={handleLogout}><LogoutIcon /> Déconnexion</button>
+          <button className="logout-btn" onClick={handleLogout}>
+            <LogoutIcon /> Déconnexion
+          </button>
         </aside>
 
         <main className="main">
           <header className="topbar">
             <div className="breadcrumb">Directeur Adjoint — IFRI</div>
             <div className="topbar-right">
-              <button className="notif-btn"><BellIcon /><span className="notif-dot" /></button>
+              <button className="notif-btn">
+                <BellIcon />
+                <span className="notif-dot" />
+              </button>
               <div className="user-info">
                 <div className="user-name">Directeur Adjoint</div>
                 <div className="user-org">IFRI</div>
@@ -307,14 +672,19 @@ export default function DashboardDA() {
             <div className="page-header">
               <div>
                 <h1 className="page-title">Espace Directeur Adjoint</h1>
-                <p className="page-subtitle">Approuvez les documents générés avant signature finale.</p>
+                <p className="page-subtitle">
+                  Approuvez les documents générés avant signature finale.
+                </p>
               </div>
-              <button className="refresh-btn" onClick={charger} disabled={loading}>
+              <button
+                className="refresh-btn"
+                onClick={charger}
+                disabled={loading}
+              >
                 {loading ? "Chargement..." : "Actualiser"}
               </button>
             </div>
 
-            {/* ✅ Stats réelles */}
             <div className="stats-grid">
               <div className="stat-card">
                 <div className="stat-icon sign">✍</div>
@@ -339,7 +709,6 @@ export default function DashboardDA() {
               </div>
             </div>
 
-            {/* ✅ Tableau : une ligne par document */}
             <div className="table-card">
               <div className="table-header">
                 <div className="table-title">
@@ -348,11 +717,26 @@ export default function DashboardDA() {
                 </div>
                 <div className="search-box">
                   <span className="search-icon">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
                     </svg>
                   </span>
-                  <input className="search-input" placeholder="Rechercher..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                  <input
+                    className="search-input"
+                    placeholder="Rechercher..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
               </div>
               <div className="table-wrapper">
@@ -370,18 +754,40 @@ export default function DashboardDA() {
                   </thead>
                   <tbody>
                     {filtered.length === 0 ? (
-                      <tr><td colSpan={7} style={{ textAlign: "center", padding: 24, color: "var(--text-muted)" }}>Aucun document en attente</td></tr>
+                      <tr>
+                        <td
+                          colSpan={7}
+                          style={{
+                            textAlign: "center",
+                            padding: 24,
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          Aucun document en attente
+                        </td>
+                      </tr>
                     ) : (
                       filtered.map((row) => (
                         <tr key={row.reference}>
-                          <td style={{ fontFamily: "monospace", fontSize: 12, color: "var(--accent-blue)" }}>{row.reference}</td>
+                          <td
+                            style={{
+                              fontFamily: "monospace",
+                              fontSize: 12,
+                              color: "var(--accent-blue)",
+                            }}
+                          >
+                            {row.reference}
+                          </td>
                           <td>{row.etudiant}</td>
                           <td>{row.typeDocument}</td>
                           <td>{row.semestre ?? "—"}</td>
                           <td>{new Date(row.createdAt).toLocaleString()}</td>
                           <td>{row.statut}</td>
                           <td style={{ display: "flex", gap: 8 }}>
-                            <button className="btn outline" onClick={() => openPreview(row.reference)}>
+                            <button
+                              className="btn outline"
+                              onClick={() => openPreview(row.reference)}
+                            >
                               Aperçu
                             </button>
                             <button
@@ -400,7 +806,9 @@ export default function DashboardDA() {
                 {filtered.length === 0 && (
                   <div className="empty-state">
                     <div className="empty-icon">📄</div>
-                    <div className="empty-text">Aucun document en attente de signature</div>
+                    <div className="empty-text">
+                      Aucun document en attente de signature
+                    </div>
                   </div>
                 )}
               </div>
@@ -409,15 +817,25 @@ export default function DashboardDA() {
         </main>
       </div>
 
-      {showMdp && <ModalMotDePasse onClose={() => setShowMdp(false)} />}
-
-      {/* ✅ Preview inline non téléchargeable */}
+      {/* Preview inline */}
       {preview && (
         <div className="modal-overlay" onClick={closePreview}>
           <div className="modal-preview" onClick={(e) => e.stopPropagation()}>
             <div className="modal-preview-title">
-              <span>👁 Aperçu — <span style={{ fontFamily: "monospace", color: "var(--accent-blue)" }}>{preview.name}</span></span>
-              <button className="btn outline" onClick={closePreview}>Fermer</button>
+              <span>
+                👁 Aperçu —{" "}
+                <span
+                  style={{
+                    fontFamily: "monospace",
+                    color: "var(--accent-blue)",
+                  }}
+                >
+                  {preview.name}
+                </span>
+              </span>
+              <button className="btn outline" onClick={closePreview}>
+                Fermer
+              </button>
             </div>
             <div className="modal-body">
               <iframe
@@ -427,7 +845,9 @@ export default function DashboardDA() {
               />
             </div>
             <div className="modal-actions">
-              <button className="btn outline" onClick={closePreview}>Fermer</button>
+              <button className="btn outline" onClick={closePreview}>
+                Fermer
+              </button>
             </div>
           </div>
         </div>

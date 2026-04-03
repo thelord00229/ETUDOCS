@@ -51,6 +51,7 @@ const css = `
     display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:10px;
     font-size:.9rem; font-weight:500; color:#475569; text-decoration:none;
     transition:background .15s, color .15s;
+    background:none; border:none; cursor:pointer; width:100%; text-align:left;
   }
   .agent-sidebar__link:hover { background:#f1f5f9; color:#1a2744; }
   .agent-sidebar__link.active { background:#1a2744; color:#ffffff; font-weight:700; box-shadow:0 4px 14px rgba(26,39,68,.18); }
@@ -168,27 +169,16 @@ const css = `
   .info-val { font-size:.88rem; font-weight:600; color:var(--navy); }
   .info-val.mono { font-family:monospace; font-size:.8rem; color:var(--blue); }
 
-  .info-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 3px; }
-  .info-value { font-size: 14px; font-weight: 600; color: var(--text); }
-  .info-value.mono { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--accent-blue); }
-
-  .doc-pill {
-    display:inline-flex; align-items:center; gap:6px;
-    background:#f0fdf4; color:var(--green);
-    padding:5px 10px; border-radius:7px; font-size:.82rem; font-weight:600; margin-top:3px;
-  }
+  .info-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 3px; }
+  .info-value { font-size: 14px; font-weight: 600; color: var(--navy); }
+  .info-value.mono { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--blue); }
 
   .doc-type-pill {
     display:inline-flex; align-items:center; gap:6px;
     background:#eff6ff; color:#1e4db7;
     padding:5px 10px; border-radius:7px; font-size:.82rem; font-weight:600; margin-top:3px;
   }
-  .sem-pills { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
-  .sem-pill { padding:5px 12px; border-radius:6px; font-size:.82rem; font-weight:600; }
-  .sem-pill.active { background:var(--navy); color:#fff; }
-  .sem-pill.inactive { background:var(--bg); color:var(--muted); border:1px solid var(--border); }
   .divider-h { height:1px; background:var(--border); margin:14px 0; }
-
   .divider { height:1px; background:var(--border); margin:14px 0; }
 
   /* Timeline */
@@ -257,7 +247,7 @@ const css = `
   .info-box.blue  { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; }
   .info-box.green { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
 
-  /* Modal */
+  /* Modal base */
   .modal-overlay { position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:200; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
   .modal { background:#fff; border-radius:20px; padding:30px; width:460px; max-width:95vw; box-shadow:0 24px 64px rgba(0,0,0,.2); }
   .modal-title { font-family:'Sora',sans-serif; font-size:1.1rem; font-weight:700; color:var(--navy); margin-bottom:12px; display:flex; align-items:center; gap:10px; }
@@ -288,6 +278,92 @@ const css = `
   .success-title { font-family:'Sora',sans-serif; font-size:1.4rem; font-weight:700; color:var(--green); margin-bottom:6px; }
   .success-sub { font-size:.88rem; color:var(--muted); margin-bottom:22px; }
   .success-ref { font-family:monospace; color:var(--blue); font-size:.9rem; background:#eff6ff; padding:10px 18px; border-radius:9px; display:inline-block; border:1px solid #bfdbfe; }
+
+  /* ── MODAL MOT DE PASSE (intégré depuis DashboardSA) ── */
+  .sa-modal-overlay {
+    position: fixed; inset: 0; background: rgba(15,23,42,.5);
+    z-index: 300; display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(3px); padding: 16px;
+  }
+  .pwd-modal {
+    background: #fff; border-radius: 16px; width: 100%; max-width: 420px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.18); overflow: hidden;
+  }
+  .pwd-modal__head {
+    padding: 22px 26px 18px; border-bottom: 1px solid #f1f5f9;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .pwd-modal__title {
+    font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.05rem; color: #1a2744;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .pwd-modal__title-icon {
+    width: 36px; height: 36px; border-radius: 10px; background: #eff6ff;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .pwd-modal__close {
+    background: none; border: none; cursor: pointer; color: #94a3b8;
+    font-size: 1.3rem; line-height: 1; padding: 2px; flex-shrink: 0;
+    transition: color .15s;
+  }
+  .pwd-modal__close:hover { color: #1a2744; }
+  .pwd-modal__body { padding: 20px 26px; display: flex; flex-direction: column; gap: 14px; }
+  .pwd-field { display: flex; flex-direction: column; gap: 6px; }
+  .pwd-label {
+    font-family: 'DM Sans', sans-serif; font-size: .82rem; font-weight: 600;
+    color: #475569; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .pwd-input-wrap { position: relative; }
+  .pwd-input {
+    width: 100%; padding: 11px 42px 11px 14px;
+    border: 1.5px solid #e2e8f0; border-radius: 9px;
+    font-family: 'DM Sans', sans-serif; font-size: .9rem; color: #334155;
+    outline: none; transition: border-color .2s; box-sizing: border-box;
+  }
+  .pwd-input:focus { border-color: #1a2744; }
+  .pwd-input.error { border-color: #ef4444; }
+  .pwd-eye {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; color: #94a3b8;
+    display: flex; align-items: center; padding: 0; transition: color .15s;
+  }
+  .pwd-eye:hover { color: #1a2744; }
+  .pwd-strength { display: flex; gap: 4px; margin-top: 4px; }
+  .pwd-strength__bar {
+    flex: 1; height: 3px; border-radius: 2px; background: #e2e8f0;
+    transition: background .3s;
+  }
+  .pwd-strength__bar.weak   { background: #ef4444; }
+  .pwd-strength__bar.medium { background: #f5a623; }
+  .pwd-strength__bar.strong { background: #16a34a; }
+  .pwd-hint { font-size: .75rem; color: #94a3b8; margin-top: 2px; }
+  .pwd-hint.error { color: #ef4444; }
+  .pwd-modal__footer { padding: 0 26px 22px; }
+
+  /* Boutons partagés modal SA */
+  .sa-btn-row { display: flex; gap: 10px; }
+  .sa-btn {
+    flex: 1; padding: 11px 16px; border-radius: 9px; border: none;
+    font-family: 'Sora', sans-serif; font-weight: 700; font-size: .88rem;
+    cursor: pointer; transition: all .2s; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .sa-btn:disabled { opacity: .55; cursor: not-allowed; }
+  .sa-btn--ghost  { background: #f8fafc; color: #475569; border: 1.5px solid #e2e8f0; }
+  .sa-btn--ghost:hover:not(:disabled)  { border-color: #1a2744; color: #1a2744; }
+  .sa-btn--primary { background: #1a2744; color: #fff; }
+  .sa-btn--primary:hover:not(:disabled) { background: #243057; }
+
+  /* Toast */
+  .sa-toast {
+    position: fixed; bottom: 28px; right: 28px; z-index: 400;
+    background: #1a2744; color: #fff;
+    padding: 13px 20px; border-radius: 11px;
+    font-family: 'DM Sans', sans-serif; font-size: .88rem; font-weight: 500;
+    box-shadow: 0 8px 30px rgba(0,0,0,.2);
+    animation: sa-toast-in .2s ease;
+  }
+  .sa-toast--error { background: #dc2626; }
+  @keyframes sa-toast-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 `;
 
 const NAV = [
@@ -324,8 +400,262 @@ const delaiLabel = (createdAt) => {
   return { label: `${d} j`, urgent: d >= 2 };
 };
 
+/* ─── Indicateur de robustesse du mot de passe ─────── */
+function getStrength(pwd) {
+  if (!pwd) return 0;
+  let score = 0;
+  if (pwd.length >= 8) score++;
+  if (/[A-Z]/.test(pwd)) score++;
+  if (/[0-9]/.test(pwd)) score++;
+  if (/[^A-Za-z0-9]/.test(pwd)) score++;
+  return score; // 0–4
+}
+
+/* ─── Icône œil (afficher/masquer mot de passe) ────── */
+function EyeToggleIcon({ show }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {show ? (
+        <>
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+          <line x1="1" y1="1" x2="23" y2="23" />
+        </>
+      ) : (
+        <>
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <circle cx="12" cy="12" r="3" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+/* ─── Modal Modifier Mot de Passe ────────────────────── */
+function ModalMotDePasse({ onClose, onSuccess }) {
+  const [actuel, setActuel] = useState("");
+  const [nouveau, setNouveau] = useState("");
+  const [confirmer, setConfirmer] = useState("");
+  const [showActuel, setShowActuel] = useState(false);
+  const [showNouveau, setShowNouveau] = useState(false);
+  const [showConfirmer, setShowConfirmer] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [erreur, setErreur] = useState("");
+
+  const strength = getStrength(nouveau);
+  const strengthLabel = ["", "Faible", "Faible", "Moyen", "Fort"][strength];
+  const strengthClass =
+    strength <= 2 ? "weak" : strength === 3 ? "medium" : "strong";
+
+  const handleSubmit = async () => {
+    setErreur("");
+    if (!actuel || !nouveau || !confirmer) {
+      setErreur("Tous les champs sont obligatoires.");
+      return;
+    }
+    if (nouveau.length < 8) {
+      setErreur("Le nouveau mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
+    if (nouveau !== confirmer) {
+      setErreur("Les mots de passe ne correspondent pas.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/auth/change-password", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ancienMotDePasse: actuel,
+          nouveauMotDePasse: nouveau,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.message || "Mot de passe actuel incorrect.");
+      }
+      onSuccess("Mot de passe modifié avec succès ✓");
+      onClose();
+    } catch (e) {
+      setErreur(e?.message || "Une erreur est survenue.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="sa-modal-overlay" onClick={onClose}>
+      <div className="pwd-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="pwd-modal__head">
+          <div className="pwd-modal__title">
+            <div className="pwd-modal__title-icon">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#1d4ed8"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </div>
+            Modifier le mot de passe
+          </div>
+          <button className="pwd-modal__close" onClick={onClose}>
+            ×
+          </button>
+        </div>
+
+        <div className="pwd-modal__body">
+          {/* Mot de passe actuel */}
+          <div className="pwd-field">
+            <label className="pwd-label">Mot de passe actuel</label>
+            <div className="pwd-input-wrap">
+              <input
+                type={showActuel ? "text" : "password"}
+                className="pwd-input"
+                placeholder="••••••••"
+                value={actuel}
+                onChange={(e) => setActuel(e.target.value)}
+                autoFocus
+              />
+              <button
+                className="pwd-eye"
+                type="button"
+                onClick={() => setShowActuel((v) => !v)}
+              >
+                <EyeToggleIcon show={showActuel} />
+              </button>
+            </div>
+          </div>
+
+          {/* Nouveau mot de passe */}
+          <div className="pwd-field">
+            <label className="pwd-label">Nouveau mot de passe</label>
+            <div className="pwd-input-wrap">
+              <input
+                type={showNouveau ? "text" : "password"}
+                className="pwd-input"
+                placeholder="••••••••"
+                value={nouveau}
+                onChange={(e) => setNouveau(e.target.value)}
+              />
+              <button
+                className="pwd-eye"
+                type="button"
+                onClick={() => setShowNouveau((v) => !v)}
+              >
+                <EyeToggleIcon show={showNouveau} />
+              </button>
+            </div>
+            {nouveau && (
+              <>
+                <div className="pwd-strength">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className={`pwd-strength__bar ${
+                        strength >= i ? strengthClass : ""
+                      }`}
+                    />
+                  ))}
+                </div>
+                <div className="pwd-hint">
+                  {strengthLabel} — minimum 8 caractères
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Confirmer */}
+          <div className="pwd-field">
+            <label className="pwd-label">
+              Confirmer le nouveau mot de passe
+            </label>
+            <div className="pwd-input-wrap">
+              <input
+                type={showConfirmer ? "text" : "password"}
+                className={`pwd-input ${
+                  confirmer && confirmer !== nouveau ? "error" : ""
+                }`}
+                placeholder="••••••••"
+                value={confirmer}
+                onChange={(e) => setConfirmer(e.target.value)}
+              />
+              <button
+                className="pwd-eye"
+                type="button"
+                onClick={() => setShowConfirmer((v) => !v)}
+              >
+                <EyeToggleIcon show={showConfirmer} />
+              </button>
+            </div>
+            {confirmer && confirmer !== nouveau && (
+              <div className="pwd-hint error">
+                Les mots de passe ne correspondent pas
+              </div>
+            )}
+          </div>
+
+          {erreur && (
+            <div
+              style={{
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderRadius: "8px",
+                padding: "10px 14px",
+                fontSize: ".85rem",
+                color: "#dc2626",
+              }}
+            >
+              {erreur}
+            </div>
+          )}
+        </div>
+
+        <div className="pwd-modal__footer">
+          <div className="sa-btn-row">
+            <button
+              className="sa-btn sa-btn--ghost"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Annuler
+            </button>
+            <button
+              className="sa-btn sa-btn--primary"
+              onClick={handleSubmit}
+              disabled={loading || !actuel || !nouveau || !confirmer}
+            >
+              {loading ? "Enregistrement…" : "Enregistrer"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Sidebar & Topbar ─────────────────────────────────────
-function Sidebar({ onLogout }) {
+function Sidebar({ onLogout, onChangePwd }) {
   return (
     <aside className="agent-sidebar">
       <NavLink to="/dashboardsc" className="agent-sidebar__brand">
@@ -372,6 +702,28 @@ function Sidebar({ onLogout }) {
             {n.label}
           </NavLink>
         ))}
+
+        {/* Bouton Modifier mot de passe */}
+        <button
+          className="agent-sidebar__link"
+          onClick={onChangePwd}
+          type="button"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            stroke="currentColor"
+          >
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          Modifier mot de passe
+        </button>
       </nav>
 
       <button
@@ -528,12 +880,11 @@ export default function DashboardCS() {
   const [search, setSearch] = useState("");
   const [demandes, setDemandes] = useState([]);
 
-  // ✅ stats: on garde un set "large" pour éviter les bugs de clés (backend peut renvoyer différentes clés)
   const [stats, setStats] = useState({
     aTraiter: 0,
     enTraitement: 0,
-    generes: 0, // alias
-    documentGenere: 0, // clé backend probable
+    generes: 0,
+    documentGenere: 0,
     rejetees: 0,
     attenteDirecteur: 0,
   });
@@ -545,11 +896,14 @@ export default function DashboardCS() {
   const [modal, setModal] = useState(null); // null | "generate" | "reject"
   const [motif, setMotif] = useState("");
   const [motifError, setMotifError] = useState("");
-  const [preview, setPreview] = useState(null); // { url, name }
+  const [preview, setPreview] = useState(null);
   const [generatedRef, setGeneratedRef] = useState("");
 
+  // État pour le modal mot de passe et le toast
+  const [showPwd, setShowPwd] = useState(false);
+  const [toast, setToast] = useState(null);
+
   useEffect(() => {
-    // récupère l'utilisateur si déjà stocké côté front
     try {
       const raw = localStorage.getItem("etudocs_user");
       if (raw) setUser(JSON.parse(raw));
@@ -557,6 +911,11 @@ export default function DashboardCS() {
     charger();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const showToast = (msg, isError = false) => {
+    setToast({ msg, isError });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   const logout = () => {
     try {
@@ -574,7 +933,6 @@ export default function DashboardCS() {
     const documentGenere = Number(base.documentGenere ?? base.generes ?? 0);
     const rejetees = Number(base.rejetees ?? 0);
     const attenteDirecteur = Number(base.attenteDirecteur ?? 0);
-
     return {
       aTraiter,
       enTraitement,
@@ -605,7 +963,6 @@ export default function DashboardCS() {
     try {
       const full = await getDemandeById(d.id);
       setSelected(full);
-
       const mapped = (full?.pieces || []).map((p) => ({
         id: p.id,
         name: p.typePiece,
@@ -619,18 +976,16 @@ export default function DashboardCS() {
             : null,
         comment: p.commentaire || "",
       }));
-
       setPieces(mapped);
       setGlobalComment(full?.commentaireChefDivision || "");
       setMotif("");
       setMotifError("");
       setPreview(null);
       setModal(null);
-
       setView("traitement");
     } catch (e) {
       console.error(e);
-      alert("Impossible d’ouvrir le dossier.");
+      alert("Impossible d'ouvrir le dossier.");
     }
   };
 
@@ -657,16 +1012,12 @@ export default function DashboardCS() {
   const setPieceStatus = async (id, status) => {
     const current = pieces.find((p) => p.id === id);
     const comment = (current?.comment || "").trim();
-
     if (status === "reject" && comment.length < 5) {
       alert("Motif obligatoire (min 5 caractères) pour rejeter une pièce.");
       return;
     }
-
-    // update UI immédiat
     setPieces((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
     setPieceBusy(id);
-
     try {
       await validerPiece(
         id,
@@ -675,7 +1026,6 @@ export default function DashboardCS() {
       );
     } catch (e) {
       console.error(e);
-      // revert
       setPieces((prev) =>
         prev.map((p) => (p.id === id ? { ...p, status: null } : p))
       );
@@ -716,12 +1066,10 @@ export default function DashboardCS() {
 
   const handleReject = async () => {
     if (!selected?.id) return;
-
     if (motif.trim().length < 20) {
       setMotifError("Le motif doit contenir au moins 20 caractères.");
       return;
     }
-
     try {
       await avancerDemande(selected.id, "REJETER", motif);
       await charger();
@@ -736,7 +1084,6 @@ export default function DashboardCS() {
   const filtered = useMemo(() => {
     const q = (search || "").trim().toLowerCase();
     if (!q) return demandes;
-
     return demandes.filter((d) => {
       const nom = `${d?.utilisateur?.nom || ""} ${
         d?.utilisateur?.prenom || ""
@@ -747,12 +1094,30 @@ export default function DashboardCS() {
     });
   }, [demandes, search]);
 
+  // ── Fragment commun : modal mot de passe + toast ─────
+  const sharedOverlays = (
+    <>
+      {toast && (
+        <div className={`sa-toast${toast.isError ? " sa-toast--error" : ""}`}>
+          {toast.msg}
+        </div>
+      )}
+      {showPwd && (
+        <ModalMotDePasse
+          onClose={() => setShowPwd(false)}
+          onSuccess={(msg) => showToast(msg)}
+        />
+      )}
+    </>
+  );
+
   // ── DASHBOARD ────────────────────────────────────────
   if (view === "dashboard")
     return (
       <div className="agent-layout">
         <style>{css}</style>
-        <Sidebar onLogout={logout} />
+        {sharedOverlays}
+        <Sidebar onLogout={logout} onChangePwd={() => setShowPwd(true)} />
         <div className="agent-main">
           <Topbar user={user} />
           <div className="agent-content">
@@ -935,7 +1300,6 @@ export default function DashboardCS() {
                       }`.trim() || "—";
                     const num = d.utilisateur?.numeroEtudiant || "—";
                     const { label, urgent } = delaiLabel(d.createdAt);
-
                     return (
                       <tr key={d.id}>
                         <td className="td-ref">
@@ -984,7 +1348,6 @@ export default function DashboardCS() {
                       </tr>
                     );
                   })}
-
                   {filtered.length === 0 && (
                     <tr>
                       <td
@@ -1013,7 +1376,8 @@ export default function DashboardCS() {
     return (
       <div className="agent-layout">
         <style>{css}</style>
-        <Sidebar onLogout={logout} />
+        {sharedOverlays}
+        <Sidebar onLogout={logout} onChangePwd={() => setShowPwd(true)} />
         <div className="agent-main">
           <Topbar user={user} />
           <div
@@ -1072,7 +1436,8 @@ export default function DashboardCS() {
   return (
     <div className="agent-layout">
       <style>{css}</style>
-      <Sidebar onLogout={logout} />
+      {sharedOverlays}
+      <Sidebar onLogout={logout} onChangePwd={() => setShowPwd(true)} />
       <div className="agent-main">
         <Topbar user={user} />
         <div className="agent-content">
@@ -1118,7 +1483,7 @@ export default function DashboardCS() {
           </div>
 
           <div className="traitement-grid">
-            {/* ── GAUCHE — Infos + Timeline ── */}
+            {/* ── GAUCHE — Infos ── */}
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div className="panel">
                 <div className="panel-header">
@@ -1269,7 +1634,6 @@ export default function DashboardCS() {
                       <span className="badge gray">En attente</span>
                     )}
                   </div>
-
                   <div className="piece-body">
                     <button
                       className="btn-preview"
@@ -1278,7 +1642,6 @@ export default function DashboardCS() {
                     >
                       <EyeIcon /> Consulter le fichier
                     </button>
-
                     <div className="piece-actions">
                       <button
                         disabled={pieceBusy === piece.id}
@@ -1301,18 +1664,6 @@ export default function DashboardCS() {
                         <XIcon /> Rejeter ✗
                       </button>
                     </div>
-
-                    {/* /  <textarea
-                      className="comment"
-                      rows={2}
-                      placeholder={
-                        piece.status === "reject"
-                          ? "Motif du rejet (obligatoire)..."
-                          : "Commentaire optionnel..."
-                      }
-                      value={piece.comment || ""}
-                      onChange={(e) => setPieceComment(piece.id, e.target.value)}
-                    /> */}
                   </div>
                 </div>
               ))}
@@ -1323,7 +1674,6 @@ export default function DashboardCS() {
                   l'attestation.
                 </div>
               )}
-
               {anyRejected && !allValidated && (
                 <div
                   className="info-box"
@@ -1381,7 +1731,6 @@ export default function DashboardCS() {
                       </div>
                     </div>
                   ))}
-
                   <div className="divider" />
                   <div
                     style={{
@@ -1418,7 +1767,6 @@ export default function DashboardCS() {
                   >
                     <SparkleIcon /> Valider et générer l'attestation
                   </button>
-
                   <button
                     className="btn-main reject-all"
                     type="button"
@@ -1433,7 +1781,6 @@ export default function DashboardCS() {
                   >
                     <XIcon /> Rejeter la demande
                   </button>
-
                   {!allDecided && (
                     <div className="info-box blue" style={{ marginTop: 4 }}>
                       Décidez pour chaque pièce avant de continuer.
@@ -1461,8 +1808,7 @@ export default function DashboardCS() {
             </div>
             <div className="modal-body">
               Vous allez générer l'attestation d'inscription pour{" "}
-              <strong>{nom}</strong>.
-              <br />
+              <strong>{nom}</strong>.<br />
               <br />
               Le système injectera automatiquement les données d'inscription
               (filière, niveau, année académique) dans le template officiel.{" "}
@@ -1499,7 +1845,6 @@ export default function DashboardCS() {
               Rejeter la demande de <strong>{nom}</strong>. L'étudiant sera
               notifié par email.
             </div>
-
             <div
               style={{
                 fontSize: ".72rem",
@@ -1510,7 +1855,6 @@ export default function DashboardCS() {
             >
               Motif de rejet *
             </div>
-
             <textarea
               className="motif-input"
               rows={4}
@@ -1521,7 +1865,6 @@ export default function DashboardCS() {
                 setMotifError("");
               }}
             />
-
             <div
               style={{
                 fontSize: ".72rem",
@@ -1532,7 +1875,6 @@ export default function DashboardCS() {
             >
               {motif.length}/20 min
             </div>
-
             {motifError && (
               <div
                 style={{
@@ -1544,7 +1886,6 @@ export default function DashboardCS() {
                 {motifError}
               </div>
             )}
-
             <div className="modal-actions" style={{ marginTop: 18 }}>
               <button
                 className="modal-btn cancel"
@@ -1580,7 +1921,6 @@ export default function DashboardCS() {
             <div className="modal-title">
               <EyeIcon /> {preview.name}
             </div>
-
             <div
               style={{
                 height: "calc(85vh - 100px)",
@@ -1595,7 +1935,6 @@ export default function DashboardCS() {
                 style={{ width: "100%", height: "100%", border: "none" }}
               />
             </div>
-
             <div className="modal-actions" style={{ marginTop: 12 }}>
               <button
                 className="modal-btn cancel"
