@@ -849,10 +849,6 @@ export default function DashboardCS() {
   const setPieceStatus = async (id, status) => {
     const current = pieces.find((p) => p.id === id);
     const comment = (current?.comment || "").trim();
-    if (status === "reject" && comment.length < 5) {
-      alert("Motif obligatoire (min 5 caractères) pour rejeter une pièce.");
-      return;
-    }
     setPieces((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
     setPieceBusy(id);
     try {
@@ -903,12 +899,15 @@ export default function DashboardCS() {
 
   const handleReject = async () => {
     if (!selected?.id) return;
-    if (motif.trim().length < 20) {
-      setMotifError("Le motif doit contenir au moins 20 caractères.");
+    if (globalComment.trim().length < 20) {
+      setMotifError(
+        "Le commentaire général est obligatoire (minimum 20 caractères)."
+      );
       return;
     }
     try {
-      await avancerDemande(selected.id, "REJETER", motif);
+      const notificationMessage = `Rejet de demande: ${globalComment.trim()}`;
+      await avancerDemande(selected.id, "REJETER", notificationMessage);
       await charger();
       setModal(null);
       setView("dashboard");
@@ -1577,17 +1576,45 @@ export default function DashboardCS() {
                       textTransform: "uppercase",
                       letterSpacing: ".05em",
                       marginBottom: 6,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
                     }}
                   >
-                    Commentaire général
+                    Commentaire général{" "}
+                    <span style={{ color: "var(--danger)" }}>*</span>
                   </div>
                   <textarea
                     className="comment"
                     rows={3}
-                    placeholder="Commentaire général (optionnel)..."
+                    placeholder="Commentaire obligatoire — sera envoyé à l'étudiant en cas de rejet (min. 20 caractères)..."
                     value={globalComment}
-                    onChange={(e) => setGlobalComment(e.target.value)}
+                    onChange={(e) => {
+                      setGlobalComment(e.target.value);
+                      setMotifError("");
+                    }}
                   />
+                  <div
+                    style={{
+                      fontSize: ".72rem",
+                      color: "var(--text-muted)",
+                      textAlign: "right",
+                      marginTop: 3,
+                    }}
+                  >
+                    {globalComment.length}/20 min
+                  </div>
+                  {motifError && (
+                    <div
+                      style={{
+                        fontSize: ".75rem",
+                        color: "var(--danger)",
+                        marginTop: 4,
+                      }}
+                    >
+                      {motifError}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1679,57 +1706,27 @@ export default function DashboardCS() {
               <XIcon /> Rejeter la demande
             </div>
             <div className="modal-body">
-              Rejeter la demande de <strong>{nom}</strong>. L'étudiant sera
-              notifié par email.
-            </div>
-            <div
-              style={{
-                fontSize: ".72rem",
-                fontWeight: 700,
-                color: "var(--muted)",
-                textTransform: "uppercase",
-              }}
-            >
-              Motif de rejet *
-            </div>
-            <textarea
-              className="motif-input"
-              rows={4}
-              placeholder="Motif précis (minimum 20 caractères)..."
-              value={motif}
-              onChange={(e) => {
-                setMotif(e.target.value);
-                setMotifError("");
-              }}
-            />
-            <div
-              style={{
-                fontSize: ".72rem",
-                color: "var(--muted)",
-                textAlign: "right",
-                marginTop: 3,
-              }}
-            >
-              {motif.length}/20 min
+              Rejeter la demande de <strong>{nom}</strong>.<br />
+              L'étudiant recevra une notification :{" "}
+              <em>"Rejet de demande: {globalComment}"</em>
             </div>
             {motifError && (
               <div
                 style={{
                   fontSize: ".75rem",
-                  color: "var(--red)",
-                  marginTop: 3,
+                  color: "var(--danger)",
+                  marginBottom: 12,
                 }}
               >
                 {motifError}
               </div>
             )}
-            <div className="modal-actions" style={{ marginTop: 18 }}>
+            <div className="modal-actions" style={{ marginTop: 8 }}>
               <button
                 className="modal-btn cancel"
                 type="button"
                 onClick={() => {
                   setModal(null);
-                  setMotif("");
                   setMotifError("");
                 }}
               >

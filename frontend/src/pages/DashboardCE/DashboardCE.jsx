@@ -947,10 +947,6 @@ export default function ChefDivisionExamens() {
   const setPieceStatus = async (id, status) => {
     const current = pieces.find((p) => p.id === id);
     const comment = (current?.comment || "").trim();
-    if (status === "reject" && comment.length < 5) {
-      alert("Motif obligatoire (min 5 caractères) pour rejeter une pièce.");
-      return;
-    }
     setPieces((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
     setPieceBusy(id);
     try {
@@ -1001,13 +997,16 @@ export default function ChefDivisionExamens() {
 
   const handleReject = async () => {
     if (!selected?.id) return;
-    if (motif.trim().length < 20) {
-      setMotifError("Le motif doit contenir au moins 20 caractères.");
+    if (globalComment.trim().length < 20) {
+      setMotifError(
+        "Le commentaire général est obligatoire (minimum 20 caractères)."
+      );
       return;
     }
     try {
       setGenBusy(true);
-      await avancerDemande(selected.id, "REJETER", motif);
+      const notificationMessage = `Rejet de demande: ${globalComment.trim()}`;
+      await avancerDemande(selected.id, "REJETER", notificationMessage);
       await Promise.all([chargerDemandes(), chargerStats()]);
       setModal(null);
       setView("dashboard");
@@ -1640,15 +1639,32 @@ export default function ChefDivisionExamens() {
                     </div>
                     <div className="divider-h" />
                     <div className="comment-global-label">
-                      Commentaire général
+                      Commentaire général{" "}
+                      <span style={{ color: "var(--danger)" }}>*</span>
                     </div>
                     <textarea
                       className="piece-comment-area"
                       rows={3}
-                      placeholder="Commentaire général sur ce dossier (optionnel)..."
+                      placeholder="Commentaire obligatoire — sera envoyé à l'étudiant en cas de rejet (min. 20 caractères)..."
                       value={globalComment}
-                      onChange={(e) => setGlobalComment(e.target.value)}
+                      onChange={(e) => {
+                        setGlobalComment(e.target.value);
+                        setMotifError("");
+                      }}
                     />
+                    <div
+                      style={{
+                        fontSize: ".72rem",
+                        color: "var(--text-muted)",
+                        textAlign: "right",
+                        marginTop: 3,
+                      }}
+                    >
+                      {globalComment.length}/20 min
+                    </div>
+                    {motifError && (
+                      <div className="motif-error">{motifError}</div>
+                    )}
                   </div>
                 </div>
 
@@ -1750,31 +1766,19 @@ export default function ChefDivisionExamens() {
               Vous allez rejeter la demande{" "}
               <span className="modal-ref">{selected?.ref}</span> de{" "}
               <strong>{selected?.etudiant}</strong>.<br />
-              L'étudiant sera notifié par email avec le motif de rejet.
+              L'étudiant recevra une notification :{" "}
+              <em>"Rejet de demande: {globalComment}"</em>
             </div>
-            <div className="comment-global-label">
-              Motif de rejet <span style={{ color: "var(--danger)" }}>*</span>
-            </div>
-            <textarea
-              className="motif-input"
-              rows={4}
-              placeholder="Expliquez précisément la raison du rejet (minimum 20 caractères)..."
-              value={motif}
-              onChange={(e) => {
-                setMotif(e.target.value);
-                setMotifError("");
-              }}
-            />
-            <div className="motif-count">
-              {motif.length} / 20 caractères minimum
-            </div>
-            {motifError && <div className="motif-error">{motifError}</div>}
-            <div className="modal-actions" style={{ marginTop: 20 }}>
+            {motifError && (
+              <div className="motif-error" style={{ marginBottom: 12 }}>
+                {motifError}
+              </div>
+            )}
+            <div className="modal-actions" style={{ marginTop: 8 }}>
               <button
                 className="modal-btn cancel"
                 onClick={() => {
                   setModal(null);
-                  setMotif("");
                   setMotifError("");
                 }}
                 disabled={genBusy}

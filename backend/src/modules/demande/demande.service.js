@@ -1,10 +1,16 @@
 // src/modules/demande/demande.service.js
 
 const prisma = require("../../config/prisma");
-const { assertPermission, getNextStatut } = require("../../modules/workflow/workflow");
+const {
+  assertPermission,
+  getNextStatut,
+} = require("../../modules/workflow/workflow");
 const emailService = require("../../services/email.service");
 
-const normalizeField = (v) => String(v || "").trim().toUpperCase();
+const normalizeField = (v) =>
+  String(v || "")
+    .trim()
+    .toUpperCase();
 
 const normalizeService = (s) => {
   const v = normalizeField(s);
@@ -19,15 +25,26 @@ const getServiceCible = (typeDocument) =>
   normalizeField(typeDocument) === "RELEVE_NOTES" ? "EXAMENS" : "SCOLARITE";
 
 const REQUIRED_PIECES_BY_DOC = {
-  RELEVE_NOTES: ["JUSTIFICATIF_INSCRIPTION", "ACTE_NAISSANCE", "CIP", "QUITTANCE"],
-  ATTESTATION_INSCRIPTION: ["JUSTIFICATIF_INSCRIPTION", "ACTE_NAISSANCE", "CIP", "QUITTANCE"],
+  RELEVE_NOTES: [
+    "JUSTIFICATIF_INSCRIPTION",
+    "ACTE_NAISSANCE",
+    "CIP",
+    "QUITTANCE",
+  ],
+  ATTESTATION_INSCRIPTION: [
+    "JUSTIFICATIF_INSCRIPTION",
+    "ACTE_NAISSANCE",
+    "CIP",
+    "QUITTANCE",
+  ],
 };
 
 const DEFAULT_REQUIRED = ["CIP", "QUITTANCE"];
 
 const parseSemestres = (semestres) => {
   if (!semestres) return [];
-  if (Array.isArray(semestres)) return semestres.map((s) => parseInt(s, 10)).filter(Boolean);
+  if (Array.isArray(semestres))
+    return semestres.map((s) => parseInt(s, 10)).filter(Boolean);
   const n = parseInt(semestres, 10);
   return Number.isFinite(n) ? [n] : [];
 };
@@ -48,7 +65,9 @@ exports.soumettre = async (utilisateurId, institutionId, body, files) => {
   const missing = required.filter((p) => !present.has(p));
 
   if (missing.length) {
-    const err = new Error(`Pièces manquantes pour ${docKey}: ${missing.join(", ")}`);
+    const err = new Error(
+      `Pièces manquantes pour ${docKey}: ${missing.join(", ")}`
+    );
     err.statusCode = 400;
     throw err;
   }
@@ -140,14 +159,29 @@ exports.getDemandes = async (user) => {
     },
   };
 
-  return prisma.demande.findMany({
+  const demandes = await prisma.demande.findMany({
     where,
     include: {
-      utilisateur: { select: { nom: true, prenom: true, numeroEtudiant: true, email: true } },
+      utilisateur: {
+        select: { nom: true, prenom: true, numeroEtudiant: true, email: true },
+      },
       pieces: true,
       documents: documentsInclude,
+      historique: {
+        where: { statut: "REJETEE" },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { commentaire: true, createdAt: true },
+      },
     },
     orderBy: { createdAt: "desc" },
+  });
+
+  // Exposer le commentaire de rejet directement sur l'objet demande
+  return demandes.map((d) => {
+    const motifRejet = d.historique?.[0]?.commentaire || null;
+    const { historique, ...rest } = d;
+    return { ...rest, motifRejet };
   });
 };
 
@@ -226,9 +260,9 @@ async function generateDocumentsOutsideTransaction({ demande, institutionId }) {
   const results = [];
 
   if (demande.typeDocument === "ATTESTATION_INSCRIPTION") {
-    const reference = `ETD-${annee}-${sigle}-ATT-${String(demande.id).substring(0, 5).toUpperCase()}-${uuidv4()
-      .substring(0, 4)
-      .toUpperCase()}`;
+    const reference = `ETD-${annee}-${sigle}-ATT-${String(demande.id)
+      .substring(0, 5)
+      .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
     const qrData = `${baseUrl}/verify/${reference}`;
 
     const pdfPath = await pdfService.generateAttestationInscription(
@@ -269,19 +303,33 @@ async function generateDocumentsOutsideTransaction({ demande, institutionId }) {
     return results;
   }
 
-  const reference = `ETD-${annee}-${sigle}-${String(demande.id).substring(0, 5).toUpperCase()}-${uuidv4()
-    .substring(0, 4)
-    .toUpperCase()}`;
+  const reference = `ETD-${annee}-${sigle}-${String(demande.id)
+    .substring(0, 5)
+    .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
   const qrData = `${baseUrl}/verify/${reference}`;
 
-  const pdfPath = await pdfService.generateDocument(demande, etudiant, null, reference, institution, qrData);
+  const pdfPath = await pdfService.generateDocument(
+    demande,
+    etudiant,
+    null,
+    reference,
+    institution,
+    qrData
+  );
 
   await qrcodeService.generate(qrData, reference);
   results.push({ reference, qrPayload: qrData, urlPdf: pdfPath });
   return results;
 }
 
-exports.avancer = async (demandeId, action, actorId, role, institutionId, commentaire) => {
+exports.avancer = async (
+  demandeId,
+  action,
+  actorId,
+  role,
+  institutionId,
+  commentaire
+) => {
   const demande = await prisma.demande.findUnique({
     where: { id: demandeId },
     include: { utilisateur: true, pieces: true },
@@ -316,22 +364,37 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
   if (action === "GENERER_DOCUMENT") {
     const invalid = demande.pieces.some((p) => p.statut !== "VALIDEE");
     if (invalid) {
-      const err = new Error("Toutes les pièces doivent être validées avant génération.");
+      const err = new Error(
+        "Toutes les pièces doivent être validées avant génération."
+      );
       err.statusCode = 400;
       throw err;
     }
   }
 
-  const prochainStatut = getNextStatut({ role, statutActuel: demande.statut, action });
+  const prochainStatut = getNextStatut({
+    role,
+    statutActuel: demande.statut,
+    action,
+  });
 
   let generatedDocs = null;
   if (action === "GENERER_DOCUMENT") {
-    generatedDocs = await generateDocumentsOutsideTransaction({ demande, institutionId });
+    generatedDocs = await generateDocumentsOutsideTransaction({
+      demande,
+      institutionId,
+    });
   }
 
   const updated = await prisma.$transaction(async (tx) => {
-    if (action === "GENERER_DOCUMENT" && Array.isArray(generatedDocs) && generatedDocs.length) {
-      const existingCount = await tx.document.count({ where: { demandeId: demande.id } });
+    if (
+      action === "GENERER_DOCUMENT" &&
+      Array.isArray(generatedDocs) &&
+      generatedDocs.length
+    ) {
+      const existingCount = await tx.document.count({
+        where: { demandeId: demande.id },
+      });
       if (existingCount > 0) {
         const err = new Error("Documents déjà générés pour cette demande.");
         err.statusCode = 400;
@@ -372,13 +435,25 @@ exports.avancer = async (demandeId, action, actorId, role, institutionId, commen
   });
 
   try {
-    await emailService.sendStatutChange(demande.utilisateur.email, demande.utilisateur.prenom, prochainStatut);
+    await emailService.sendStatutChange(
+      demande.utilisateur.email,
+      demande.utilisateur.prenom,
+      prochainStatut
+    );
   } catch {}
 
   return updated;
 };
 
-exports.validerPiece = async (pieceId, statut, commentaire, actorId, role, institutionId, service) => {
+exports.validerPiece = async (
+  pieceId,
+  statut,
+  commentaire,
+  actorId,
+  role,
+  institutionId,
+  service
+) => {
   if (role !== "CHEF_DIVISION") {
     const err = new Error("Seul le Chef de Division peut valider une pièce.");
     err.statusCode = 403;
@@ -420,7 +495,9 @@ exports.validerPiece = async (pieceId, statut, commentaire, actorId, role, insti
   const st = normalizeField(statut);
   const allowed = new Set(["VALIDEE", "REJETEE"]);
   if (!allowed.has(st)) {
-    const err = new Error("Statut pièce invalide (attendu: VALIDEE ou REJETEE).");
+    const err = new Error(
+      "Statut pièce invalide (attendu: VALIDEE ou REJETEE)."
+    );
     err.statusCode = 400;
     throw err;
   }
@@ -441,18 +518,31 @@ exports.getStatsChefDivision = async (user) => {
   const chefService = normalizeService(service);
 
   if (!chefService) {
-    return { aTraiter: 0, documentGenere: 0, attenteDirecteur: 0, disponibles: 0, rejetees: 0 };
+    return {
+      aTraiter: 0,
+      documentGenere: 0,
+      attenteDirecteur: 0,
+      disponibles: 0,
+      rejetees: 0,
+    };
   }
 
   const baseFilter = { institutionId, serviceCible: chefService };
 
-  const [aTraiter, rejetees, documentGenere, attenteDirecteur, disponibles] = await Promise.all([
-    prisma.demande.count({ where: { ...baseFilter, statut: "TRANSMISE_SECRETAIRE_GENERAL" } }),
-    prisma.demande.count({ where: { ...baseFilter, statut: "REJETEE" } }),
-    prisma.demande.count({ where: { ...baseFilter, statut: "DOCUMENT_GENERE" } }),
-    prisma.demande.count({ where: { ...baseFilter, statut: "ATTENTE_SIGNATURE_DIRECTEUR" } }),
-    prisma.demande.count({ where: { ...baseFilter, statut: "DISPONIBLE" } }),
-  ]);
+  const [aTraiter, rejetees, documentGenere, attenteDirecteur, disponibles] =
+    await Promise.all([
+      prisma.demande.count({
+        where: { ...baseFilter, statut: "TRANSMISE_SECRETAIRE_GENERAL" },
+      }),
+      prisma.demande.count({ where: { ...baseFilter, statut: "REJETEE" } }),
+      prisma.demande.count({
+        where: { ...baseFilter, statut: "DOCUMENT_GENERE" },
+      }),
+      prisma.demande.count({
+        where: { ...baseFilter, statut: "ATTENTE_SIGNATURE_DIRECTEUR" },
+      }),
+      prisma.demande.count({ where: { ...baseFilter, statut: "DISPONIBLE" } }),
+    ]);
 
   return { aTraiter, documentGenere, attenteDirecteur, disponibles, rejetees };
 };
@@ -492,7 +582,9 @@ exports.getStatsSG = async (user) => {
   const { institutionId } = user;
 
   const [transmises, rejetees] = await Promise.all([
-    prisma.demande.count({ where: { institutionId, statut: "TRANSMISE_SECRETAIRE_GENERAL" } }),
+    prisma.demande.count({
+      where: { institutionId, statut: "TRANSMISE_SECRETAIRE_GENERAL" },
+    }),
     prisma.demande.count({ where: { institutionId, statut: "REJETEE" } }),
   ]);
 
