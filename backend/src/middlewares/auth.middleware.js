@@ -1,8 +1,7 @@
 // src/middlewares/auth.middleware.js
 
 const jwt = require("jsonwebtoken");
-const { PrismaClient } = require("@prisma/client"); // adapter selon votre ORM
-const prisma = new PrismaClient();
+const prisma = require("../config/prisma");
 
 function getBearerToken(req) {
   const header = req.headers.authorization;
@@ -27,11 +26,11 @@ module.exports = async (req, res, next) => {
   try {
     const payload = jwt.verify(token, secret);
 
-    if (!payload || !payload.id || !payload.role) {
+    if (!payload || !payload.id) {
       return res.status(401).json({ message: "Token invalide ou expiré" });
     }
 
-    // ── Vérification en base : le compte est-il encore actif ? ──
+    // ── Vérification en base : utilisateur existe et actif, rôle depuis BDD ──
     const user = await prisma.utilisateur.findUnique({
       where: { id: payload.id },
       select: {
@@ -46,19 +45,19 @@ module.exports = async (req, res, next) => {
       },
     });
 
-    if (!user) return res.status(401).json({ message: "Compte introuvable" });
+    if (!user) {
+      return res.status(401).json({ message: "Compte introuvable" });
+    }
+
     if (!user.actif) {
       return res.status(403).json({ message: "Votre compte a été désactivé. Contactez l'administrateur." });
     }
 
-    // Normalisation
-    payload.role = String(payload.role).trim().toUpperCase();
-
     req.user = {
       id: user.id,
-      role: String(user.role || "").trim().toUpperCase(),
+      role: user.role,
       institutionId: user.institutionId,
-      service: user.service, // EXAMENS / SCOLARITE pour CHEF_DIVISION
+      service: user.service,
       email: user.email,
       nom: user.nom,
       prenom: user.prenom,

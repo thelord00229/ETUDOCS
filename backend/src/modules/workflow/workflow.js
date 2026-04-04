@@ -5,91 +5,94 @@
  * - Donne des messages humains (UX)
  */
 
+const { SOUMISE, CORRECTION_DEMANDEE, TRANSMISE_SECRETAIRE_ADJOINT, TRANSMISE_SECRETAIRE_GENERAL, DOCUMENT_GENERE, ATTENTE_SIGNATURE_DIRECTEUR, DISPONIBLE, REJETEE, ANNULEE } = require("../../constants/statuts");
+const { ETUDIANT, SECRETAIRE_ADJOINT, SECRETAIRE_GENERAL, CHEF_DIVISION, DIRECTEUR_ADJOINT, DIRECTEUR } = require("../../constants/roles");
+
 const WORKFLOW = Object.freeze({
   /**
    * Étudiant a soumis une demande.
    * Elle arrive chez le Secrétaire Adjoints pour vérification de complétude.
    */
-  SOUMISE: {
+  [SOUMISE]: {
     label: "Soumise",
     description: "Votre demande a été soumise et attend la vérification de complétude.",
-    roles: ["SECRETAIRE_ADJOINT"],
+    roles: [SECRETAIRE_ADJOINT],
     actions: {
-      TRANSMETTRE: "TRANSMISE_SECRETAIRE_ADJOINT",
-      DEMANDER_CORRECTION: "CORRECTION_DEMANDEE",
-      REJETER: "REJETEE",
+      TRANSMETTRE: TRANSMISE_SECRETAIRE_ADJOINT,
+      DEMANDER_CORRECTION: CORRECTION_DEMANDEE,
+      REJETER: REJETEE,
     },
   },
 
   /**
    * Correction demandée à l'étudiant.
    */
-  CORRECTION_DEMANDEE: {
+  [CORRECTION_DEMANDEE]: {
     label: "Correction demandée",
     description: "Des pièces sont manquantes ou illisibles. Veuillez corriger puis soumettre.",
-    roles: ["ETUDIANT"],
+    roles: [ETUDIANT],
     actions: {
-      SOUMETTRE_CORRECTION: "SOUMISE",
-      ANNULER: "ANNULEE",
+      SOUMETTRE_CORRECTION: SOUMISE,
+      ANNULER: ANNULEE,
     },
   },
 
   /**
    * Secrétaire adjoint a transmis au Secrétaire général.
    */
-  TRANSMISE_SECRETAIRE_ADJOINT: {
+  [TRANSMISE_SECRETAIRE_ADJOINT]: {
     label: "Transmise (Secrétaire général)",
     description: "Votre demande a été transmise au Secrétaire général.",
-    roles: ["SECRETAIRE_GENERAL"],
+    roles: [SECRETAIRE_GENERAL],
     actions: {
-      TRANSMETTRE: "TRANSMISE_SECRETAIRE_GENERAL",
-      REJETER: "REJETEE",
-      DEMANDER_CORRECTION: "CORRECTION_DEMANDEE",
+      TRANSMETTRE: TRANSMISE_SECRETAIRE_GENERAL,
+      REJETER: REJETEE,
+      DEMANDER_CORRECTION: CORRECTION_DEMANDEE,
     },
   },
 
   /**
    * Secrétaire général a transmis au Chef de division.
    */
-  TRANSMISE_SECRETAIRE_GENERAL: {
+  [TRANSMISE_SECRETAIRE_GENERAL]: {
     label: "Chez Chef de division",
     description: "Votre dossier est en cours de validation des pièces justificatives.",
-    roles: ["CHEF_DIVISION"],
+    roles: [CHEF_DIVISION],
     actions: {
-      GENERER_DOCUMENT: "DOCUMENT_GENERE",
-      REJETER: "REJETEE",
-      DEMANDER_CORRECTION: "CORRECTION_DEMANDEE",
+      GENERER_DOCUMENT: DOCUMENT_GENERE,
+      REJETER: REJETEE,
+      DEMANDER_CORRECTION: CORRECTION_DEMANDEE,
     },
   },
 
   /**
    * Document généré — attente de signature Directeur adjoint.
    */
-  DOCUMENT_GENERE: {
+  [DOCUMENT_GENERE]: {
     label: "Document généré",
     description: "Le document est généré et attend la signature du Directeur adjoint.",
-    roles: ["DIRECTEUR_ADJOINT"],
+    roles: [DIRECTEUR_ADJOINT],
     actions: {
-      APPROUVER: "ATTENTE_SIGNATURE_DIRECTEUR",
-      REJETER: "REJETEE",
+      APPROUVER: ATTENTE_SIGNATURE_DIRECTEUR,
+      REJETER: REJETEE,
     },
   },
 
   /**
    * Après signature DA, attente signature Directeur.
    */
-  ATTENTE_SIGNATURE_DIRECTEUR: {
+  [ATTENTE_SIGNATURE_DIRECTEUR]: {
     label: "En attente signature Directeur",
     description: "Le document attend la signature finale du Directeur.",
-    roles: ["DIRECTEUR"],
+    roles: [DIRECTEUR],
     actions: {
-      APPROUVER: "DISPONIBLE",
-      REJETER: "REJETEE",
+      APPROUVER: DISPONIBLE,
+      REJETER: REJETEE,
     },
   },
 
   // Statuts terminaux
-  DISPONIBLE: {
+  [DISPONIBLE]: {
     label: "Disponible",
     description: "Votre document est disponible au téléchargement.",
     terminal: true,
@@ -97,7 +100,7 @@ const WORKFLOW = Object.freeze({
     actions: {},
   },
 
-  REJETEE: {
+  [REJETEE]: {
     label: "Rejetée",
     description: "Votre demande a été rejetée.",
     terminal: true,
@@ -105,7 +108,7 @@ const WORKFLOW = Object.freeze({
     actions: {},
   },
 
-  ANNULEE: {
+  [ANNULEE]: {
     label: "Annulée",
     description: "La demande a été annulée par l'étudiant.",
     terminal: true,
@@ -207,12 +210,12 @@ function getStatutMeta(statut) {
  */
 function getTimelineSteps() {
   return [
-    "SOUMISE",
-    "TRANSMISE_SECRETAIRE_ADJOINT",
-    "TRANSMISE_SECRETAIRE_GENERAL",
-    "DOCUMENT_GENERE",
-    "ATTENTE_SIGNATURE_DIRECTEUR",
-    "DISPONIBLE",
+    SOUMISE,
+    TRANSMISE_SECRETAIRE_ADJOINT,
+    TRANSMISE_SECRETAIRE_GENERAL,
+    DOCUMENT_GENERE,
+    ATTENTE_SIGNATURE_DIRECTEUR,
+    DISPONIBLE,
   ].map(getStatutMeta);
 }
 

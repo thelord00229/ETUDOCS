@@ -4,6 +4,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const emailService = require("../../services/email.service");
+const validatePassword = require("./security/validatePassword");
+const { ETUDIANT } = require("../../constants/roles");
 
 const normalize = (v) => String(v || "").trim().toUpperCase();
 
@@ -67,11 +69,7 @@ exports.register = async ({
     throw err;
   }
 
-  if (password.length < 8) {
-    const err = new Error("Mot de passe trop court (minimum 8 caractères).");
-    err.statusCode = 400;
-    throw err;
-  }
+  validatePassword(password);
 
   const cleanEmail = String(email).trim().toLowerCase();
 
@@ -125,23 +123,23 @@ exports.register = async ({
       prenom: String(prenom).trim(),
       email: cleanEmail,
       password: hash,
-      role: "ETUDIANT",
+      role: ETUDIANT,
       numeroEtudiant: numeroEtudiant ? String(numeroEtudiant).trim() : null,
       filiere: filiere ? String(filiere).trim() : null,
       niveau: niveau ? String(niveau).trim() : null,
       institutionId: resolvedInstitutionId,
-      tokenVerification,
+      tokenVerification: tokenVerification ? await bcrypt.hash(tokenVerification, 12) : null,
       emailVerifie: REQUIRE_EMAIL_VERIFICATION ? false : true,
       actif: REQUIRE_EMAIL_VERIFICATION ? false : true,
     },
-    select: { id: true, email: true, tokenVerification: true },
+    select: { id: true, email: true },
   });
 
-  if (REQUIRE_EMAIL_VERIFICATION) {
+  if (REQUIRE_EMAIL_VERIFICATION && tokenVerification) {
     try {
       await emailService.sendVerificationEmail(
         created.email,
-        created.tokenVerification
+        tokenVerification
       );
     } catch (e) {
       console.log("[EMAIL SKIPPED]", e.message);
@@ -218,10 +216,17 @@ exports.login = async ({ email, password }) => {
 
 exports.verifyEmail = async (token) => {
   const user = await prisma.utilisateur.findFirst({
-    where: { tokenVerification: token },
+    where: { tokenVerification: { not: null } },
   });
 
   if (!user) {
+    const err = new Error("Token invalide");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const isValid = await bcrypt.compare(token, user.tokenVerification);
+  if (!isValid) {
     const err = new Error("Token invalide");
     err.statusCode = 400;
     throw err;
@@ -246,11 +251,12 @@ exports.requestPasswordReset = async (email) => {
   if (!user) return { message: "Si cet email existe, un lien a été envoyé." };
 
   const token = crypto.randomBytes(32).toString("hex");
+  const hashedToken = await bcrypt.hash(token, 12);
 
   await prisma.utilisateur.update({
     where: { id: user.id },
     data: {
-      tokenResetPassword: token,
+      tokenResetPassword: hashedToken,
       tokenResetExpiry: new Date(Date.now() + 3600000),
     },
   });
@@ -265,9 +271,11 @@ exports.requestPasswordReset = async (email) => {
 };
 
 exports.resetPassword = async (token, newPassword) => {
+  validatePassword(newPassword);
+
   const user = await prisma.utilisateur.findFirst({
-    where: { tokenResetPassword: token, tokenResetExpiry: { gt: new Date() } },
-    select: { id: true },
+    where: { tokenResetPassword: { not: null }, tokenResetExpiry: { gt: new Date() } },
+    select: { id: true, tokenResetPassword: true },
   });
 
   if (!user) {
@@ -276,8 +284,9 @@ exports.resetPassword = async (token, newPassword) => {
     throw err;
   }
 
-  if (!newPassword || newPassword.length < 8) {
-    const err = new Error("Mot de passe trop court (minimum 8 caractères).");
+  const isValid = await bcrypt.compare(token, user.tokenResetPassword);
+  if (!isValid) {
+    const err = new Error("Token invalide ou expiré");
     err.statusCode = 400;
     throw err;
   }
@@ -290,4 +299,35 @@ exports.resetPassword = async (token, newPassword) => {
   });
 
   return { message: "Mot de passe réinitialisé." };
+};
+
+exports.changePassword = async (userId, currentPassword, newPassword) => {
+  validatePassword(newPassword);
+
+  const user = await prisma.utilisateur.findUnique({
+    where: { id: userId },
+    select: { id: true, password: true },
+  });
+
+  if (!user) {
+    const err = new Error("Utilisateur introuvable");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const isValid = await bcrypt.compare(currentPassword, user.password);
+  if (!isValid) {
+    const err = new Error("Mot de passe actuel incorrect");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const hash = await bcrypt.hash(newPassword, 12);
+
+  await prisma.utilisateur.update({
+    where: { id: user.id },
+    data: { password: hash },
+  });
+
+  return { message: "Mot de passe modifié avec succès" };
 };
