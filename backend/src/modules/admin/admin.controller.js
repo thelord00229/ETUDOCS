@@ -1,6 +1,7 @@
 const adminService = require("./admin.service");
 const asyncHandler = require("../../utils/asyncHandler");
 const prisma = require("../../config/prisma");
+const { ATTESTATION_INSCRIPTION, RELEVE_NOTES } = require("../../constants/typeDocument");
 
 const DEFAULT_PASSWORD = "Password123!";
 
@@ -90,8 +91,8 @@ async function computeKpis({ days = 30, institution = "ALL", docType = "ALL" }) 
     // mapping simple (ajuste si tu veux)
     // ATTENTION: ton enum Prisma est ATTESTATION_INSCRIPTION / RELEVE_NOTES
     const map = {
-      ATTESTATION: "ATTESTATION_INSCRIPTION",
-      RELEVE: "RELEVE_NOTES",
+      ATTESTATION: ATTESTATION_INSCRIPTION,
+      RELEVE: RELEVE_NOTES,
     };
     if (map[docType]) baseWhere.typeDocument = map[docType];
   }

@@ -3,24 +3,26 @@
 const prisma = require("../../config/prisma");
 const { assertPermission, getNextStatut } = require("../../modules/workflow/workflow");
 const emailService = require("../../services/email.service");
+const { ATTESTATION_INSCRIPTION, RELEVE_NOTES } = require("../../constants/typeDocument");
+const { EXAMENS, SCOLARITE } = require("../../constants/services");
 
 const normalizeField = (v) => String(v || "").trim().toUpperCase();
 
 const normalizeService = (s) => {
   const v = normalizeField(s);
   if (!v) return "";
-  if (v === "EXAMEN") return "EXAMENS";
-  if (v === "EXAMENS") return "EXAMENS";
-  if (v === "SCOLARITE") return "SCOLARITE";
+  if (v === "EXAMEN") return EXAMENS;
+  if (v === EXAMENS) return EXAMENS;
+  if (v === SCOLARITE) return SCOLARITE;
   return v;
 };
 
 const getServiceCible = (typeDocument) =>
-  normalizeField(typeDocument) === "RELEVE_NOTES" ? "EXAMENS" : "SCOLARITE";
+  normalizeField(typeDocument) === RELEVE_NOTES ? EXAMENS : SCOLARITE;
 
 const REQUIRED_PIECES_BY_DOC = {
-  RELEVE_NOTES: ["JUSTIFICATIF_INSCRIPTION", "ACTE_NAISSANCE", "CIP", "QUITTANCE"],
-  ATTESTATION_INSCRIPTION: ["JUSTIFICATIF_INSCRIPTION", "ACTE_NAISSANCE", "CIP", "QUITTANCE"],
+  [RELEVE_NOTES]: ["JUSTIFICATIF_INSCRIPTION", "ACTE_NAISSANCE", "CIP", "QUITTANCE"],
+  [ATTESTATION_INSCRIPTION]: ["JUSTIFICATIF_INSCRIPTION", "ACTE_NAISSANCE", "CIP", "QUITTANCE"],
 };
 
 const DEFAULT_REQUIRED = ["CIP", "QUITTANCE"];
@@ -225,7 +227,7 @@ async function generateDocumentsOutsideTransaction({ demande, institutionId }) {
 
   const results = [];
 
-  if (demande.typeDocument === "ATTESTATION_INSCRIPTION") {
+  if (demande.typeDocument === ATTESTATION_INSCRIPTION) {
     const reference = `ETD-${annee}-${sigle}-ATT-${String(demande.id).substring(0, 5).toUpperCase()}-${uuidv4()
       .substring(0, 4)
       .toUpperCase()}`;

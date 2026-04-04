@@ -1,7 +1,5 @@
 const authService = require("./auth.service");
 const asyncHandler = require("../../utils/asyncHandler");
-const bcrypt = require("bcryptjs");
-const prisma = require("../../config/prisma");
 
 exports.register = asyncHandler(async (req, res) => {
   const result = await authService.register(req.body);
@@ -34,41 +32,10 @@ exports.resetPassword = asyncHandler(async (req, res) => {
 // ✅ Changer le mot de passe (utilisateur connecté)
 exports.changePassword = asyncHandler(async (req, res) => {
   const { motDePasseActuel, nouveauMotDePasse } = req.body;
-
-  if (!req.user?.id) {
-    return res.status(401).json({ message: "Non authentifié" });
-  }
-
-  if (!motDePasseActuel || !nouveauMotDePasse) {
-    return res.status(400).json({ message: "Tous les champs sont requis" });
-  }
-
-  if (nouveauMotDePasse.length < 8) {
-    return res.status(400).json({
-      message: "Le nouveau mot de passe doit contenir au moins 8 caractères",
-    });
-  }
-
-  const user = await prisma.utilisateur.findUnique({
-    where: { id: req.user.id },
-    select: { id: true, password: true },
-  });
-
-  if (!user) {
-    return res.status(404).json({ message: "Utilisateur introuvable" });
-  }
-
-  const valid = await bcrypt.compare(motDePasseActuel, user.password);
-  if (!valid) {
-    return res.status(400).json({ message: "Mot de passe actuel incorrect" });
-  }
-
-  const hash = await bcrypt.hash(nouveauMotDePasse, 10);
-
-  await prisma.utilisateur.update({
-    where: { id: user.id },
-    data: { password: hash },
-  });
-
-  res.json({ message: "Mot de passe modifié avec succès" });
+  const result = await authService.changePassword(
+    req.user.id,
+    motDePasseActuel,
+    nouveauMotDePasse
+  );
+  res.json(result);
 });
