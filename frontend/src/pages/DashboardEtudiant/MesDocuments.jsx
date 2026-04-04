@@ -300,7 +300,6 @@ function DocCard({ doc, onDownload }) {
         {/* Nom + date */}
         <div>
           <div className="doc-file-name">{doc.title}</div>
-          <div className="doc-file-date">Délivré le : {doc.date}</div>
         </div>
 
         {/* Bouton */}

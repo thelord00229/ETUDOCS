@@ -13,25 +13,21 @@ const css = `
   .topbar__notif {
     position: relative; background: none; border: none; cursor: pointer;
     color: #94a3b8; padding: 4px;
+    transition: color .15s;
   }
+  .topbar__notif:hover { color: #2e7d32; }
   .topbar__badge {
     position: absolute; top: 0; right: 0;
     width: 8px; height: 8px; border-radius: 50%;
-    background: #f5a623; border: 2px solid #fff;
+    background: #2e7d32; border: 2px solid #fff;
   }
 
-  /* ✅ Dropdown notifications */
   .notif-panel {
-    position: absolute;
-    top: 44px;
-    right: 0;
-    width: 360px;
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
+    position: absolute; top: 44px; right: 0;
+    width: 360px; background: #fff;
+    border: 1px solid #e2e8f0; border-radius: 14px;
     box-shadow: 0 10px 30px rgba(0,0,0,.08);
-    overflow: hidden;
-    z-index: 200;
+    overflow: hidden; z-index: 200;
   }
   .notif-panel__header {
     padding: 14px 14px 10px;
@@ -39,89 +35,55 @@ const css = `
     border-bottom: 1px solid #e2e8f0;
   }
   .notif-panel__title {
-    font-family: 'Sora', sans-serif;
-    font-weight: 700;
-    font-size: .9rem;
-    color: #1a2744;
+    font-family: 'Sora', sans-serif; font-weight: 700;
+    font-size: .9rem; color: #1e293b;
   }
-  .notif-panel__actions {
-    display: flex; align-items: center; gap: 10px;
-  }
+  .notif-panel__actions { display: flex; align-items: center; gap: 10px; }
   .notif-clear {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: .78rem;
-    font-weight: 600;
-    color: #94a3b8;
-    padding: 6px 8px;
-    border-radius: 8px;
+    background: none; border: none; cursor: pointer;
+    font-size: .78rem; font-weight: 600; color: #94a3b8;
+    padding: 6px 8px; border-radius: 8px;
     transition: background .15s, color .15s;
   }
-  .notif-clear:hover {
-    background: #f1f5f9;
-    color: #1a2744;
-  }
-  .notif-list {
-    max-height: 360px;
-    overflow: auto;
-  }
-  .notif-empty {
-    padding: 18px 14px;
-    font-size: .85rem;
-    color: #64748b;
-  }
+  .notif-clear:hover { background: #f1f8e9; color: #2e7d32; }
+
+  .notif-list { max-height: 360px; overflow: auto; }
+  .notif-empty { padding: 18px 14px; font-size: .85rem; color: #64748b; }
   .notif-item {
-    padding: 12px 14px;
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 12px 14px; display: flex; gap: 10px;
+    align-items: flex-start; border-bottom: 1px solid #f1f5f9;
   }
   .notif-item:last-child { border-bottom: none; }
-
   .notif-dot {
     width: 9px; height: 9px; border-radius: 50%;
-    background: #f5a623;
-    margin-top: 6px;
-    flex-shrink: 0;
+    background: #2e7d32; margin-top: 6px; flex-shrink: 0;
   }
   .notif-body { flex: 1; min-width: 0; }
   .notif-msg {
-    font-size: .85rem;
-    color: #1e293b;
-    line-height: 1.35;
-    margin-bottom: 4px;
-    word-break: break-word;
+    font-size: .85rem; color: #1e293b;
+    line-height: 1.35; margin-bottom: 4px; word-break: break-word;
   }
-  .notif-meta {
-    font-size: .75rem;
-    color: #94a3b8;
-  }
+  .notif-meta { font-size: .75rem; color: #94a3b8; }
   .notif-del {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #94a3b8;
-    padding: 4px;
-    border-radius: 8px;
-    transition: background .15s, color .15s;
-    flex-shrink: 0;
+    background: none; border: none; cursor: pointer;
+    color: #94a3b8; padding: 4px; border-radius: 8px;
+    transition: background .15s, color .15s; flex-shrink: 0;
   }
-  .notif-del:hover {
-    background: #fef2f2;
-    color: #dc2626;
-  }
+  .notif-del:hover { background: #fef2f2; color: #dc2626; }
 
   .topbar__user { display: flex; align-items: center; gap: 10px; }
   .topbar__avatar {
-    width: 38px; height: 38px; border-radius: 50%; background: #1a2744;
+    width: 38px; height: 38px; border-radius: 50%;
+    background: #2e7d32;
     display: flex; align-items: center; justify-content: center;
-    font-family: 'Sora', sans-serif; font-weight: 700; font-size: 0.85rem; color: #fff;
-    flex-shrink: 0;
+    font-family: 'Sora', sans-serif; font-weight: 700;
+    font-size: 0.85rem; color: #fff; flex-shrink: 0;
   }
   .topbar__info { line-height: 1.3; }
-  .topbar__name { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 0.9rem; color: #1a2744; }
+  .topbar__name {
+    font-family: 'Sora', sans-serif; font-weight: 700;
+    font-size: 0.9rem; color: #1e293b;
+  }
   .topbar__meta { font-size: 0.78rem; color: #94a3b8; }
 `;
 

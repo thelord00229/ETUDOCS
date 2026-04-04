@@ -15,12 +15,12 @@ const css = `
     display: flex; align-items: center; gap: 10px;
     padding: 20px 20px 28px;
     font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.1rem;
-    color: #1a2744; text-decoration: none;
+    color: #2e7d32; text-decoration: none;
   }
   .sidebar__brand-icon {
     width: 42px; height: 42px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    overflow: hidden; background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; overflow: hidden; background: transparent;
   }
   .sidebar__nav { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 0 10px; }
   .sidebar__link {
@@ -30,11 +30,11 @@ const css = `
     color: #475569; text-decoration: none;
     transition: background .15s, color .15s;
   }
-  .sidebar__link:hover { background: #f1f5f9; color: #1a2744; }
-  .sidebar__link.active { background: #1a2744; color: #fff; }
+  .sidebar__link:hover { background: #f1f8e9; color: #2e7d32; }
+  .sidebar__link.active { background: #2e7d32; color: #fff; }
   .sidebar__link.active svg { stroke: #fff; }
   .sidebar__link svg { stroke: #94a3b8; transition: stroke .15s; }
-  .sidebar__link:hover svg { stroke: #1a2744; }
+  .sidebar__link:hover svg { stroke: #2e7d32; }
   .sidebar__divider { height: 1px; background: #e2e8f0; margin: 12px 10px; }
   .sidebar__logout {
     display: flex; align-items: center; gap: 12px;
