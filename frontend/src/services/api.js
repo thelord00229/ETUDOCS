@@ -17,10 +17,17 @@ export const getStoredUser = () => {
     localStorage.getItem("etudocs_user") ||
     sessionStorage.getItem("etudocs_user");
   if (!raw) return null;
-  try { return JSON.parse(raw); } catch { return null; }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 };
 
-const normalizeInst = (v) => String(v || "").trim().toUpperCase();
+const normalizeInst = (v) =>
+  String(v || "")
+    .trim()
+    .toUpperCase();
 
 export const getInstitutionCode = () => {
   const u = getStoredUser();
@@ -63,7 +70,10 @@ export const setSession = ({ token, user }) => {
 export const avancerDocument = async (reference, action, commentaire = "") => {
   const body = { action };
   if (commentaire) body.commentaire = commentaire;
-  return apiRequest(`/api/documents/${reference}/avancer`, { method: "POST", body });
+  return apiRequest(`/api/documents/${reference}/avancer`, {
+    method: "POST",
+    body,
+  });
 };
 
 export const clearSession = () => {
@@ -137,7 +147,11 @@ const apiRequest = async (endpoint, { method = "GET", body, headers } = {}) => {
   return res.json().catch(() => ({}));
 };
 
-const apiForm = async (endpoint, formData, { method = "POST", headers } = {}) => {
+const apiForm = async (
+  endpoint,
+  formData,
+  { method = "POST", headers } = {}
+) => {
   const res = await fetch(`${API_URL}${endpoint}`, {
     method,
     headers: buildHeaders({ json: false, extraHeaders: headers }),
@@ -205,6 +219,9 @@ export const getStatsSG = () =>
 export const getStatsDA = () =>
   apiRequest("/api/demandes/stats/directeur-adjoint");
 
+// ✅ Stats Directeur
+export const getStatsDI = () => apiRequest("/api/demandes/stats/directeur");
+
 export const avancerDemande = async (id, action, commentaire = "") => {
   const body = { action };
   if (commentaire) body.commentaire = commentaire;
@@ -212,8 +229,14 @@ export const avancerDemande = async (id, action, commentaire = "") => {
 };
 
 export const submitDemande = async ({
-  typeDocument, semestre, semestres, anneeAcademique,
-  CIP, QUITTANCE, ACTE_NAISSANCE, JUSTIFICATIF_INSCRIPTION,
+  typeDocument,
+  semestre,
+  semestres,
+  anneeAcademique,
+  CIP,
+  QUITTANCE,
+  ACTE_NAISSANCE,
+  JUSTIFICATIF_INSCRIPTION,
 }) => {
   const token = getToken();
   if (!token) throw new Error("UNAUTHORIZED");
@@ -223,7 +246,9 @@ export const submitDemande = async ({
   if (anneeAcademique) form.append("anneeAcademique", anneeAcademique);
 
   if (Array.isArray(semestres)) {
-    semestres.forEach((s) => form.append("semestres", String(s).replace("S", "")));
+    semestres.forEach((s) =>
+      form.append("semestres", String(s).replace("S", ""))
+    );
   } else if (semestre) {
     form.append("semestres", String(semestre));
   }
@@ -231,7 +256,8 @@ export const submitDemande = async ({
   if (CIP) form.append("CIP", CIP);
   if (QUITTANCE) form.append("QUITTANCE", QUITTANCE);
   if (ACTE_NAISSANCE) form.append("ACTE_NAISSANCE", ACTE_NAISSANCE);
-  if (JUSTIFICATIF_INSCRIPTION) form.append("JUSTIFICATIF_INSCRIPTION", JUSTIFICATIF_INSCRIPTION);
+  if (JUSTIFICATIF_INSCRIPTION)
+    form.append("JUSTIFICATIF_INSCRIPTION", JUSTIFICATIF_INSCRIPTION);
 
   return apiForm("/api/demandes", form, { method: "POST" });
 };

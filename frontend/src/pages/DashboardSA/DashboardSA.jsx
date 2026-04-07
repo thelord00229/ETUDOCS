@@ -410,7 +410,14 @@ function ModalMotDePasse({ onClose, onSuccess }) {
 
   const strength = getStrength(nouveau);
   const strengthLabel = ["", "Faible", "Faible", "Moyen", "Fort"][strength];
-  const strengthClass = strength <= 1 ? "weak" : strength <= 2 ? "weak" : strength === 3 ? "medium" : "strong";
+  const strengthClass =
+    strength <= 1
+      ? "weak"
+      : strength <= 2
+      ? "weak"
+      : strength === 3
+      ? "medium"
+      : "strong";
 
   const handleSubmit = async () => {
     setErreur("");
@@ -436,7 +443,10 @@ function ModalMotDePasse({ onClose, onSuccess }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ ancienMotDePasse: actuel, nouveauMotDePasse: nouveau }),
+        body: JSON.stringify({
+          ancienMotDePasse: actuel,
+          nouveauMotDePasse: nouveau,
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -452,7 +462,16 @@ function ModalMotDePasse({ onClose, onSuccess }) {
   };
 
   const EyeIcon = ({ show }) => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       {show ? (
         <>
           <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
@@ -474,14 +493,25 @@ function ModalMotDePasse({ onClose, onSuccess }) {
         <div className="pwd-modal__head">
           <div className="pwd-modal__title">
             <div className="pwd-modal__title-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#1d4ed8"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
             </div>
             Modifier le mot de passe
           </div>
-          <button className="sa-modal__close" onClick={onClose}>×</button>
+          <button className="sa-modal__close" onClick={onClose}>
+            ×
+          </button>
         </div>
 
         <div className="pwd-modal__body">
@@ -497,7 +527,11 @@ function ModalMotDePasse({ onClose, onSuccess }) {
                 onChange={(e) => setActuel(e.target.value)}
                 autoFocus
               />
-              <button className="pwd-eye" type="button" onClick={() => setShowActuel((v) => !v)}>
+              <button
+                className="pwd-eye"
+                type="button"
+                onClick={() => setShowActuel((v) => !v)}
+              >
                 <EyeIcon show={showActuel} />
               </button>
             </div>
@@ -514,7 +548,11 @@ function ModalMotDePasse({ onClose, onSuccess }) {
                 value={nouveau}
                 onChange={(e) => setNouveau(e.target.value)}
               />
-              <button className="pwd-eye" type="button" onClick={() => setShowNouveau((v) => !v)}>
+              <button
+                className="pwd-eye"
+                type="button"
+                onClick={() => setShowNouveau((v) => !v)}
+              >
                 <EyeIcon show={showNouveau} />
               </button>
             </div>
@@ -524,37 +562,60 @@ function ModalMotDePasse({ onClose, onSuccess }) {
                   {[1, 2, 3, 4].map((i) => (
                     <div
                       key={i}
-                      className={`pwd-strength__bar ${strength >= i ? strengthClass : ""}`}
+                      className={`pwd-strength__bar ${
+                        strength >= i ? strengthClass : ""
+                      }`}
                     />
                   ))}
                 </div>
-                <div className="pwd-hint">{strengthLabel} — minimum 8 caractères</div>
+                <div className="pwd-hint">
+                  {strengthLabel} — minimum 8 caractères
+                </div>
               </>
             )}
           </div>
 
           {/* Confirmer */}
           <div className="pwd-field">
-            <label className="pwd-label">Confirmer le nouveau mot de passe</label>
+            <label className="pwd-label">
+              Confirmer le nouveau mot de passe
+            </label>
             <div className="pwd-input-wrap">
               <input
                 type={showConfirmer ? "text" : "password"}
-                className={`pwd-input ${confirmer && confirmer !== nouveau ? "error" : ""}`}
+                className={`pwd-input ${
+                  confirmer && confirmer !== nouveau ? "error" : ""
+                }`}
                 placeholder="••••••••"
                 value={confirmer}
                 onChange={(e) => setConfirmer(e.target.value)}
               />
-              <button className="pwd-eye" type="button" onClick={() => setShowConfirmer((v) => !v)}>
+              <button
+                className="pwd-eye"
+                type="button"
+                onClick={() => setShowConfirmer((v) => !v)}
+              >
                 <EyeIcon show={showConfirmer} />
               </button>
             </div>
             {confirmer && confirmer !== nouveau && (
-              <div className="pwd-hint error">Les mots de passe ne correspondent pas</div>
+              <div className="pwd-hint error">
+                Les mots de passe ne correspondent pas
+              </div>
             )}
           </div>
 
           {erreur && (
-            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "10px 14px", fontSize: ".85rem", color: "#dc2626" }}>
+            <div
+              style={{
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderRadius: "8px",
+                padding: "10px 14px",
+                fontSize: ".85rem",
+                color: "#dc2626",
+              }}
+            >
               {erreur}
             </div>
           )}
@@ -562,7 +623,11 @@ function ModalMotDePasse({ onClose, onSuccess }) {
 
         <div className="pwd-modal__footer">
           <div className="sa-btn-row">
-            <button className="sa-btn sa-btn--ghost" onClick={onClose} disabled={loading}>
+            <button
+              className="sa-btn sa-btn--ghost"
+              onClick={onClose}
+              disabled={loading}
+            >
               Annuler
             </button>
             <button
@@ -592,10 +657,11 @@ function ModalVerifier({ demande, onClose, onSuccess }) {
     setLoading(true);
     try {
       await avancerDemande(demande.id, "TRANSMETTRE");
-      onSuccess("Demande transmise au Secrétaire Général ✓");
+      // On passe l'ID directement — le parent n'a pas besoin de lire `selected`
+      onSuccess("Demande transmise au Secrétaire Général ✓", false, demande.id);
       onClose();
     } catch (e) {
-      onSuccess(e?.message || "Erreur lors de la transmission", true);
+      onSuccess(e?.message || "Erreur lors de la transmission", true, null);
     } finally {
       setLoading(false);
     }
@@ -616,22 +682,30 @@ function ModalVerifier({ demande, onClose, onSuccess }) {
               Réf : {demande.id} · soumise le {fmtDate(demande.createdAt)}
             </div>
           </div>
-          <button className="sa-modal__close" onClick={onClose}>×</button>
+          <button className="sa-modal__close" onClick={onClose}>
+            ×
+          </button>
         </div>
 
         <div className="sa-modal__body">
           <div className="sa-info-grid">
             <div className="sa-info-item">
               <div className="sa-info-key">Étudiant</div>
-              <div className="sa-info-val">{etudiant.prenom} {etudiant.nom}</div>
+              <div className="sa-info-val">
+                {etudiant.prenom} {etudiant.nom}
+              </div>
             </div>
             <div className="sa-info-item">
               <div className="sa-info-key">N° Étudiant</div>
-              <div className="sa-info-val">{etudiant.numeroEtudiant || "—"}</div>
+              <div className="sa-info-val">
+                {etudiant.numeroEtudiant || "—"}
+              </div>
             </div>
             <div className="sa-info-item">
               <div className="sa-info-key">Document</div>
-              <div className="sa-info-val">{TYPE_LABEL[demande.typeDocument] || demande.typeDocument}</div>
+              <div className="sa-info-val">
+                {TYPE_LABEL[demande.typeDocument] || demande.typeDocument}
+              </div>
             </div>
             <div className="sa-info-item">
               <div className="sa-info-key">Statut</div>
@@ -641,12 +715,18 @@ function ModalVerifier({ demande, onClose, onSuccess }) {
 
           {pieces.length > 0 && (
             <div>
-              <div className="sa-pieces-label">Pièces justificatives ({pieces.length})</div>
+              <div className="sa-pieces-label">
+                Pièces justificatives ({pieces.length})
+              </div>
               {pieces.map((p) => (
                 <div key={p.id} className="sa-piece-row">
                   <div>
-                    <div className="sa-piece-name">{PIECE_LABEL[p.typePiece] || p.typePiece}</div>
-                    <div className="sa-piece-meta">{p.nom || "Fichier uploadé"}</div>
+                    <div className="sa-piece-name">
+                      {PIECE_LABEL[p.typePiece] || p.typePiece}
+                    </div>
+                    <div className="sa-piece-meta">
+                      {p.nom || "Fichier uploadé"}
+                    </div>
                   </div>
                   <span className="sa-piece-tag">{p.statut || "SOUMISE"}</span>
                 </div>
@@ -683,6 +763,30 @@ export default function DashboardSA() {
   const [selected, setSelected] = useState(null);
   const [showPwd, setShowPwd] = useState(false);
   const [toast, setToast] = useState(null);
+
+  // Compteur de transmissions persisté dans localStorage.
+  // On stocke les IDs pour éviter les doublons (même demande transmise deux fois).
+  const [transmisesIds, setTransmisesIds] = useState(() => {
+    try {
+      const raw = localStorage.getItem("etudocs_sa_transmises");
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const addTransmise = (id) => {
+    if (!id) return;
+    setTransmisesIds((prev) => {
+      if (prev.includes(id)) return prev; // déjà compté, pas de doublon
+      const next = [...prev, id];
+      try {
+        localStorage.setItem("etudocs_sa_transmises", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
   const user = (() => {
     try {
@@ -729,9 +833,11 @@ export default function DashboardSA() {
 
   const stats = {
     nouvelles: demandes.filter((d) => d.statut === "SOUMISE").length,
-    corrections: demandes.filter((d) => d.statut === "CORRECTION_DEMANDEE").length,
+    corrections: demandes.filter((d) => d.statut === "CORRECTION_DEMANDEE")
+      .length,
     total: demandes.length,
-    transmises: 0,
+    // Nombre de demandes transmises, persisté via localStorage (survit aux rechargements)
+    transmises: transmisesIds.length,
   };
 
   // ✅ Filtrage + tri du plus ancien au plus récent
@@ -742,14 +848,21 @@ export default function DashboardSA() {
       const u = d.utilisateur || {};
       const nom = `${u.prenom || ""} ${u.nom || ""}`.toLowerCase();
       const ref = String(d.id || "").toLowerCase();
-      const doc = String(TYPE_LABEL[d.typeDocument] || d.typeDocument || "").toLowerCase();
+      const doc = String(
+        TYPE_LABEL[d.typeDocument] || d.typeDocument || ""
+      ).toLowerCase();
       const num = String(u.numeroEtudiant || "").toLowerCase();
-      return nom.includes(q) || ref.includes(q) || doc.includes(q) || num.includes(q);
+      return (
+        nom.includes(q) || ref.includes(q) || doc.includes(q) || num.includes(q)
+      );
     })
     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); // Plus ancien → plus récent
 
   const handleLogout = () => {
     clearSession();
+    try {
+      localStorage.removeItem("etudocs_sa_transmises");
+    } catch {}
     window.location.href = "/login";
   };
 
@@ -767,8 +880,15 @@ export default function DashboardSA() {
       {selected && (
         <ModalVerifier
           demande={selected}
-          onClose={() => { setSelected(null); load(); }}
-          onSuccess={(msg, isErr) => { showToast(msg, isErr); if (!isErr) load(); }}
+          onClose={() => setSelected(null)}
+          onSuccess={(msg, isErr, demandeId) => {
+            showToast(msg, isErr);
+            if (!isErr) {
+              if (demandeId) addTransmise(demandeId);
+              load();
+            }
+            setSelected(null);
+          }}
         />
       )}
 
@@ -798,7 +918,15 @@ export default function DashboardSA() {
                 "agent-sidebar__link" + (isActive ? " active" : "")
               }
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d={n.d} />
               </svg>
               {n.label}
@@ -810,7 +938,15 @@ export default function DashboardSA() {
             className="agent-sidebar__link"
             onClick={() => setShowPwd(true)}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
@@ -821,7 +957,15 @@ export default function DashboardSA() {
         <div className="agent-sidebar__divider" />
 
         <button className="agent-sidebar__logout" onClick={handleLogout}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
           Déconnexion
@@ -836,14 +980,26 @@ export default function DashboardSA() {
           </div>
           <div className="agent-topbar__right">
             <button className="agent-topbar__notif">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
               {stats.nouvelles > 0 && <span className="agent-topbar__badge" />}
             </button>
             <div className="agent-topbar__user">
-              <div className="agent-topbar__info" style={{ textAlign: "right" }}>
+              <div
+                className="agent-topbar__info"
+                style={{ textAlign: "right" }}
+              >
                 <div className="agent-topbar__name">{displayName}</div>
                 <div className="agent-topbar__meta">{institution}</div>
               </div>
@@ -856,10 +1012,25 @@ export default function DashboardSA() {
           <div className="agent-page-header">
             <div>
               <h2 className="agent-page-title">Tableau de bord</h2>
-              <p className="agent-page-sub">Gérez les nouvelles demandes des étudiants.</p>
+              <p className="agent-page-sub">
+                Gérez les nouvelles demandes des étudiants.
+              </p>
             </div>
-            <button className="btn-actualiser" onClick={load} disabled={loading}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <button
+              className="btn-actualiser"
+              onClick={load}
+              disabled={loading}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <polyline points="23 4 23 10 17 10" />
                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
               </svg>
@@ -870,26 +1041,99 @@ export default function DashboardSA() {
           <div className="agent-stats">
             {[
               {
-                value: stats.nouvelles, label: "NOUVELLES DEMANDES", iconBg: "#eff6ff",
-                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0" /></svg>,
+                value: stats.nouvelles,
+                label: "NOUVELLES DEMANDES",
+                iconBg: "#eff6ff",
+                icon: (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#1d4ed8"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0" />
+                  </svg>
+                ),
               },
               {
-                value: stats.corrections, label: "CORRECTIONS DEMANDÉES", iconBg: "#fff7ed",
-                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>,
+                value: stats.corrections,
+                label: "CORRECTIONS DEMANDÉES",
+                iconBg: "#fff7ed",
+                icon: (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#ea580c"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                ),
               },
               {
-                value: stats.total, label: "TOTAL À TRAITER", iconBg: "#f1f5f9",
-                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>,
+                value: stats.total,
+                label: "TOTAL À TRAITER",
+                iconBg: "#f1f5f9",
+                icon: (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#475569"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="3" y="3" width="7" height="7" />
+                    <rect x="14" y="3" width="7" height="7" />
+                    <rect x="3" y="14" width="7" height="7" />
+                    <rect x="14" y="14" width="7" height="7" />
+                  </svg>
+                ),
               },
               {
-                value: stats.transmises, label: "TRANSMISES", iconBg: "#f0fdf4",
-                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>,
+                value: stats.transmises,
+                label: "TRANSMISES",
+                iconBg: "#f0fdf4",
+                icon: (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#16a34a"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                ),
               },
             ].map((s, i) => (
               <div className="agent-stat-card" key={i}>
-                <div className="agent-stat-card__icon" style={{ background: s.iconBg }}>{s.icon}</div>
+                <div
+                  className="agent-stat-card__icon"
+                  style={{ background: s.iconBg }}
+                >
+                  {s.icon}
+                </div>
                 <div>
-                  <div className="agent-stat-card__value">{loading ? "…" : s.value}</div>
+                  <div className="agent-stat-card__value">
+                    {loading ? "…" : s.value}
+                  </div>
                   <div className="agent-stat-card__label">{s.label}</div>
                 </div>
               </div>
@@ -901,12 +1145,23 @@ export default function DashboardSA() {
           <div className="agent-table-card">
             <div className="agent-table-header">
               <div className="agent-table-title">
-                Demandes à traiter <span className="count-badge">{filtered.length}</span>
+                Demandes à traiter{" "}
+                <span className="count-badge">{filtered.length}</span>
               </div>
               <div className="agent-table-actions">
                 <div className="search-box">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#94a3b8"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
                   </svg>
                   <input
                     placeholder="Rechercher..."
@@ -915,7 +1170,16 @@ export default function DashboardSA() {
                   />
                 </div>
                 <button className="btn-filter" type="button">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#475569"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
                   </svg>
                 </button>
@@ -936,14 +1200,32 @@ export default function DashboardSA() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="6" style={{ textAlign: "center", padding: "32px", color: "#94a3b8", fontSize: ".9rem" }}>
+                    <td
+                      colSpan="6"
+                      style={{
+                        textAlign: "center",
+                        padding: "32px",
+                        color: "#94a3b8",
+                        fontSize: ".9rem",
+                      }}
+                    >
                       Chargement…
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan="6" style={{ textAlign: "center", padding: "32px", color: "#94a3b8", fontSize: ".9rem" }}>
-                      {search ? "Aucune demande trouvée" : "Aucune demande en attente"}
+                    <td
+                      colSpan="6"
+                      style={{
+                        textAlign: "center",
+                        padding: "32px",
+                        color: "#94a3b8",
+                        fontSize: ".9rem",
+                      }}
+                    >
+                      {search
+                        ? "Aucune demande trouvée"
+                        : "Aucune demande en attente"}
                     </td>
                   </tr>
                 ) : (
@@ -953,10 +1235,16 @@ export default function DashboardSA() {
                       <tr key={d.id}>
                         <td className="td-ref">{d.id}</td>
                         <td>
-                          <div className="td-etudiant-name">{u.prenom} {u.nom}</div>
-                          <div className="td-etudiant-num">{u.numeroEtudiant || "—"}</div>
+                          <div className="td-etudiant-name">
+                            {u.prenom} {u.nom}
+                          </div>
+                          <div className="td-etudiant-num">
+                            {u.numeroEtudiant || "—"}
+                          </div>
                         </td>
-                        <td className="td-doc">{TYPE_LABEL[d.typeDocument] || d.typeDocument}</td>
+                        <td className="td-doc">
+                          {TYPE_LABEL[d.typeDocument] || d.typeDocument}
+                        </td>
                         <td className="td-date">{fmtDate(d.createdAt)}</td>
                         <td>
                           <span className={`badge ${badgeClass(d.statut)}`}>
@@ -965,8 +1253,19 @@ export default function DashboardSA() {
                         </td>
                         <td>
                           <div className="td-actions">
-                            <button className="btn-verifier" onClick={() => setSelected(d)}>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <button
+                              className="btn-verifier"
+                              onClick={() => setSelected(d)}
+                            >
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                                 <circle cx="12" cy="12" r="3" />
                               </svg>

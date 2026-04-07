@@ -719,11 +719,10 @@ export default function DashboardCS() {
 
   const [stats, setStats] = useState({
     aTraiter: 0,
-    enTraitement: 0,
-    generes: 0,
     documentGenere: 0,
-    rejetees: 0,
     attenteDirecteur: 0,
+    disponibles: 0,
+    rejetees: 0,
   });
 
   const [selected, setSelected] = useState(null);
@@ -764,19 +763,14 @@ export default function DashboardCS() {
   };
 
   const normalizeStats = (st) => {
+    // API retourne : { aTraiter, documentGenere, attenteDirecteur, disponibles, rejetees }
     const base = st ?? {};
-    const aTraiter = Number(base.aTraiter ?? 0);
-    const enTraitement = Number(base.enTraitement ?? 0);
-    const documentGenere = Number(base.documentGenere ?? base.generes ?? 0);
-    const rejetees = Number(base.rejetees ?? 0);
-    const attenteDirecteur = Number(base.attenteDirecteur ?? 0);
     return {
-      aTraiter,
-      enTraitement,
-      documentGenere,
-      generes: documentGenere,
-      rejetees,
-      attenteDirecteur,
+      aTraiter: Number(base.aTraiter ?? 0),
+      documentGenere: Number(base.documentGenere ?? 0),
+      attenteDirecteur: Number(base.attenteDirecteur ?? 0),
+      disponibles: Number(base.disponibles ?? 0),
+      rejetees: Number(base.rejetees ?? 0),
     };
   };
 
@@ -1011,7 +1005,7 @@ export default function DashboardCS() {
                 },
                 {
                   val: stats.documentGenere,
-                  label: "GÉNÉRÉES (MOIS)",
+                  label: "DOCS GÉNÉRÉS",
                   bg: "#f0fdf4",
                   icon: (
                     <svg
@@ -1139,10 +1133,14 @@ export default function DashboardCS() {
                     return (
                       <tr key={d.id}>
                         <td className="td-ref">
-                          {(d.ref || d.id || "")
-                            .toString()
-                            .substring(0, 8)
-                            .toUpperCase()}
+                          {d.document?.reference ||
+                            d.documents?.[0]?.reference ||
+                            d.ref ||
+                            (d.id || "")
+                              .toString()
+                              .substring(0, 8)
+                              .toUpperCase() ||
+                            "—"}
                         </td>
                         <td>
                           <div className="td-etudiant-name">{nom}</div>
@@ -1310,10 +1308,14 @@ export default function DashboardCS() {
                   color: "var(--blue)",
                 }}
               >
-                {(selected?.ref || selected?.id || "")
-                  .toString()
-                  .substring(0, 8)
-                  .toUpperCase()}
+                {selected?.document?.reference ||
+                  selected?.documents?.[0]?.reference ||
+                  selected?.ref ||
+                  (selected?.id || "")
+                    .toString()
+                    .substring(0, 8)
+                    .toUpperCase() ||
+                  "—"}
               </div>
             </div>
           </div>
@@ -1345,11 +1347,22 @@ export default function DashboardCS() {
                   <div className="info-row">
                     <div className="info-label">Filière / Niveau</div>
                     <div className="info-value">
-                      {selected?.utilisateur?.filiere
-                        ? `${selected.utilisateur.filiere} — ${
-                            selected.utilisateur.niveau || ""
-                          }`
-                        : "—"}
+                      {(() => {
+                        const u = selected?.utilisateur;
+                        const filiere =
+                          u?.filiere ||
+                          u?.etudiant?.filiere ||
+                          u?.profile?.filiere ||
+                          null;
+                        const niveau =
+                          u?.niveau ||
+                          u?.etudiant?.niveau ||
+                          u?.profile?.niveau ||
+                          null;
+                        if (!filiere && !niveau) return "—";
+                        if (filiere && niveau) return `${filiere} — ${niveau}`;
+                        return filiere || niveau;
+                      })()}
                     </div>
                   </div>
                   <div className="info-row">
@@ -1417,7 +1430,10 @@ export default function DashboardCS() {
                   <div className="info-row">
                     <div className="info-label">Référence</div>
                     <div className="info-value mono">
-                      {selected?.documents?.[0]?.reference || "—"}
+                      {selected?.document?.reference ||
+                        selected?.documents?.[0]?.reference ||
+                        selected?.ref ||
+                        "—"}
                     </div>
                   </div>
                 </div>

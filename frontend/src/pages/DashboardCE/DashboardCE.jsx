@@ -3,7 +3,7 @@ import {
   getDemandes,
   getDemandeById,
   avancerDemande,
-  getChefDivisionStats,
+  getStatsDI,
   validerPiece,
 } from "../../services/api";
 
@@ -97,7 +97,7 @@ const styles = `
   }
   .actualiser-btn:hover { background: var(--uac-dk); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(46,125,50,.28); }
 
-  .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 28px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 28px; }
   .stat-card {
     background: white; border-radius: 16px; padding: 24px 20px;
     display: flex; align-items: center; gap: 16px;
@@ -846,11 +846,11 @@ export default function ChefDivisionExamens() {
   const [preview, setPreview] = useState(null);
   const [genBusy, setGenBusy] = useState(false);
   const [demandes, setDemandes] = useState([]);
+  // getStatsDI retourne : { aSigner, signesCeMois, refuses }
   const [stats, setStats] = useState({
-    aTraiter: 0,
-    enTraitement: 0,
-    generes: 0,
-    rejetees: 0,
+    aSigner: 0,
+    signesCeMois: 0,
+    refuses: 0,
   });
 
   // État modal mot de passe + toast
@@ -879,13 +879,11 @@ export default function ChefDivisionExamens() {
 
   const chargerStats = async () => {
     try {
-      const data = await getChefDivisionStats();
-      setStats(
-        data ?? { aTraiter: 0, enTraitement: 0, generes: 0, rejetees: 0 }
-      );
+      const data = await getStatsDI();
+      setStats(data ?? { aSigner: 0, signesCeMois: 0, refuses: 0 });
     } catch (e) {
       console.error(e);
-      setStats({ aTraiter: 0, enTraitement: 0, generes: 0, rejetees: 0 });
+      setStats({ aSigner: 0, signesCeMois: 0, refuses: 0 });
     }
   };
 
@@ -1084,26 +1082,20 @@ export default function ChefDivisionExamens() {
                   {
                     icon: <ClockIcon />,
                     cls: "pending",
-                    val: stats.aTraiter,
-                    label: "À traiter",
+                    val: stats.aSigner,
+                    label: "En attente de signature",
                   },
                   {
                     icon: <ClipboardCheckIcon />,
                     cls: "process",
-                    val: stats.enTraitement,
-                    label: "En traitement",
-                  },
-                  {
-                    icon: <CheckCircleIcon />,
-                    cls: "done",
-                    val: stats.generes,
-                    label: "Générés (mois)",
+                    val: stats.signesCeMois,
+                    label: "Signés ce mois",
                   },
                   {
                     icon: <AlertCircleIcon />,
                     cls: "refused",
-                    val: stats.rejetees,
-                    label: "Rejetées",
+                    val: stats.refuses,
+                    label: "Rejetées ce mois",
                   },
                 ].map((s) => (
                   <div className="stat-card" key={s.label}>
@@ -1167,6 +1159,8 @@ export default function ChefDivisionExamens() {
                           const num = d.utilisateur?.numeroEtudiant || "—";
                           const ref =
                             d.document?.reference ||
+                            d.documents?.[0]?.reference ||
+                            d.ref ||
                             (d.id || "")
                               .toString()
                               .substring(0, 8)
@@ -1368,7 +1362,11 @@ export default function ChefDivisionExamens() {
                   Traitement du dossier
                 </h1>
                 <span className="td-ref" style={{ fontSize: 13 }}>
-                  {selected?.id?.substring(0, 8).toUpperCase() || "—"}
+                  {selected?.document?.reference ||
+                    selected?.documents?.[0]?.reference ||
+                    selected?.ref ||
+                    selected?.id?.substring(0, 8).toUpperCase() ||
+                    "—"}
                 </span>
               </div>
             </div>
@@ -1402,11 +1400,23 @@ export default function ChefDivisionExamens() {
                     <div className="info-row">
                       <div className="info-label">Filière / Niveau</div>
                       <div className="info-value">
-                        {selected?.utilisateur?.filiere
-                          ? `${selected.utilisateur.filiere} — ${
-                              selected.utilisateur.niveau || ""
-                            }`
-                          : "—"}
+                        {(() => {
+                          const u = selected?.utilisateur;
+                          const filiere =
+                            u?.filiere ||
+                            u?.etudiant?.filiere ||
+                            u?.profile?.filiere ||
+                            null;
+                          const niveau =
+                            u?.niveau ||
+                            u?.etudiant?.niveau ||
+                            u?.profile?.niveau ||
+                            null;
+                          if (!filiere && !niveau) return "—";
+                          if (filiere && niveau)
+                            return `${filiere} — ${niveau}`;
+                          return filiere || niveau;
+                        })()}
                       </div>
                     </div>
                     <div className="info-row">
@@ -1473,7 +1483,10 @@ export default function ChefDivisionExamens() {
                     <div className="info-row">
                       <div className="info-label">Référence</div>
                       <div className="info-value mono">
-                        {selected?.documents?.[0]?.reference || "—"}
+                        {selected?.document?.reference ||
+                          selected?.documents?.[0]?.reference ||
+                          selected?.ref ||
+                          "—"}
                       </div>
                     </div>
                   </div>

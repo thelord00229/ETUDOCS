@@ -757,7 +757,7 @@ export default function DashboardDA() {
               },
               {
                 val: stats.signesCeMois,
-                label: "SIGNÉS (MOIS)",
+                label: "TRANSMIS AU DIR. (MOIS)",
                 bg: "#f0fdf4",
                 icon: (
                   <svg

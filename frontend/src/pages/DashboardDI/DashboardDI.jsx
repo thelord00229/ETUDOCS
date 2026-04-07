@@ -3,6 +3,7 @@ import {
   getDemandes,
   avancerDocument,
   previewDocumentBlob,
+  getStatsDI,
 } from "../../services/api";
 
 // ── Styles ────────────────────────────────────────────────
@@ -556,6 +557,12 @@ export default function DashboardDI() {
   const [showPwd, setShowPwd] = useState(false);
   const [toast, setToast] = useState(null);
   const [confirmRow, setConfirmRow] = useState(null);
+  // Stats provenant du backend via getStatsDI()
+  const [stats, setStats] = useState({
+    aSigner: 0,
+    signesCeMois: 0,
+    refuses: 0,
+  });
 
   useEffect(() => {
     try {
@@ -583,26 +590,50 @@ export default function DashboardDI() {
   const charger = async () => {
     setLoading(true);
     try {
-      const data = await getDemandes();
+      // getDemandes() pour DIRECTEUR retourne uniquement les demandes
+      // avec statut ATTENTE_SIGNATURE_DIRECTEUR — on déroule leurs documents
+      // pour l'affichage du tableau uniquement.
+      // Les stats chiffrées viennent du backend via getStatsDI() pour être exactes.
+      const [data, statsData] = await Promise.all([
+        getDemandes(),
+        getStatsDI(),
+      ]);
       const demandes = Array.isArray(data) ? data : data?.demandes ?? [];
       const lignes = [];
       for (const d of demandes) {
         const docs = Array.isArray(d.documents) ? d.documents : [];
-        for (const doc of docs) {
-          const sMatch = doc.reference?.match(/-S(\d+)-/);
+        if (docs.length === 0) {
+          // Demande sans document encore lié : on affiche quand même la ligne
           lignes.push({
-            reference: doc.reference,
+            reference: null,
             etudiant: `${d.utilisateur?.prenom ?? ""} ${
               d.utilisateur?.nom ?? ""
             }`.trim(),
             typeDocument: d.typeDocument,
-            semestre: sMatch ? `S${sMatch[1]}` : null,
-            createdAt: doc.createdAt || d.createdAt,
-            statutDoc: doc.statut,
+            semestre: null,
+            createdAt: d.createdAt,
+            demandeId: d.id,
+            statut: d.statut,
           });
+        } else {
+          for (const doc of docs) {
+            const sMatch = doc.reference?.match(/-S(\d+)-/);
+            lignes.push({
+              reference: doc.reference,
+              etudiant: `${d.utilisateur?.prenom ?? ""} ${
+                d.utilisateur?.nom ?? ""
+              }`.trim(),
+              typeDocument: d.typeDocument,
+              semestre: sMatch ? `S${sMatch[1]}` : null,
+              createdAt: doc.createdAt || d.createdAt,
+              demandeId: d.id,
+              statut: d.statut,
+            });
+          }
         }
       }
       setRows(lignes);
+      setStats(statsData ?? { aSigner: 0, signesCeMois: 0, refuses: 0 });
     } catch (e) {
       console.error(e);
       setRows([]);
@@ -670,13 +701,13 @@ export default function DashboardDI() {
     </>
   );
 
-  const statsASigner = rows.length;
-  const statsValides = rows.filter(
-    (r) => r.statutDoc === "SIGNE" || r.statutDoc === "VALIDE"
-  ).length;
-  const statsRefuses = rows.filter(
-    (r) => r.statutDoc === "REFUSE" || r.statutDoc === "REJETE"
-  ).length;
+  // Stats issues du backend (getStatsDI) — fiables et correctement calculées
+  // aSigner      = count(ATTENTE_SIGNATURE_DIRECTEUR) — demandes en attente
+  // signesCeMois = count(DISPONIBLE ce mois-ci) — signées et livrées ce mois
+  // refuses      = count(REJETEE ce mois-ci)
+  const statsASigner = loading ? "…" : stats.aSigner;
+  const statsValides = loading ? "…" : stats.signesCeMois;
+  const statsRefuses = loading ? "…" : stats.refuses;
 
   return (
     <div className="agent-layout">
@@ -744,7 +775,7 @@ export default function DashboardDI() {
               },
               {
                 val: statsValides,
-                label: "VALIDÉS (MOIS)",
+                label: "SIGNÉS CE MOIS",
                 bg: "#f0fdf4",
                 icon: (
                   <svg
@@ -841,8 +872,8 @@ export default function DashboardDI() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((r) => (
-                  <tr key={r.reference}>
+                {filtered.map((r, i) => (
+                  <tr key={r.reference ?? `row-${i}`}>
                     <td className="td-ref">{r.reference}</td>
                     <td>
                       <div className="td-etudiant-name">{r.etudiant}</div>
@@ -851,7 +882,7 @@ export default function DashboardDI() {
                     <td className="td-date">{r.semestre ?? "—"}</td>
                     <td className="td-date">{formatDate(r.createdAt)}</td>
                     <td>
-                      <span className="badge gray">{r.statutDoc}</span>
+                      <span className="badge gray">{r.statut ?? "—"}</span>
                     </td>
                     <td style={{ textAlign: "right" }}>
                       <div style={{ display: "inline-flex", gap: 8 }}>

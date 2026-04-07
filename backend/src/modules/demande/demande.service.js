@@ -27,7 +27,6 @@ const getServiceCible = (typeDocument) =>
   normalizeField(typeDocument) === RELEVE_NOTES ? EXAMENS : SCOLARITE;
 
 const REQUIRED_PIECES_BY_DOC = {
-<<<<<<< HEAD
   RELEVE_NOTES: [
     "JUSTIFICATIF_INSCRIPTION",
     "ACTE_NAISSANCE",
@@ -40,10 +39,6 @@ const REQUIRED_PIECES_BY_DOC = {
     "CIP",
     "QUITTANCE",
   ],
-=======
-  [RELEVE_NOTES]: ["JUSTIFICATIF_INSCRIPTION", "ACTE_NAISSANCE", "CIP", "QUITTANCE"],
-  [ATTESTATION_INSCRIPTION]: ["JUSTIFICATIF_INSCRIPTION", "ACTE_NAISSANCE", "CIP", "QUITTANCE"],
->>>>>>> f07f3d3ec560f8648c9fa5214653b927dacaf197
 };
 
 const DEFAULT_REQUIRED = ["CIP", "QUITTANCE"];
@@ -266,17 +261,10 @@ async function generateDocumentsOutsideTransaction({ demande, institutionId }) {
 
   const results = [];
 
-<<<<<<< HEAD
   if (demande.typeDocument === "ATTESTATION_INSCRIPTION") {
     const reference = `ETD-${annee}-${sigle}-ATT-${String(demande.id)
       .substring(0, 5)
       .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
-=======
-  if (demande.typeDocument === ATTESTATION_INSCRIPTION) {
-    const reference = `ETD-${annee}-${sigle}-ATT-${String(demande.id).substring(0, 5).toUpperCase()}-${uuidv4()
-      .substring(0, 4)
-      .toUpperCase()}`;
->>>>>>> f07f3d3ec560f8648c9fa5214653b927dacaf197
     const qrData = `${baseUrl}/verify/${reference}`;
 
     const pdfPath = await pdfService.generateAttestationInscription(
