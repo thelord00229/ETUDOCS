@@ -70,7 +70,7 @@ const css = `
   .badge--disponible { background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; }
   .badge--attente    { background:#fffbeb; color:#d97706; border:1px solid #fde68a; }
   .badge--rejete     { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
-  .badge--expire     { background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; }
+  .badge--expire     { <background: id="f"></background:>1f5f9; color:#64748b; border:1px solid #e2e8f0; }
 
   .state-box { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:18px 20px; color:#475569; }
   .state-error { color:#dc2626; }
@@ -170,6 +170,7 @@ const css = `
     background:#f8fafc; border:1px solid #e2e8f0;
     display:flex; align-items:center; justify-content:center; color:#94a3b8;
   }
+  .piece-rejected { display:inline-flex; align-items:center; gap:5px; font-size:.8rem; font-weight:600; color:#dc2626; white-space:nowrap; }
   .piece-name { font-size:.88rem; font-weight:600; color:#1e293b; }
   .piece-meta { font-size:.75rem; color:#94a3b8; margin-top:2px; }
   .piece-ok   { display:inline-flex; align-items:center; gap:5px; font-size:.8rem; font-weight:600; color:#16a34a; white-space:nowrap; }
@@ -204,7 +205,14 @@ const css = `
   }
 `;
 
-const FILTERS = ["Toutes", "En attente", "En traitement", "Disponible", "Expirée", "Rejetée"];
+const FILTERS = [
+  "Toutes",
+  "En attente",
+  "En traitement",
+  "Disponible",
+  "Expirée",
+  "Rejetée",
+];
 
 const labelType = (t) => {
   if (t === "RELEVE_NOTES") return "Relevé de notes";
@@ -215,9 +223,11 @@ const labelType = (t) => {
 const computeUiStatus = (demande) => {
   const raw = demande?.statut || null;
   const doc0 = Array.isArray(demande?.documents) ? demande.documents[0] : null;
-  const downloadCount = typeof doc0?.downloadCount === "number" ? doc0.downloadCount : null;
+  const downloadCount =
+    typeof doc0?.downloadCount === "number" ? doc0.downloadCount : null;
 
-  const isExpired = raw === "DISPONIBLE" && downloadCount !== null && downloadCount >= 3;
+  const isExpired =
+    raw === "DISPONIBLE" && downloadCount !== null && downloadCount >= 3;
   if (isExpired) return "Expirée";
 
   if (raw === "DISPONIBLE") return "Disponible";
@@ -308,31 +318,92 @@ const getSteps = (rawStatut, uiStatut) => {
    ICONES
 ───────────────────────────────────────────────────────────── */
 const IcoArrow = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <line x1="19" y1="12" x2="5" y2="12" />
     <polyline points="12 19 5 12 12 5" />
   </svg>
 );
 const IcoEye = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
     <circle cx="12" cy="12" r="3" />
   </svg>
 );
 const IcoFile = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
     <polyline points="14 2 14 8 20 8" />
   </svg>
 );
 const IcoCheckGreen = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="15"
+    height="15"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#16a34a"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
     <polyline points="22 4 12 14.01 9 11.01" />
   </svg>
 );
+const IcoXRed = () => (
+  <svg
+    width="15"
+    height="15"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#dc2626"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="15" y1="9" x2="9" y2="15" />
+    <line x1="9" y1="9" x2="15" y2="15" />
+  </svg>
+);
 const SvgStepDone = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="white"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <polyline points="20 6 9 17 4 12" />
   </svg>
 );
@@ -388,11 +459,19 @@ function DetailDemande({ demande, onBack, onGoDocuments }) {
   const ref = reference || demande.id;
 
   const dateStr = demande.createdAt
-    ? new Date(demande.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })
+    ? new Date(demande.createdAt).toLocaleDateString("fr-FR", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
     : "—";
 
   const updatedStr = demande.updatedAt
-    ? new Date(demande.updatedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })
+    ? new Date(demande.updatedAt).toLocaleDateString("fr-FR", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
     : "—";
 
   const pieces = Array.isArray(demande.pieces) ? demande.pieces : [];
@@ -420,12 +499,21 @@ function DetailDemande({ demande, onBack, onGoDocuments }) {
               <div className={`stepper-dot stepper-dot--${s.state}`}>
                 {s.state === "done" && <SvgStepDone />}
                 {s.state === "active" && (
-                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#1a2744" }} />
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: "#1a2744",
+                    }}
+                  />
                 )}
               </div>
               <div className={`stepper-label stepper-label--${s.state}`}>
                 {s.label}
-                {s.state === "active" && <div className="stepper-label--sub">En cours</div>}
+                {s.state === "active" && (
+                  <div className="stepper-label--sub">En cours</div>
+                )}
               </div>
             </div>
           ))}
@@ -441,30 +529,50 @@ function DetailDemande({ demande, onBack, onGoDocuments }) {
           ) : (
             pieces.map((p) => {
               const pieceLabel =
-                p.typePiece === "CIP" ? "Carte d'Identification Personnelle (CIP)" :
-                p.typePiece === "QUITTANCE" ? "Quittance de paiement" :
-                p.typePiece === "ACTE_NAISSANCE" ? "Acte de naissance" :
-                p.typePiece === "JUSTIFICATIF_INSCRIPTION" ? "Justificatif d'inscription" :
-                p.typePiece || "Pièce";
+                p.typePiece === "CIP"
+                  ? "Carte d'Identification Personnelle (CIP)"
+                  : p.typePiece === "QUITTANCE"
+                  ? "Quittance de paiement"
+                  : p.typePiece === "ACTE_NAISSANCE"
+                  ? "Acte de naissance"
+                  : p.typePiece === "JUSTIFICATIF_INSCRIPTION"
+                  ? "Justificatif d'inscription"
+                  : p.typePiece || "Pièce";
 
-              const meta = p.nom ? p.nom : (p.url ? String(p.url).split("\\").pop() : "—");
+              const meta = p.nom
+                ? p.nom
+                : p.url
+                ? String(p.url).split("\\").pop()
+                : "—";
               const statutPiece = p.statut || "SOUMISE";
-              
 
               return (
                 <div key={p.id} className="piece-row">
                   <div className="piece-left">
-                    <div className="piece-ico"><IcoFile /></div>
+                    <div className="piece-ico">
+                      <IcoFile />
+                    </div>
                     <div style={{ minWidth: 0 }}>
                       <div className="piece-name">{pieceLabel}</div>
-                      <div className="piece-meta" style={{ wordBreak: "break-word" }}>
+                      <div
+                        className="piece-meta"
+                        style={{ wordBreak: "break-word" }}
+                      >
                         {meta}
                       </div>
                     </div>
                   </div>
 
                   <span className="piece-ok">
-                    <IcoCheckGreen /> {statutPiece}
+                    {statutPiece === "REJETEE" || statutPiece === "REJETE" ? (
+                      <span className="piece-rejected">
+                        <IcoXRed /> {statutPiece}
+                      </span>
+                    ) : (
+                      <span className="piece-ok">
+                        <IcoCheckGreen /> {statutPiece}
+                      </span>
+                    )}
                   </span>
                 </div>
               );
@@ -501,7 +609,10 @@ function DetailDemande({ demande, onBack, onGoDocuments }) {
             <div className="help-title">Besoin d'aide ?</div>
             <div className="help-text">
               Si vous rencontrez un problème avec cette demande, contactez{" "}
-              <a href="mailto:support@etudocs.bj" style={{ color: "#1a2744", fontWeight: 600 }}>
+              <a
+                href="mailto:support@etudocs.bj"
+                style={{ color: "#1a2744", fontWeight: 600 }}
+              >
                 support@etudocs.bj
               </a>
               .
@@ -528,7 +639,6 @@ export default function MesDemandes() {
 
   const location = useLocation();
 
-
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -554,7 +664,14 @@ export default function MesDemandes() {
   }, [demandes, location.state?.openId]);
 
   const counts = useMemo(() => {
-    const base = { Toutes: 0, "En attente": 0, "En traitement": 0, Disponible: 0, Expirée: 0, Rejetée: 0 };
+    const base = {
+      Toutes: 0,
+      "En attente": 0,
+      "En traitement": 0,
+      Disponible: 0,
+      Expirée: 0,
+      Rejetée: 0,
+    };
     base.Toutes = demandes.length;
     for (const d of demandes) {
       const s = computeUiStatus(d);
@@ -570,7 +687,11 @@ export default function MesDemandes() {
       const type = labelType(d.typeDocument);
       const dateObj = d.createdAt ? new Date(d.createdAt) : null;
       const date = dateObj
-        ? dateObj.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })
+        ? dateObj.toLocaleDateString("fr-FR", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })
         : "—";
       const status = computeUiStatus(d);
       const groupKey = groupKeyForDate(d.createdAt);
@@ -593,7 +714,10 @@ export default function MesDemandes() {
 
     const list = flatRows.filter((row) => {
       const matchFilter = filter === "Toutes" || row.status === filter;
-      const matchSearch = !q || row.ref.toLowerCase().includes(q) || row.type.toLowerCase().includes(q);
+      const matchSearch =
+        !q ||
+        row.ref.toLowerCase().includes(q) ||
+        row.type.toLowerCase().includes(q);
       return matchFilter && matchSearch;
     });
 
@@ -633,7 +757,9 @@ export default function MesDemandes() {
       <div className="md-header">
         <div>
           <h2 className="md-title">Mes demandes</h2>
-          <p className="md-sub">Suivez l'état de toutes vos demandes de documents</p>
+          <p className="md-sub">
+            Suivez l'état de toutes vos demandes de documents
+          </p>
         </div>
 
         <a href="/dashboardEtu/nouvelle" className="btn-new-orange">
@@ -654,7 +780,16 @@ export default function MesDemandes() {
         ))}
 
         <div className="search-wrap">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#94a3b8"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
@@ -668,7 +803,9 @@ export default function MesDemandes() {
       </div>
 
       {loading && <div className="state-box">Chargement des demandes…</div>}
-      {!loading && error && <div className="state-box state-error">{error}</div>}
+      {!loading && error && (
+        <div className="state-box state-error">{error}</div>
+      )}
 
       {!loading && !error && (
         <div className="table-card">
@@ -686,7 +823,10 @@ export default function MesDemandes() {
             <tbody>
               {grouped.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ padding: "18px 20px", color: "#475569" }}>
+                  <td
+                    colSpan={5}
+                    style={{ padding: "18px 20px", color: "#475569" }}
+                  >
                     Aucune demande trouvée.
                   </td>
                 </tr>
@@ -702,16 +842,25 @@ export default function MesDemandes() {
                   );
 
                   const rows = g.items.map((d) => (
-                    <tr key={d.raw.id} className={d.isExpired ? "row-expired" : ""}>
+                    <tr
+                      key={d.raw.id}
+                      className={d.isExpired ? "row-expired" : ""}
+                    >
                       <td className="td-ref">{d.ref}</td>
                       <td className="td-type">{d.type}</td>
                       <td className="td-date">{d.date}</td>
                       <td>
-                        <span className={`badge ${badgeClass(d.status)}`}>{d.status}</span>
+                        <span className={`badge ${badgeClass(d.status)}`}>
+                          {d.status}
+                        </span>
                       </td>
                       <td>
                         <div className="td-actions">
-                          <button className="btn-view" type="button" onClick={() => setDetailItem(d.raw)}>
+                          <button
+                            className="btn-view"
+                            type="button"
+                            onClick={() => setDetailItem(d.raw)}
+                          >
                             <IcoEye /> Voir détails
                           </button>
                         </div>
