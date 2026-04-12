@@ -4,16 +4,14 @@ Projet réalisé dans le cadre du hackathon **HACKBYIFRI 2026**.
 
 ## 📌 Description
 
-Digital Minds est une application visant à [explique ici l'objectif de ton projet : gestion de documents, plateforme éducative, workflow administratif, etc.].
-
-L'objectif est de proposer une solution innovante, efficace et accessible pour améliorer [problème que tu résous].
+Digital Minds est une application visant à faciliter l'accès des étudiants aux documents administratifs.
 
 ---
 
 ## ⚙️ Technologies utilisées
 
 ### Frontend
-- React / Next.js (à adapter)
+- React 
 - Tailwind CSS / CSS
 
 ### Backend
@@ -21,7 +19,7 @@ L'objectif est de proposer une solution innovante, efficace et accessible pour a
 - JWT (authentification)
 
 ### Base de données
-- MongoDB / MySQL / PostgreSQL
+- PostgreSQL
 
 ---
 
