@@ -31,10 +31,10 @@ const css = `
     grid-column: 1 / -1;
     min-width: 0;
   }
-  .add-inst-card:hover { border-color: #1a2744; background: #f0f4ff; }
+  /* .add-inst-card:hover { border-color: #1a2744; background: #f0f4ff; }
   .add-inst-card__icon { width: 56px; height: 56px; border-radius: 16px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; }
   .add-inst-card__title { font-family: 'Sora', sans-serif; font-weight: 700; color: #1a2744; font-size: 1rem; text-align:center; }
-  .add-inst-card__sub   { font-size: .85rem; color: #94a3b8; text-align:center; }
+  .add-inst-card__sub   { font-size: .85rem; color: #94a3b8; text-align:center; } */
   .btn-add-inst {
     padding: 11px 28px; background: #1a2744; color: #fff; border: none; border-radius: 10px;
     font-family: 'Sora', sans-serif; font-weight: 700; font-size: .9rem; cursor: pointer;
@@ -206,7 +206,7 @@ export default function SAInstitutions() {
             );
           })}
 
-          <div className="add-inst-card">
+          {/* <div className="add-inst-card">
             <div className="add-inst-card__icon">
               <svg
                 width="28"
@@ -228,7 +228,7 @@ export default function SAInstitutions() {
             <button className="btn-add-inst" type="button">
               Ajouter une institution
             </button>
-          </div>
+          </div> */}
         </div>
       )}
     </SALayout>
