@@ -1,0 +1,17 @@
+{
+  "name": "bulletin-preview",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"nodemon --watch bulletin.template.js --exec node preview.js\" \"live-server --port=3333 --open=index.html\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "live-server": "^1.2.0",
+    "nodemon": "^3.1.14"
+  }
+}

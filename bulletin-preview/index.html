@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Preview Bulletin</title>
+  <style>
+    body { margin: 0; background: #e5e5e5; display: flex; flex-direction: column; align-items: center; padding: 20px; font-family: sans-serif; }
+    button { margin-bottom: 12px; padding: 8px 20px; cursor: pointer; font-size: 14px; }
+    iframe { width: 210mm; height: 297mm; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.2); background: white; }
+  </style>
+</head>
+<body>
+  <button onclick="refresh()">🔄 Regénérer</button>
+  <iframe id="preview" src="output.html"></iframe>
+  <script>
+    function refresh() {
+      document.getElementById('preview').src = 'output.html?t=' + Date.now();
+    }
+  </script>
+</body>
+</html>
