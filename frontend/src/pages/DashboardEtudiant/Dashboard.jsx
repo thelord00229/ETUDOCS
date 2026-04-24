@@ -301,7 +301,8 @@ const uiTitle = (type) => {
 
 const uiRef = (type, rawRef) => {
   if (type === "RELEVE_NOTES") return rawRef || "ETD-2026-IFRI-S1-00847-XK29";
-  if (type === "ATTESTATION_INSCRIPTION") return rawRef || "ETD-2026-IFRI-INS-00234-LM47";
+  if (type === "ATTESTATION_INSCRIPTION")
+    return rawRef || "ETD-2026-IFRI-INS-00234-LM47";
   return rawRef || "ETD-2026-IFRI-INS-00234-LM47";
 };
 
@@ -314,54 +315,141 @@ const uiIntervenant = (type) => {
    ICÔNES SVG
 ───────────────────────────────────────────────────────────── */
 const SvgClock = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#d97706"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
   </svg>
 );
 const SvgDownload = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-    <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#16a34a"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
   </svg>
 );
 const SvgX = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"/>
-    <line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#dc2626"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="15" y1="9" x2="9" y2="15" />
+    <line x1="9" y1="9" x2="15" y2="15" />
   </svg>
 );
 const SvgArrowLeft = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="19" y1="12" x2="5" y2="12" />
+    <polyline points="12 19 5 12 12 5" />
   </svg>
 );
 const SvgCheckCircle = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-    <polyline points="22 4 12 14.01 9 11.01"/>
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#16a34a"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
   </svg>
 );
 const SvgFile = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-    <polyline points="14 2 14 8 20 8"/>
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
   </svg>
 );
 const SvgDlBtn = () => (
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-    <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+  <svg
+    width="17"
+    height="17"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="white"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
   </svg>
 );
 const SvgStepDone = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="20 6 9 17 4 12"/>
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="white"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="20 6 9 17 4 12" />
   </svg>
 );
 const SvgAlert = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#991b1b" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"/>
-    <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#991b1b"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
   </svg>
 );
 
@@ -370,16 +458,16 @@ const SvgAlert = () => (
 ───────────────────────────────────────────────────────────── */
 const getSteps = (status) => {
   const all = [
-    { key: "soumise",    label: "Soumise" },
-    { key: "sec_adj",    label: "Reçue (Sec. Adj)" },
-    { key: "sec_gen",    label: "Transmise (Sec. Gén)" },
+    { key: "soumise", label: "Soumise" },
+    { key: "sec_adj", label: "Reçue (Sec. Adj)" },
+    { key: "sec_gen", label: "Transmise (Sec. Gén)" },
     { key: "traitement", label: "En traitement" },
-    { key: "sign_da",    label: "Signature DA" },
-    { key: "sign_dir",   label: "Signature DIR" },
+    { key: "sign_da", label: "Signature DA" },
+    { key: "sign_dir", label: "Signature DIR" },
     { key: "disponible", label: "Disponible" },
   ];
 
-  const activeMap = { "En traitement": 3, "Disponible": 6, "Rejeté": 3 };
+  const activeMap = { "En traitement": 3, Disponible: 6, Rejeté: 3 };
   const activeIdx = activeMap[status] ?? 3;
 
   return all.map((s, i) => ({
@@ -394,17 +482,29 @@ const getSteps = (status) => {
 function DetailDemande({ demande, onBack }) {
   const title = uiTitle(demande.typeDocument || demande.title);
   const status = demande.statut ? uiStatus(demande.statut) : demande.status;
-  const ref = uiRef(demande.typeDocument, demande.document?.reference || demande.ref_);
+  const ref = uiRef(
+    demande.typeDocument,
+    demande.document?.reference || demande.ref_
+  );
   const steps = getSteps(status);
-  const isReleve = (demande.typeDocument === "RELEVE_NOTES") || title.includes("Relevé");
+  const isReleve =
+    demande.typeDocument === "RELEVE_NOTES" || title.includes("Relevé");
 
   const badgeClass =
-    status === "Disponible" ? "badge--disponible" :
-    status === "Rejeté" ? "badge--rejete" :
-    status === "En traitement" ? "badge--traitement" : "badge--soumise";
+    status === "Disponible"
+      ? "badge--disponible"
+      : status === "Rejeté"
+      ? "badge--rejete"
+      : status === "En traitement"
+      ? "badge--traitement"
+      : "badge--soumise";
 
   const dateStr = demande.createdAt
-    ? new Date(demande.createdAt).toLocaleDateString("fr-FR", { day:"2-digit", month:"long", year:"numeric" })
+    ? new Date(demande.createdAt).toLocaleDateString("fr-FR", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
     : demande.date || "—";
 
   return (
@@ -429,12 +529,21 @@ function DetailDemande({ demande, onBack }) {
               <div className={`stepper-dot stepper-dot--${s.state}`}>
                 {s.state === "done" && <SvgStepDone />}
                 {s.state === "active" && (
-                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#1a2744" }} />
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: "#1a2744",
+                    }}
+                  />
                 )}
               </div>
               <div className={`stepper-label stepper-label--${s.state}`}>
                 {s.label}
-                {s.state === "active" && <div className="stepper-label--sub">En cours</div>}
+                {s.state === "active" && (
+                  <div className="stepper-label--sub">En cours</div>
+                )}
               </div>
             </div>
           ))}
@@ -443,9 +552,12 @@ function DetailDemande({ demande, onBack }) {
 
       {status === "Rejeté" && (
         <div className="rejection-card">
-          <div className="rejection-title"><SvgAlert /> Motif de rejet</div>
+          <div className="rejection-title">
+            <SvgAlert /> Motif de rejet
+          </div>
           <div className="rejection-text">
-            {demande.motifRejet || "Pièce justificative non conforme. Veuillez soumettre une nouvelle demande avec une quittance de paiement lisible et en cours de validité."}
+            {demande.motifRejet ||
+              "Pièce justificative non conforme. Veuillez soumettre une nouvelle demande avec une quittance de paiement lisible et en cours de validité."}
           </div>
         </div>
       )}
@@ -455,13 +567,25 @@ function DetailDemande({ demande, onBack }) {
           <div className="pieces-title">Pièces jointes</div>
 
           {[
-            { name: "Carte d'Identification Personnelle (CIP)", meta: "PDF • 1.2 Mo" },
+            {
+              name: "Carte d'Identification Personnelle (CIP)",
+              meta: "PDF • 1.2 Mo",
+            },
             { name: "Quittance de paiement", meta: "PDF • 1.2 Mo" },
-            ...(isReleve ? [{ name: "Relevé de notes officiel", meta: "Généré automatiquement" }] : []),
+            ...(isReleve
+              ? [
+                  {
+                    name: "Relevé de notes officiel",
+                    meta: "Généré automatiquement",
+                  },
+                ]
+              : []),
           ].map((p, i) => (
             <div key={i} className="piece-row">
               <div className="piece-left">
-                <div className="piece-icon-wrap"><SvgFile /></div>
+                <div className="piece-icon-wrap">
+                  <SvgFile />
+                </div>
                 <div>
                   <div className="piece-name">{p.name}</div>
                   <div className="piece-meta">{p.meta}</div>
@@ -495,7 +619,9 @@ function DetailDemande({ demande, onBack }) {
             </div>
             <div className="detail-meta-row">
               <span className="detail-meta-key">Intervenant</span>
-              <span className="detail-meta-val">{uiIntervenant(demande.typeDocument)}</span>
+              <span className="detail-meta-val">
+                {uiIntervenant(demande.typeDocument)}
+              </span>
             </div>
             {isReleve && (
               <div className="detail-meta-row">
@@ -508,8 +634,15 @@ function DetailDemande({ demande, onBack }) {
           <div className="detail-help-card">
             <div className="detail-help-title">Besoin d'aide ?</div>
             <div className="detail-help-text">
-              Si vous rencontrez un problème avec cette demande, contactez notre support à{" "}
-              <a href="mailto:support@etudocs.bj" style={{ color: "#1a2744", fontWeight: 600 }}>support@etudocs.bj</a>.
+              Si vous rencontrez un problème avec cette demande, contactez notre
+              support à{" "}
+              <a
+                href="mailto:support@etudocs.bj"
+                style={{ color: "#1a2744", fontWeight: 600 }}
+              >
+                support@etudocs.bj
+              </a>
+              .
             </div>
           </div>
         </div>
@@ -526,11 +659,15 @@ const STATUSMAP_KEY = "etudocs_status_map";
 const NOTIFIED_KEY = "etudocs_notified_ids"; // ✅ IDs déjà notifiés
 
 const safeJsonParse = (v, fallback) => {
-  try { return JSON.parse(v); } catch { return fallback; }
+  try {
+    return JSON.parse(v);
+  } catch {
+    return fallback;
+  }
 };
 
 const buildNotifId = () =>
-  (typeof crypto !== "undefined" && crypto.randomUUID)
+  typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
     : `${Date.now()}_${Math.random().toString(16).slice(2)}`;
 
@@ -552,18 +689,36 @@ const detectStatusChanges = (prevMap, nextList) => {
     const id = d?.id;
     if (!id) return;
     const next = d.statut || null;
-    const notifId = `${id}-DISPONIBLE`;
 
-    // ✅ Notifier si DISPONIBLE et jamais notifié, peu importe prev
-    if (next === "DISPONIBLE" && !alreadyNotified.includes(notifId)) {
-      changes.push({ id, next, demande: d, notifId });
+    // ✅ Notifier si DISPONIBLE et jamais notifié
+    const notifIdDispo = `${id}-DISPONIBLE`;
+    if (next === "DISPONIBLE" && !alreadyNotified.includes(notifIdDispo)) {
+      changes.push({ id, next, demande: d, notifId: notifIdDispo });
+    }
+
+    // ✅ Notifier si REJETEE/REJETE et jamais notifié
+    const notifIdRejet = `${id}-REJET`;
+    if (
+      (next === "REJETEE" || next === "REJETE") &&
+      !alreadyNotified.includes(notifIdRejet)
+    ) {
+      changes.push({ id, next, demande: d, notifId: notifIdRejet });
     }
   });
   return changes;
 };
 
-const notifMessage = ({ demande }) => {
+const notifMessage = ({ demande, next }) => {
   const titre = formatDocLabel(demande?.typeDocument);
+  if (next === "REJETEE" || next === "REJETE") {
+    const motif =
+      demande?.commentaireRejet ||
+      demande?.motifRejet ||
+      demande?.commentaire ||
+      "";
+    const suffix = motif ? ` — ${motif}` : "";
+    return `❌ Rejet de demande : ${titre}${suffix}`;
+  }
   return `✅ Votre ${titre} est prêt. Rendez-vous dans "Mes documents" pour le télécharger.`;
 };
 
@@ -582,27 +737,41 @@ export default function Dashboard() {
   // ✅ Notifications
   const [notifications, setNotifications] = useState(() => {
     const saved = localStorage.getItem(NOTIF_KEY);
-    return Array.isArray(safeJsonParse(saved, [])) ? safeJsonParse(saved, []) : [];
+    return Array.isArray(safeJsonParse(saved, []))
+      ? safeJsonParse(saved, [])
+      : [];
   });
 
   const statusMapRef = useRef(() => {
     const saved = localStorage.getItem(STATUSMAP_KEY);
     return safeJsonParse(saved, {});
   });
-  if (typeof statusMapRef.current === "function") statusMapRef.current = statusMapRef.current();
+  if (typeof statusMapRef.current === "function")
+    statusMapRef.current = statusMapRef.current();
 
-  const persistNotifs = (list) => localStorage.setItem(NOTIF_KEY, JSON.stringify(list));
-  const persistStatusMap = (map) => localStorage.setItem(STATUSMAP_KEY, JSON.stringify(map));
+  const persistNotifs = (list) =>
+    localStorage.setItem(NOTIF_KEY, JSON.stringify(list));
+  const persistStatusMap = (map) =>
+    localStorage.setItem(STATUSMAP_KEY, JSON.stringify(map));
 
   const addNotifications = (items) => {
     if (!items.length) return;
 
-    const alreadyNotified = safeJsonParse(localStorage.getItem(NOTIFIED_KEY), []);
-    const newIds = items.map(i => i.notifId).filter(Boolean);
-    localStorage.setItem(NOTIFIED_KEY, JSON.stringify([...new Set([...alreadyNotified, ...newIds])]));
+    const alreadyNotified = safeJsonParse(
+      localStorage.getItem(NOTIFIED_KEY),
+      []
+    );
+    const newIds = items.map((i) => i.notifId).filter(Boolean);
+    localStorage.setItem(
+      NOTIFIED_KEY,
+      JSON.stringify([...new Set([...alreadyNotified, ...newIds])])
+    );
 
     setNotifications((prev) => {
-      const merged = [...items, ...(Array.isArray(prev) ? prev : [])].slice(0, 50);
+      const merged = [...items, ...(Array.isArray(prev) ? prev : [])].slice(
+        0,
+        50
+      );
       persistNotifs(merged);
       return merged;
     });
@@ -623,19 +792,31 @@ export default function Dashboard() {
 
   /* ✅ Compteurs */
   const nbEnCours = useMemo(
-    () => demandes.filter(d => d.statut !== "DISPONIBLE" && d.statut !== "REJETEE" && d.statut !== "REJETE").length,
+    () =>
+      demandes.filter(
+        (d) =>
+          d.statut !== "DISPONIBLE" &&
+          d.statut !== "REJETEE" &&
+          d.statut !== "REJETE"
+      ).length,
     [demandes]
   );
 
   const docsCount = useMemo(
-    () => demandes
-      .filter(d => d.statut === "DISPONIBLE" && Array.isArray(d.documents))
-      .reduce((acc, d) => acc + d.documents.filter(doc => doc?.reference).length, 0),
+    () =>
+      demandes
+        .filter((d) => d.statut === "DISPONIBLE" && Array.isArray(d.documents))
+        .reduce(
+          (acc, d) => acc + d.documents.filter((doc) => doc?.reference).length,
+          0
+        ),
     [demandes]
   );
 
   const nbRejetees = useMemo(
-    () => demandes.filter(d => d.statut === "REJETEE" || d.statut === "REJETE").length,
+    () =>
+      demandes.filter((d) => d.statut === "REJETEE" || d.statut === "REJETE")
+        .length,
     [demandes]
   );
 
@@ -643,13 +824,21 @@ export default function Dashboard() {
   const demandesRecentes = useMemo(() => {
     const list = Array.isArray(demandes) ? demandes : [];
     return [...list]
-      .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))
+      .sort(
+        (a, b) =>
+          new Date(b.updatedAt || b.createdAt || 0) -
+          new Date(a.updatedAt || a.createdAt || 0)
+      )
       .slice(0, 3)
-      .map(d => ({
+      .map((d) => ({
         ...d,
         title: uiTitle(d.typeDocument),
         ref_: uiRef(d.typeDocument, d.document?.reference || d.id),
-        date: new Date(d.createdAt).toLocaleDateString("fr-FR", { day:"2-digit", month:"short", year:"numeric" }),
+        date: new Date(d.createdAt).toLocaleDateString("fr-FR", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }),
         status: uiStatus(d.statut),
       }));
   }, [demandes]);
@@ -662,7 +851,9 @@ export default function Dashboard() {
   };
 
   // ✅ fetch demandes + generate notifications on status change
-  const refreshDemandes = async ({ notifyChanges } = { notifyChanges: false }) => {
+  const refreshDemandes = async (
+    { notifyChanges } = { notifyChanges: false }
+  ) => {
     const list = await getDemandes();
     const nextList = Array.isArray(list) ? list : [];
     setDemandes(nextList);
@@ -690,8 +881,12 @@ export default function Dashboard() {
 
   // ✅ Load initial + start polling
   useEffect(() => {
-    const token = localStorage.getItem("etudocs_token") || localStorage.getItem("token");
-    if (!token) { window.location.href = "/login"; return; }
+    const token =
+      localStorage.getItem("etudocs_token") || localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
 
     let timer = null;
     let alive = true;
@@ -715,7 +910,6 @@ export default function Dashboard() {
         timer = setInterval(() => {
           refreshDemandes({ notifyChanges: true });
         }, 15000);
-
       } catch (err) {
         if (!alive) return;
         if (err?.message === "UNAUTHORIZED") hardLogout();
@@ -733,20 +927,30 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fullName = useMemo(() => (!user ? "…" : `${user.prenom ?? ""} ${user.nom ?? ""}`.trim() || "Étudiant"), [user]);
-  const meta = useMemo(() => (!user ? "…" : (user.email || "—")), [user]);
-  const initials = useMemo(() => (!user ? "…" : getInitials(user.prenom, user.nom)), [user]);
+  const fullName = useMemo(
+    () =>
+      !user
+        ? "…"
+        : `${user.prenom ?? ""} ${user.nom ?? ""}`.trim() || "Étudiant",
+    [user]
+  );
+  const meta = useMemo(() => (!user ? "…" : user.email || "—"), [user]);
+  const initials = useMemo(
+    () => (!user ? "…" : getInitials(user.prenom, user.nom)),
+    [user]
+  );
 
-  const topbarProps = useMemo(() => ({
-    name: fullName,
-    meta,
-    initials,
-    notifications,
-    onDeleteNotif: deleteNotif,
-    onClearAllNotifs: clearAllNotifs,
-  }), [fullName, meta, initials, notifications]);
-
-  
+  const topbarProps = useMemo(
+    () => ({
+      name: fullName,
+      meta,
+      initials,
+      notifications,
+      onDeleteNotif: deleteNotif,
+      onClearAllNotifs: clearAllNotifs,
+    }),
+    [fullName, meta, initials, notifications]
+  );
 
   return (
     <DashboardLayout disableAutoNotifs topbarProps={topbarProps}>
@@ -754,12 +958,24 @@ export default function Dashboard() {
 
       <div className="dash-hero">
         <div>
-          <h1>Bonjour {user ? user.prenom : "…"}, que pouvons-nous faire pour vous aujourd'hui ?</h1>
+          <h1>
+            Bonjour {user ? user.prenom : "…"}, que pouvons-nous faire pour vous
+            aujourd'hui ?
+          </h1>
           <p>Bienvenue sur votre espace personnel EtuDocs</p>
           <a href="/dashboardEtu/nouvelle" className="btn-new-demand">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
             </svg>
             Nouvelle demande
           </a>
@@ -788,7 +1004,11 @@ export default function Dashboard() {
         <StatCard
           label="Demandes rejetées"
           value={loading ? "…" : String(nbRejetees)}
-          sub={nbRejetees === 0 ? "Aucune demande rejetée" : "Certaines demandes ont été rejetées"}
+          sub={
+            nbRejetees === 0
+              ? "Aucune demande rejetée"
+              : "Certaines demandes ont été rejetées"
+          }
           icon={<SvgX />}
           accentColor="#ef4444"
           iconBg="#fef2f2"
@@ -798,11 +1018,15 @@ export default function Dashboard() {
       <div className="card-section">
         <div className="card-section__header">
           <span className="card-section__title">Demandes récentes</span>
-          <a href="/dashboardEtu/demandes" className="card-section__link">Voir tout</a>
+          <a href="/dashboardEtu/demandes" className="card-section__link">
+            Voir tout
+          </a>
         </div>
 
         {!loading && demandesRecentes.length === 0 && (
-          <div style={{ color: "#64748b", fontSize: ".9rem", padding: "10px 0" }}>
+          <div
+            style={{ color: "#64748b", fontSize: ".9rem", padding: "10px 0" }}
+          >
             Aucune demande pour le moment.
           </div>
         )}
@@ -814,7 +1038,9 @@ export default function Dashboard() {
             ref_={d.ref_}
             date={d.date}
             status={d.status}
-            onDetails={() => navigate("/dashboardEtu/demandes", { state: { openId: d.id } })}
+            onDetails={() =>
+              navigate("/dashboardEtu/demandes", { state: { openId: d.id } })
+            }
           />
         ))}
       </div>
@@ -822,26 +1048,58 @@ export default function Dashboard() {
       <div className="bottom-grid">
         <div className="promo-card">
           <div className="promo-card__icon" style={{ background: "#eff6ff" }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a2744" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#1a2744"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
             </svg>
           </div>
-          <div className="promo-card__title" style={{ color: "#1e293b" }}>Besoin d'un document ?</div>
-          <div className="promo-card__sub">Soumettez une nouvelle demande en quelques clics</div>
-          <a href="/dashboardEtu/nouvelle" className="btn-outline-sm">Faire une demande</a>
+          <div className="promo-card__title" style={{ color: "#1e293b" }}>
+            Besoin d'un document ?
+          </div>
+          <div className="promo-card__sub">
+            Soumettez une nouvelle demande en quelques clics
+          </div>
+          <a href="/dashboardEtu/nouvelle" className="btn-outline-sm">
+            Faire une demande
+          </a>
         </div>
 
         <div className="promo-card">
           <div className="promo-card__icon" style={{ background: "#f1f8e9" }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="9 11 12 14 22 4"/>
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#2e7d32"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="9 11 12 14 22 4" />
             </svg>
           </div>
-          <div className="promo-card__title" style={{ color: "#2e7d32" }}>Documents prêts</div>
-          <div className="promo-card__sub">{loading ? "Chargement..." : `${docsCount} document(s) disponible(s)`}</div>
-          <a href="/dashboardEtu/documents" className="btn-outline-sm">Télécharger</a>
+          <div className="promo-card__title" style={{ color: "#2e7d32" }}>
+            Documents prêts
+          </div>
+          <div className="promo-card__sub">
+            {loading
+              ? "Chargement..."
+              : `${docsCount} document(s) disponible(s)`}
+          </div>
+          <a href="/dashboardEtu/documents" className="btn-outline-sm">
+            Télécharger
+          </a>
         </div>
       </div>
 

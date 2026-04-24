@@ -3,7 +3,7 @@ import {
   getDemandes,
   getDemandeById,
   avancerDemande,
-  getChefDivisionStats,
+  getStatsDI,
   validerPiece,
 } from "../../services/api";
 
@@ -97,7 +97,7 @@ const styles = `
   }
   .actualiser-btn:hover { background: var(--uac-dk); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(46,125,50,.28); }
 
-  .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 28px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 28px; }
   .stat-card {
     background: white; border-radius: 16px; padding: 24px 20px;
     display: flex; align-items: center; gap: 16px;
@@ -846,11 +846,11 @@ export default function ChefDivisionExamens() {
   const [preview, setPreview] = useState(null);
   const [genBusy, setGenBusy] = useState(false);
   const [demandes, setDemandes] = useState([]);
+  // getStatsDI retourne : { aSigner, signesCeMois, refuses }
   const [stats, setStats] = useState({
-    aTraiter: 0,
-    enTraitement: 0,
-    generes: 0,
-    rejetees: 0,
+    aSigner: 0,
+    signesCeMois: 0,
+    refuses: 0,
   });
 
   // État modal mot de passe + toast
@@ -879,13 +879,11 @@ export default function ChefDivisionExamens() {
 
   const chargerStats = async () => {
     try {
-      const data = await getChefDivisionStats();
-      setStats(
-        data ?? { aTraiter: 0, enTraitement: 0, generes: 0, rejetees: 0 }
-      );
+      const data = await getStatsDI();
+      setStats(data ?? { aSigner: 0, signesCeMois: 0, refuses: 0 });
     } catch (e) {
       console.error(e);
-      setStats({ aTraiter: 0, enTraitement: 0, generes: 0, rejetees: 0 });
+      setStats({ aSigner: 0, signesCeMois: 0, refuses: 0 });
     }
   };
 
@@ -947,10 +945,6 @@ export default function ChefDivisionExamens() {
   const setPieceStatus = async (id, status) => {
     const current = pieces.find((p) => p.id === id);
     const comment = (current?.comment || "").trim();
-    if (status === "reject" && comment.length < 5) {
-      alert("Motif obligatoire (min 5 caractères) pour rejeter une pièce.");
-      return;
-    }
     setPieces((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
     setPieceBusy(id);
     try {
@@ -1001,13 +995,16 @@ export default function ChefDivisionExamens() {
 
   const handleReject = async () => {
     if (!selected?.id) return;
-    if (motif.trim().length < 20) {
-      setMotifError("Le motif doit contenir au moins 20 caractères.");
+    if (globalComment.trim().length < 20) {
+      setMotifError(
+        "Le commentaire général est obligatoire (minimum 20 caractères)."
+      );
       return;
     }
     try {
       setGenBusy(true);
-      await avancerDemande(selected.id, "REJETER", motif);
+      const notificationMessage = `Rejet de demande: ${globalComment.trim()}`;
+      await avancerDemande(selected.id, "REJETER", notificationMessage);
       await Promise.all([chargerDemandes(), chargerStats()]);
       setModal(null);
       setView("dashboard");
@@ -1085,26 +1082,20 @@ export default function ChefDivisionExamens() {
                   {
                     icon: <ClockIcon />,
                     cls: "pending",
-                    val: stats.aTraiter,
-                    label: "À traiter",
+                    val: stats.aSigner,
+                    label: "En attente de signature",
                   },
                   {
                     icon: <ClipboardCheckIcon />,
                     cls: "process",
-                    val: stats.enTraitement,
-                    label: "En traitement",
-                  },
-                  {
-                    icon: <CheckCircleIcon />,
-                    cls: "done",
-                    val: stats.generes,
-                    label: "Générés (mois)",
+                    val: stats.signesCeMois,
+                    label: "Signés ce mois",
                   },
                   {
                     icon: <AlertCircleIcon />,
                     cls: "refused",
-                    val: stats.rejetees,
-                    label: "Rejetées",
+                    val: stats.refuses,
+                    label: "Rejetées ce mois",
                   },
                 ].map((s) => (
                   <div className="stat-card" key={s.label}>
@@ -1168,6 +1159,8 @@ export default function ChefDivisionExamens() {
                           const num = d.utilisateur?.numeroEtudiant || "—";
                           const ref =
                             d.document?.reference ||
+                            d.documents?.[0]?.reference ||
+                            d.ref ||
                             (d.id || "")
                               .toString()
                               .substring(0, 8)
@@ -1369,7 +1362,11 @@ export default function ChefDivisionExamens() {
                   Traitement du dossier
                 </h1>
                 <span className="td-ref" style={{ fontSize: 13 }}>
-                  {selected?.id?.substring(0, 8).toUpperCase() || "—"}
+                  {selected?.document?.reference ||
+                    selected?.documents?.[0]?.reference ||
+                    selected?.ref ||
+                    selected?.id?.substring(0, 8).toUpperCase() ||
+                    "—"}
                 </span>
               </div>
             </div>
@@ -1403,11 +1400,23 @@ export default function ChefDivisionExamens() {
                     <div className="info-row">
                       <div className="info-label">Filière / Niveau</div>
                       <div className="info-value">
-                        {selected?.utilisateur?.filiere
-                          ? `${selected.utilisateur.filiere} — ${
-                              selected.utilisateur.niveau || ""
-                            }`
-                          : "—"}
+                        {(() => {
+                          const u = selected?.utilisateur;
+                          const filiere =
+                            u?.filiere ||
+                            u?.etudiant?.filiere ||
+                            u?.profile?.filiere ||
+                            null;
+                          const niveau =
+                            u?.niveau ||
+                            u?.etudiant?.niveau ||
+                            u?.profile?.niveau ||
+                            null;
+                          if (!filiere && !niveau) return "—";
+                          if (filiere && niveau)
+                            return `${filiere} — ${niveau}`;
+                          return filiere || niveau;
+                        })()}
                       </div>
                     </div>
                     <div className="info-row">
@@ -1474,7 +1483,10 @@ export default function ChefDivisionExamens() {
                     <div className="info-row">
                       <div className="info-label">Référence</div>
                       <div className="info-value mono">
-                        {selected?.documents?.[0]?.reference || "—"}
+                        {selected?.document?.reference ||
+                          selected?.documents?.[0]?.reference ||
+                          selected?.ref ||
+                          "—"}
                       </div>
                     </div>
                   </div>
@@ -1640,15 +1652,32 @@ export default function ChefDivisionExamens() {
                     </div>
                     <div className="divider-h" />
                     <div className="comment-global-label">
-                      Commentaire général
+                      Commentaire général{" "}
+                      <span style={{ color: "var(--danger)" }}>*</span>
                     </div>
                     <textarea
                       className="piece-comment-area"
                       rows={3}
-                      placeholder="Commentaire général sur ce dossier (optionnel)..."
+                      placeholder="Commentaire obligatoire — sera envoyé à l'étudiant en cas de rejet (min. 20 caractères)..."
                       value={globalComment}
-                      onChange={(e) => setGlobalComment(e.target.value)}
+                      onChange={(e) => {
+                        setGlobalComment(e.target.value);
+                        setMotifError("");
+                      }}
                     />
+                    <div
+                      style={{
+                        fontSize: ".72rem",
+                        color: "var(--text-muted)",
+                        textAlign: "right",
+                        marginTop: 3,
+                      }}
+                    >
+                      {globalComment.length}/20 min
+                    </div>
+                    {motifError && (
+                      <div className="motif-error">{motifError}</div>
+                    )}
                   </div>
                 </div>
 
@@ -1750,31 +1779,19 @@ export default function ChefDivisionExamens() {
               Vous allez rejeter la demande{" "}
               <span className="modal-ref">{selected?.ref}</span> de{" "}
               <strong>{selected?.etudiant}</strong>.<br />
-              L'étudiant sera notifié par email avec le motif de rejet.
+              L'étudiant recevra une notification :{" "}
+              <em>"Rejet de demande: {globalComment}"</em>
             </div>
-            <div className="comment-global-label">
-              Motif de rejet <span style={{ color: "var(--danger)" }}>*</span>
-            </div>
-            <textarea
-              className="motif-input"
-              rows={4}
-              placeholder="Expliquez précisément la raison du rejet (minimum 20 caractères)..."
-              value={motif}
-              onChange={(e) => {
-                setMotif(e.target.value);
-                setMotifError("");
-              }}
-            />
-            <div className="motif-count">
-              {motif.length} / 20 caractères minimum
-            </div>
-            {motifError && <div className="motif-error">{motifError}</div>}
-            <div className="modal-actions" style={{ marginTop: 20 }}>
+            {motifError && (
+              <div className="motif-error" style={{ marginBottom: 12 }}>
+                {motifError}
+              </div>
+            )}
+            <div className="modal-actions" style={{ marginTop: 8 }}>
               <button
                 className="modal-btn cancel"
                 onClick={() => {
                   setModal(null);
-                  setMotif("");
                   setMotifError("");
                 }}
                 disabled={genBusy}

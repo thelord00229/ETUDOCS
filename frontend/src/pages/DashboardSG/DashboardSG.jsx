@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getDemandes, avancerDemande, downloadDocumentBlob, getStatsSG } from "../../services/api";
+import {
+  getDemandes,
+  avancerDemande,
+  downloadDocumentBlob,
+  getStatsSG,
+} from "../../services/api";
 import logo from "../../assets/logo.png";
 
 const css = `
@@ -215,31 +220,78 @@ const css = `
 
 /* ── ICÔNES ── */
 const GridIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-    <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="3" width="7" height="7" />
+    <rect x="14" y="3" width="7" height="7" />
+    <rect x="3" y="14" width="7" height="7" />
+    <rect x="14" y="14" width="7" height="7" />
   </svg>
 );
 const LockIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
   </svg>
 );
 const LogoutIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
   </svg>
 );
 const BellIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
   </svg>
 );
 const SearchIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  <svg
+    width="15"
+    height="15"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="11" cy="11" r="8" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
   </svg>
 );
 
@@ -257,7 +309,8 @@ const getEtudiantLabel = (d) => {
   const full = `${u?.prenom ?? ""} ${u?.nom ?? ""}`.trim();
   return full || fallback || "—";
 };
-const getNumeroEtudiant = (d) => d?.utilisateur?.numeroEtudiant || d?.numeroEtudiant || d?.num || "—";
+const getNumeroEtudiant = (d) =>
+  d?.utilisateur?.numeroEtudiant || d?.numeroEtudiant || d?.num || "—";
 const getReferenceDoc = (d) => {
   const doc = Array.isArray(d?.documents) ? d.documents[0] : null;
   return doc?.reference || d?.reference || d?.ref || "—";
@@ -276,31 +329,41 @@ function getStrength(pwd) {
 
 /* ── Modal Modifier Mot de Passe ── */
 function ModalMotDePasse({ onClose, onSuccess }) {
-  const [actuel, setActuel]       = useState("");
-  const [nouveau, setNouveau]     = useState("");
+  const [actuel, setActuel] = useState("");
+  const [nouveau, setNouveau] = useState("");
   const [confirmer, setConfirmer] = useState("");
   const [showA, setShowA] = useState(false);
   const [showN, setShowN] = useState(false);
   const [showC, setShowC] = useState(false);
-  const [loading, setLoading]     = useState(false);
-  const [erreur, setErreur]       = useState("");
+  const [loading, setLoading] = useState(false);
+  const [erreur, setErreur] = useState("");
 
   const strength = getStrength(nouveau);
   const strengthLabel = ["", "Faible", "Faible", "Moyen", "Fort"][strength];
-  const strengthClass = strength <= 2 ? "weak" : strength === 3 ? "medium" : "strong";
+  const strengthClass =
+    strength <= 2 ? "weak" : strength === 3 ? "medium" : "strong";
 
   const EyeIcon = ({ show }) => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       {show ? (
         <>
-          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-          <line x1="1" y1="1" x2="23" y2="23"/>
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+          <line x1="1" y1="1" x2="23" y2="23" />
         </>
       ) : (
         <>
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-          <circle cx="12" cy="12" r="3"/>
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <circle cx="12" cy="12" r="3" />
         </>
       )}
     </svg>
@@ -308,16 +371,32 @@ function ModalMotDePasse({ onClose, onSuccess }) {
 
   const handleSubmit = async () => {
     setErreur("");
-    if (!actuel || !nouveau || !confirmer) { setErreur("Tous les champs sont obligatoires."); return; }
-    if (nouveau.length < 8) { setErreur("Le nouveau mot de passe doit contenir au moins 8 caractères."); return; }
-    if (nouveau !== confirmer) { setErreur("Les mots de passe ne correspondent pas."); return; }
+    if (!actuel || !nouveau || !confirmer) {
+      setErreur("Tous les champs sont obligatoires.");
+      return;
+    }
+    if (nouveau.length < 8) {
+      setErreur("Le nouveau mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
+    if (nouveau !== confirmer) {
+      setErreur("Les mots de passe ne correspondent pas.");
+      return;
+    }
     setLoading(true);
     try {
-      const token = localStorage.getItem("token") || localStorage.getItem("etudocs_token");
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("etudocs_token");
       const res = await fetch("/api/auth/change-password", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ancienMotDePasse: actuel, nouveauMotDePasse: nouveau }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ancienMotDePasse: actuel,
+          nouveauMotDePasse: nouveau,
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -338,14 +417,25 @@ function ModalMotDePasse({ onClose, onSuccess }) {
         <div className="pwd-modal__head">
           <div className="pwd-modal__title">
             <div className="pwd-modal__title-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#1d4ed8"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
             </div>
             Modifier le mot de passe
           </div>
-          <button className="pwd-modal__close" onClick={onClose}>×</button>
+          <button className="pwd-modal__close" onClick={onClose}>
+            ×
+          </button>
         </div>
 
         <div className="pwd-modal__body">
@@ -353,9 +443,21 @@ function ModalMotDePasse({ onClose, onSuccess }) {
           <div className="pwd-field">
             <label className="pwd-label">Mot de passe actuel</label>
             <div className="pwd-input-wrap">
-              <input type={showA ? "text" : "password"} className="pwd-input" placeholder="••••••••"
-                value={actuel} onChange={(e) => setActuel(e.target.value)} autoFocus />
-              <button className="pwd-eye" type="button" onClick={() => setShowA(v => !v)}><EyeIcon show={showA} /></button>
+              <input
+                type={showA ? "text" : "password"}
+                className="pwd-input"
+                placeholder="••••••••"
+                value={actuel}
+                onChange={(e) => setActuel(e.target.value)}
+                autoFocus
+              />
+              <button
+                className="pwd-eye"
+                type="button"
+                onClick={() => setShowA((v) => !v)}
+              >
+                <EyeIcon show={showA} />
+              </button>
             </div>
           </div>
 
@@ -363,38 +465,81 @@ function ModalMotDePasse({ onClose, onSuccess }) {
           <div className="pwd-field">
             <label className="pwd-label">Nouveau mot de passe</label>
             <div className="pwd-input-wrap">
-              <input type={showN ? "text" : "password"} className="pwd-input" placeholder="••••••••"
-                value={nouveau} onChange={(e) => setNouveau(e.target.value)} />
-              <button className="pwd-eye" type="button" onClick={() => setShowN(v => !v)}><EyeIcon show={showN} /></button>
+              <input
+                type={showN ? "text" : "password"}
+                className="pwd-input"
+                placeholder="••••••••"
+                value={nouveau}
+                onChange={(e) => setNouveau(e.target.value)}
+              />
+              <button
+                className="pwd-eye"
+                type="button"
+                onClick={() => setShowN((v) => !v)}
+              >
+                <EyeIcon show={showN} />
+              </button>
             </div>
             {nouveau && (
               <>
                 <div className="pwd-strength">
-                  {[1,2,3,4].map(i => (
-                    <div key={i} className={`pwd-strength__bar ${strength >= i ? strengthClass : ""}`} />
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className={`pwd-strength__bar ${
+                        strength >= i ? strengthClass : ""
+                      }`}
+                    />
                   ))}
                 </div>
-                <div className="pwd-hint">{strengthLabel} — minimum 8 caractères</div>
+                <div className="pwd-hint">
+                  {strengthLabel} — minimum 8 caractères
+                </div>
               </>
             )}
           </div>
 
           {/* Confirmer */}
           <div className="pwd-field">
-            <label className="pwd-label">Confirmer le nouveau mot de passe</label>
+            <label className="pwd-label">
+              Confirmer le nouveau mot de passe
+            </label>
             <div className="pwd-input-wrap">
-              <input type={showC ? "text" : "password"}
-                className={`pwd-input ${confirmer && confirmer !== nouveau ? "pwd-err" : ""}`}
-                placeholder="••••••••" value={confirmer} onChange={(e) => setConfirmer(e.target.value)} />
-              <button className="pwd-eye" type="button" onClick={() => setShowC(v => !v)}><EyeIcon show={showC} /></button>
+              <input
+                type={showC ? "text" : "password"}
+                className={`pwd-input ${
+                  confirmer && confirmer !== nouveau ? "pwd-err" : ""
+                }`}
+                placeholder="••••••••"
+                value={confirmer}
+                onChange={(e) => setConfirmer(e.target.value)}
+              />
+              <button
+                className="pwd-eye"
+                type="button"
+                onClick={() => setShowC((v) => !v)}
+              >
+                <EyeIcon show={showC} />
+              </button>
             </div>
             {confirmer && confirmer !== nouveau && (
-              <div className="pwd-hint pwd-hint-err">Les mots de passe ne correspondent pas</div>
+              <div className="pwd-hint pwd-hint-err">
+                Les mots de passe ne correspondent pas
+              </div>
             )}
           </div>
 
           {erreur && (
-            <div style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:"8px", padding:"10px 14px", fontSize:".85rem", color:"#dc2626" }}>
+            <div
+              style={{
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderRadius: "8px",
+                padding: "10px 14px",
+                fontSize: ".85rem",
+                color: "#dc2626",
+              }}
+            >
               {erreur}
             </div>
           )}
@@ -402,9 +547,18 @@ function ModalMotDePasse({ onClose, onSuccess }) {
 
         <div className="pwd-modal__footer">
           <div className="pwd-btn-row">
-            <button className="pwd-btn pwd-btn--ghost" onClick={onClose} disabled={loading}>Annuler</button>
-            <button className="pwd-btn pwd-btn--primary" onClick={handleSubmit}
-              disabled={loading || !actuel || !nouveau || !confirmer}>
+            <button
+              className="pwd-btn pwd-btn--ghost"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Annuler
+            </button>
+            <button
+              className="pwd-btn pwd-btn--primary"
+              onClick={handleSubmit}
+              disabled={loading || !actuel || !nouveau || !confirmer}
+            >
               {loading ? "Enregistrement…" : "Enregistrer"}
             </button>
           </div>
@@ -418,13 +572,16 @@ function ModalMotDePasse({ onClose, onSuccess }) {
 export default function DashboardSG() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading]         = useState(false);
-  const [busyId, setBusyId]           = useState(null);
-  const [demandes, setDemandes]       = useState([]);
-  const [preview, setPreview]         = useState(null);
-  const [showPwd, setShowPwd]         = useState(false);
-  const [toast, setToast]             = useState(null);
-  const [statsExternes, setStatsExternes] = useState({ transmises: 0, rejetees: 0 });
+  const [loading, setLoading] = useState(false);
+  const [busyId, setBusyId] = useState(null);
+  const [demandes, setDemandes] = useState([]);
+  const [preview, setPreview] = useState(null);
+  const [showPwd, setShowPwd] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [statsExternes, setStatsExternes] = useState({
+    transmises: 0,
+    rejetees: 0,
+  });
 
   const showToast = (msg, isError = false) => {
     setToast({ msg, isError });
@@ -438,9 +595,9 @@ export default function DashboardSG() {
         getDemandes(),
         getStatsSG().catch(() => ({ transmises: 0, rejetees: 0 })),
       ]);
-      const list = Array.isArray(data) ? data : (data?.demandes ?? []);
+      const list = Array.isArray(data) ? data : data?.demandes ?? [];
       const demandesATransmettre = list
-        .filter(d => d.statut === "TRANSMISE_SECRETAIRE_ADJOINT")
+        .filter((d) => d.statut === "TRANSMISE_SECRETAIRE_ADJOINT")
         .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       setDemandes(demandesATransmettre);
       setStatsExternes(statsData);
@@ -453,17 +610,24 @@ export default function DashboardSG() {
     }
   };
 
-  useEffect(() => { charger(); }, []);
+  useEffect(() => {
+    charger();
+  }, []);
 
   const filtered = useMemo(() => {
     const q = (searchQuery || "").trim().toLowerCase();
     if (!q) return demandes;
     return demandes.filter((d) => {
-      const ref  = (getReferenceDoc(d) || "").toLowerCase();
-      const etu  = (getEtudiantLabel(d) || "").toLowerCase();
-      const num  = (getNumeroEtudiant(d) || "").toLowerCase();
+      const ref = (getReferenceDoc(d) || "").toLowerCase();
+      const etu = (getEtudiantLabel(d) || "").toLowerCase();
+      const num = (getNumeroEtudiant(d) || "").toLowerCase();
       const type = ((d?.typeDocument || "") + "").toLowerCase();
-      return ref.includes(q) || etu.includes(q) || num.includes(q) || type.includes(q);
+      return (
+        ref.includes(q) ||
+        etu.includes(q) ||
+        num.includes(q) ||
+        type.includes(q)
+      );
     });
   }, [demandes, searchQuery]);
 
@@ -483,7 +647,10 @@ export default function DashboardSG() {
 
   const openPreview = async (demande) => {
     const reference = getReferenceDoc(demande);
-    if (!reference || reference === "—") { alert("Aucune référence de document trouvée."); return; }
+    if (!reference || reference === "—") {
+      alert("Aucune référence de document trouvée.");
+      return;
+    }
     try {
       const blob = await downloadDocumentBlob(reference);
       const url = window.URL.createObjectURL(blob);
@@ -500,7 +667,7 @@ export default function DashboardSG() {
   };
 
   const handleLogout = () => {
-    ["etudocs_token","token","etudocs_user"].forEach(k => {
+    ["etudocs_token", "token", "etudocs_user"].forEach((k) => {
       localStorage.removeItem(k);
       sessionStorage.removeItem(k);
     });
@@ -513,7 +680,9 @@ export default function DashboardSG() {
 
       {/* Toast */}
       {toast && (
-        <div className={`sg-toast${toast.isError ? " sg-toast--error" : ""}`}>{toast.msg}</div>
+        <div className={`sg-toast${toast.isError ? " sg-toast--error" : ""}`}>
+          {toast.msg}
+        </div>
       )}
 
       {/* Modal mot de passe */}
@@ -525,12 +694,15 @@ export default function DashboardSG() {
       )}
 
       <div className="sg-layout">
-
         {/* ── SIDEBAR ── */}
         <aside className="sg-sidebar">
           <a href="/" className="sg-sidebar__brand">
             <div className="sg-sidebar__brand-icon">
-              <img src={logo} alt="EtuDocs" style={{ width: 52, height: 52, objectFit: "contain" }} />
+              <img
+                src={logo}
+                alt="EtuDocs"
+                style={{ width: 52, height: 52, objectFit: "contain" }}
+              />
             </div>
             EtuDocs
           </a>
@@ -542,14 +714,21 @@ export default function DashboardSG() {
             </button>
 
             {/* Modifier mot de passe */}
-            <button className="sg-sidebar__link" onClick={() => setShowPwd(true)}>
+            <button
+              className="sg-sidebar__link"
+              onClick={() => setShowPwd(true)}
+            >
               <LockIcon />
               Modifier mot de passe
             </button>
           </nav>
 
           <div className="sg-sidebar__divider" />
-          <button className="sg-sidebar__logout" onClick={handleLogout} type="button">
+          <button
+            className="sg-sidebar__logout"
+            onClick={handleLogout}
+            type="button"
+          >
             <LogoutIcon />
             Déconnexion
           </button>
@@ -557,10 +736,11 @@ export default function DashboardSG() {
 
         {/* ── MAIN ── */}
         <main className="sg-main">
-
           {/* TOPBAR */}
           <header className="sg-topbar">
-            <div className="sg-topbar__breadcrumb">Secrétaire Général — IFRI</div>
+            <div className="sg-topbar__breadcrumb">
+              Secrétaire Général — IFRI
+            </div>
             <div className="sg-topbar__right">
               <button className="sg-topbar__notif" title="Notifications">
                 <BellIcon />
@@ -576,16 +756,28 @@ export default function DashboardSG() {
 
           {/* CONTENT */}
           <div className="sg-content">
-
             {/* HERO */}
             <div className="sg-hero">
               <div>
                 <h1>Espace Secrétaire Général</h1>
                 <p>Transmission des demandes au Chef de Division</p>
-                <button className="sg-hero__btn" onClick={charger} disabled={loading}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="23 4 23 10 17 10"/>
-                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                <button
+                  className="sg-hero__btn"
+                  onClick={charger}
+                  disabled={loading}
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="23 4 23 10 17 10" />
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
                   </svg>
                   {loading ? "Chargement..." : "Actualiser"}
                 </button>
@@ -595,22 +787,43 @@ export default function DashboardSG() {
             {/* STATS */}
             <div className="sg-stats-grid">
               <div className="sg-stat-card">
-                <div className="sg-stat-card__accent" style={{ background: "#7c3aed" }} />
-                <div className="sg-stat-card__header"><span className="sg-stat-card__label">À transmettre</span></div>
+                <div
+                  className="sg-stat-card__accent"
+                  style={{ background: "#7c3aed" }}
+                />
+                <div className="sg-stat-card__header">
+                  <span className="sg-stat-card__label">À transmettre</span>
+                </div>
                 <div className="sg-stat-card__value">{demandes.length}</div>
                 <div className="sg-stat-card__sub">Suivi des transmissions</div>
               </div>
               <div className="sg-stat-card">
-                <div className="sg-stat-card__accent" style={{ background: "#22c55e" }} />
-                <div className="sg-stat-card__header"><span className="sg-stat-card__label">Transmis (mois)</span></div>
-                <div className="sg-stat-card__value">{loading ? "…" : statsExternes.transmises}</div>
-                <div className="sg-stat-card__sub">Ce mois-ci</div>
+                <div
+                  className="sg-stat-card__accent"
+                  style={{ background: "#22c55e" }}
+                />
+                <div className="sg-stat-card__header">
+                  <span className="sg-stat-card__label">Total transmis</span>
+                </div>
+                <div className="sg-stat-card__value">
+                  {loading ? "…" : statsExternes.transmises}
+                </div>
+                <div className="sg-stat-card__sub">
+                  Transmises au chef de division
+                </div>
               </div>
               <div className="sg-stat-card">
-                <div className="sg-stat-card__accent" style={{ background: "#ef4444" }} />
-                <div className="sg-stat-card__header"><span className="sg-stat-card__label">Refusés</span></div>
-                <div className="sg-stat-card__value">{loading ? "…" : statsExternes.rejetees}</div>
-                <div className="sg-stat-card__sub">Demandes refusées</div>
+                <div
+                  className="sg-stat-card__accent"
+                  style={{ background: "#ef4444" }}
+                />
+                <div className="sg-stat-card__header">
+                  <span className="sg-stat-card__label">Total rejetées</span>
+                </div>
+                <div className="sg-stat-card__value">
+                  {loading ? "…" : statsExternes.rejetees}
+                </div>
+                <div className="sg-stat-card__sub">Demandes rejetées</div>
               </div>
             </div>
 
@@ -622,9 +835,15 @@ export default function DashboardSG() {
                   <span className="sg-badge-count">{filtered.length}</span>
                 </div>
                 <div className="sg-search-box">
-                  <span className="sg-search-icon"><SearchIcon /></span>
-                  <input className="sg-search-input" placeholder="Rechercher..."
-                    value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                  <span className="sg-search-icon">
+                    <SearchIcon />
+                  </span>
+                  <input
+                    className="sg-search-input"
+                    placeholder="Rechercher..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
               </div>
 
@@ -645,17 +864,35 @@ export default function DashboardSG() {
                   <tbody>
                     {filtered.map((d) => (
                       <tr key={d.id || getReferenceDoc(d)}>
-                        <td><span className="sg-mono">{getReferenceDoc(d)}</span></td>
                         <td>
-                          <div style={{ fontWeight: 700 }}>{getEtudiantLabel(d)}</div>
-                          <div className="sg-muted">N° {getNumeroEtudiant(d)}</div>
+                          <span className="sg-mono">{getReferenceDoc(d)}</span>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 700 }}>
+                            {getEtudiantLabel(d)}
+                          </div>
+                          <div className="sg-muted">
+                            N° {getNumeroEtudiant(d)}
+                          </div>
                         </td>
                         <td>{d?.typeDocument || "—"}</td>
                         <td className="sg-muted">{formatDate(d?.createdAt)}</td>
-                        <td><span className="sg-chip">{d?.statut || "—"}</span></td>
-                        <td style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
-                          <button className="sg-btn primary" onClick={() => handleTransmettre(d)}
-                            disabled={busyId === d.id}>
+                        <td>
+                          <span className="sg-chip">{d?.statut || "—"}</span>
+                        </td>
+                        <td
+                          style={{
+                            display: "flex",
+                            gap: 10,
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <button
+                            className="sg-btn primary"
+                            onClick={() => handleTransmettre(d)}
+                            disabled={busyId === d.id}
+                          >
                             ⏩ Transmettre
                           </button>
                         </td>
@@ -667,12 +904,13 @@ export default function DashboardSG() {
                 {filtered.length === 0 && (
                   <div className="sg-empty">
                     <div className="sg-empty__icon">📄</div>
-                    <div className="sg-empty__text">Aucune demande à transmettre</div>
+                    <div className="sg-empty__text">
+                      Aucune demande à transmettre
+                    </div>
                   </div>
                 )}
               </div>
             </div>
-
           </div>
         </main>
       </div>
@@ -682,16 +920,31 @@ export default function DashboardSG() {
         <div className="sg-modal-overlay" onClick={closePreview}>
           <div className="sg-modal" onClick={(e) => e.stopPropagation()}>
             <div className="sg-modal__title">
-              <span style={{ display:"inline-flex", alignItems:"center", gap:10 }}>
-                <span style={{ fontSize:18 }}>👁</span> Aperçu — <span className="sg-mono">{preview.name}</span>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                <span style={{ fontSize: 18 }}>👁</span> Aperçu —{" "}
+                <span className="sg-mono">{preview.name}</span>
               </span>
-              <button className="sg-btn outline" onClick={closePreview}>Fermer</button>
+              <button className="sg-btn outline" onClick={closePreview}>
+                Fermer
+              </button>
             </div>
             <div className="sg-modal__body">
-              <iframe title="preview" src={preview.url} style={{ width:"100%", height:"100%", border:"none" }} />
+              <iframe
+                title="preview"
+                src={preview.url}
+                style={{ width: "100%", height: "100%", border: "none" }}
+              />
             </div>
             <div className="sg-modal__actions">
-              <button className="sg-btn outline" onClick={closePreview}>Fermer</button>
+              <button className="sg-btn outline" onClick={closePreview}>
+                Fermer
+              </button>
             </div>
           </div>
         </div>

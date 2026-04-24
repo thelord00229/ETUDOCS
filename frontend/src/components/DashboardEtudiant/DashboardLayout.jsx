@@ -50,7 +50,10 @@ function saveDismissed(ids) {
   localStorage.setItem(NOTIF_KEY, JSON.stringify(ids));
 }
 
-const normalizeInst = (v) => String(v || "").trim().toUpperCase();
+const normalizeInst = (v) =>
+  String(v || "")
+    .trim()
+    .toUpperCase();
 
 function getInstitutionCodeFromUser(user) {
   // priorité : user.institution.sigle
@@ -77,8 +80,7 @@ export default function DashboardLayout({ children }) {
 
   // ✅ source fiable
   const email = user.email || "";
-  const initials =
-    `${prenom[0] || ""}${nom[0] || ""}`.toUpperCase() || "EU";
+  const initials = `${prenom[0] || ""}${nom[0] || ""}`.toUpperCase() || "EU";
 
   // ✅ TU VEUX TOUJOURS L'EMAIL
   const meta = email;
@@ -95,19 +97,41 @@ export default function DashboardLayout({ children }) {
         if (!Array.isArray(demandes)) return;
 
         const dismissed = getDismissed();
+        const notifs = [];
 
-        const notifs = demandes
-          .filter((d) => d.statut === "DISPONIBLE")
-          .map((d) => ({
-            id: `${d.id}-DISPONIBLE`,
-            message: `✅ Votre ${labelType(
-              d.typeDocument
-            )} est prêt. Rendez-vous dans "Mes documents" pour le télécharger.`,
-            createdAt: d.updatedAt || d.createdAt,
-          }))
-          .filter((n) => !dismissed.includes(n.id))
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        for (const d of demandes) {
+          // ✅ Notification document disponible
+          if (d.statut === "DISPONIBLE") {
+            const id = `${d.id}-DISPONIBLE`;
+            if (!dismissed.includes(id)) {
+              notifs.push({
+                id,
+                message: `✅ Votre ${labelType(
+                  d.typeDocument
+                )} est prêt. Rendez-vous dans "Mes documents" pour le télécharger.`,
+                createdAt: d.updatedAt || d.createdAt,
+              });
+            }
+          }
 
+          // ✅ Notification rejet avec commentaire
+          if (d.statut === "REJETEE" || d.statut === "REJETE") {
+            const id = `${d.id}-REJET`;
+            if (!dismissed.includes(id)) {
+              const motif = d.motifRejet || "";
+              const suffix = motif ? ` — ${motif}` : "";
+              notifs.push({
+                id,
+                message: `❌ Rejet de demande : ${labelType(
+                  d.typeDocument
+                )}${suffix}`,
+                createdAt: d.updatedAt || d.createdAt,
+              });
+            }
+          }
+        }
+
+        notifs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setNotifications(notifs);
       } catch {
         /* silencieux */
