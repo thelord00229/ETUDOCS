@@ -49,7 +49,7 @@ if (hasBrevoConfig) {
 }
 
 exports.sendVerificationEmail = async (email, token) => {
-  const link = `${process.env.FRONTEND_URL}/auth/verify/${token}`;
+  const link = `${process.env.FRONTEND_URL}/auth/verify/${token}?email=${encodeURIComponent(email)}`;
   await transporter.sendMail({
     from: FROM,
     to: email,
@@ -74,7 +74,7 @@ exports.sendStatutChange = async (email, prenom, statut) => {
 };
 
 exports.sendPasswordResetEmail = async (email, token) => {
-  const link = `${process.env.FRONTEND_URL}/auth/reset-password/${token}`;
+  const link = `${process.env.FRONTEND_URL}/auth/reset-password/${token}?email=${encodeURIComponent(email)}`;
   await transporter.sendMail({
     from: FROM,
     to: email,
@@ -82,5 +82,65 @@ exports.sendPasswordResetEmail = async (email, token) => {
     html: `<p>Cliquez pour réinitialiser votre mot de passe :</p>
            <a href="${link}">Réinitialiser</a>
            <p>Expire dans 1h.</p>`,
+  });
+};
+
+exports.sendDemandeConfirmee = async (email, prenom, reference, typeDocument) => {
+  await transporter.sendMail({
+    from: FROM,
+    to: email,
+    subject: "Demande reçue — EtuDocs",
+    html: `<p>Bonjour ${prenom},</p>
+           <p>Votre demande de ${typeDocument} a été reçue avec succès.</p>
+           <p>Référence : ${reference}</p>
+           <p>Vous recevrez une notification dès que votre document sera traité.</p>
+           <a href="${process.env.FRONTEND_URL}/dashboard">Suivre ma demande</a>`,
+  });
+};
+
+exports.sendDemandeRejetee = async (email, prenom, typeDocument, motif) => {
+  await transporter.sendMail({
+    from: FROM,
+    to: email,
+    subject: "Demande refusée — EtuDocs",
+    html: `<p>Bonjour ${prenom},</p>
+           <p>Malheureusement, votre demande de ${typeDocument} a été refusée.</p>
+           <p><strong>Motif du refus :</strong> ${motif}</p>
+           <p>Vous pouvez soumettre une nouvelle demande avec les corrections nécessaires.</p>
+           <a href="${process.env.FRONTEND_URL}/dashboard">Accéder à mon espace</a>`,
+  });
+};
+
+exports.sendDocumentDisponible = async (email, prenom, typeDocument) => {
+  await transporter.sendMail({
+    from: FROM,
+    to: email,
+    subject: "Votre document est prêt — EtuDocs",
+    html: `<p>Bonjour ${prenom},</p>
+           <p>Votre ${typeDocument} est maintenant disponible.</p>
+           <p>Vous pouvez le télécharger depuis votre espace personnel.</p>
+           <a href="${process.env.FRONTEND_URL}/dashboard">Télécharger mon document</a>`,
+  });
+};
+
+exports.sendAgentNotification = async (email, prenom, role, nbDossiers) => {
+  if (nbDossiers === 0) return;
+
+  const sujet = nbDossiers === 1
+    ? "Nouveau dossier à traiter — EtuDocs"
+    : `${nbDossiers} dossiers vous attendent — EtuDocs`;
+
+  const message = nbDossiers === 1
+    ? "Un nouveau dossier vous a été assigné."
+    : `${nbDossiers} dossiers vous attendent pour traitement.`;
+
+  await transporter.sendMail({
+    from: FROM,
+    to: email,
+    subject: sujet,
+    html: `<p>Bonjour ${prenom},</p>
+           <p>${message}</p>
+           <p>Veuillez vous connecter pour traiter ${nbDossiers === 1 ? 'ce dossier' : 'ces dossiers'}.</p>
+           <a href="${process.env.FRONTEND_URL}/dashboard">Accéder à mon espace</a>`,
   });
 };

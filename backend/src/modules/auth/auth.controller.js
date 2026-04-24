@@ -12,7 +12,7 @@ exports.login = asyncHandler(async (req, res) => {
 });
 
 exports.verifyEmail = asyncHandler(async (req, res) => {
-  const result = await authService.verifyEmail(req.params.token);
+  const result = await authService.verifyEmail(req.params.token, req.query.email);
   res.json(result);
 });
 
@@ -24,7 +24,8 @@ exports.requestReset = asyncHandler(async (req, res) => {
 exports.resetPassword = asyncHandler(async (req, res) => {
   const result = await authService.resetPassword(
     req.params.token,
-    req.body.newPassword
+    req.body.newPassword,
+    req.query.email
   );
   res.json(result);
 });

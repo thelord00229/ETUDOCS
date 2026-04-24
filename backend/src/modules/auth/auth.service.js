@@ -166,6 +166,8 @@ exports.login = async ({ email, password }) => {
   });
 
   if (!user) {
+    // Simuler le temps bcrypt pour éviter les timing attacks
+    await bcrypt.compare(password, "$2a$12$fakehashfakehashfakehashfakehash");
     const err = new Error("Email ou mot de passe incorrect");
     err.statusCode = 401;
     throw err;
@@ -214,12 +216,15 @@ exports.login = async ({ email, password }) => {
   };
 };
 
-exports.verifyEmail = async (token) => {
-  const user = await prisma.utilisateur.findFirst({
-    where: { tokenVerification: { not: null } },
+exports.verifyEmail = async (token, email) => {
+  const cleanEmail = String(email || "").trim().toLowerCase();
+  
+  const user = await prisma.utilisateur.findUnique({
+    where: { email: cleanEmail },
+    select: { id: true, tokenVerification: true, emailVerifie: true },
   });
 
-  if (!user) {
+  if (!user || !user.tokenVerification) {
     const err = new Error("Token invalide");
     err.statusCode = 400;
     throw err;
@@ -270,15 +275,17 @@ exports.requestPasswordReset = async (email) => {
   return { message: "Si cet email existe, un lien a été envoyé." };
 };
 
-exports.resetPassword = async (token, newPassword) => {
+exports.resetPassword = async (token, newPassword, email) => {
   validatePassword(newPassword);
 
-  const user = await prisma.utilisateur.findFirst({
-    where: { tokenResetPassword: { not: null }, tokenResetExpiry: { gt: new Date() } },
-    select: { id: true, tokenResetPassword: true },
+  const cleanEmail = String(email || "").trim().toLowerCase();
+
+  const user = await prisma.utilisateur.findUnique({
+    where: { email: cleanEmail },
+    select: { id: true, tokenResetPassword: true, tokenResetExpiry: true },
   });
 
-  if (!user) {
+  if (!user || !user.tokenResetPassword || user.tokenResetExpiry < new Date()) {
     const err = new Error("Token invalide ou expiré");
     err.statusCode = 400;
     throw err;
