@@ -4,6 +4,7 @@ import { Routes, Route } from "react-router-dom";
 import Home from "../pages/Home.jsx";
 import Login from "../pages/Login.jsx";
 import Register from "../pages/Register.jsx";
+import Landingpage from "../pages/Landingpage.jsx";
 
 import Dashboard from "../pages/DashboardEtudiant/Dashboard.jsx";
 import NouvelleDemande from "../pages/DashboardEtudiant/NouvelleDemande.jsx";
@@ -28,10 +29,9 @@ import SAAnalytics from "../pages/DashboardAdmin/SAAnalytics.jsx";
 const Router = () => {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<Landingpage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-
 
       {/* Etudiant */}
       <Route path="/dashboardEtu" element={<Dashboard />} />

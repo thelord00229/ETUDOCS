@@ -23,9 +23,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ASSETS_DIR = path.resolve(__dirname, "../assets");
 const OUTPUT_DIR = path.resolve(process.cwd(), "uploads", "pdfs");
 
-const PDF_TIMEOUT_MS          = Number(process.env.PDF_TIMEOUT_MS          || 60000);
-const REMOTE_ASSET_TIMEOUT_MS = Number(process.env.REMOTE_ASSET_TIMEOUT_MS || 8000);
-const REMOTE_ASSET_MAX_BYTES  = Number(process.env.REMOTE_ASSET_MAX_BYTES  || 2_500_000);
+const PDF_TIMEOUT_MS = Number(process.env.PDF_TIMEOUT_MS || 60000);
+const REMOTE_ASSET_TIMEOUT_MS = Number(
+  process.env.REMOTE_ASSET_TIMEOUT_MS || 8000,
+);
+const REMOTE_ASSET_MAX_BYTES = Number(
+  process.env.REMOTE_ASSET_MAX_BYTES || 2_500_000,
+);
 const PUPPETEER_EXECUTABLE_PATH = process.env.PUPPETEER_EXECUTABLE_PATH || "";
 const DEBUG_PDF = String(process.env.DEBUG_PDF || "").toLowerCase() === "true";
 
@@ -45,7 +49,11 @@ async function getBrowser() {
   if (_browserPromise) return _browserPromise;
   const launchOptions = {
     headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+    ],
   };
   if (PUPPETEER_EXECUTABLE_PATH) {
     launchOptions.executablePath = PUPPETEER_EXECUTABLE_PATH;
@@ -60,24 +68,34 @@ async function closeBrowser() {
       const b = await _browserPromise;
       await b.close();
     }
-  } catch {}
-  finally { _browserPromise = null; }
+  } catch {
+  } finally {
+    _browserPromise = null;
+  }
 }
 
-process.on("exit",    () => closeBrowser());
-process.on("SIGINT",  async () => { await closeBrowser(); process.exit(0); });
-process.on("SIGTERM", async () => { await closeBrowser(); process.exit(0); });
+process.on("exit", () => closeBrowser());
+process.on("SIGINT", async () => {
+  await closeBrowser();
+  process.exit(0);
+});
+process.on("SIGTERM", async () => {
+  await closeBrowser();
+  process.exit(0);
+});
 
 // ─────────────────────────────────────────────
 // UTILITAIRES ASSETS
 // ─────────────────────────────────────────────
 
 function detectMimeFromExt(ext) {
-  const e = String(ext || "").toLowerCase().replace(".", "");
+  const e = String(ext || "")
+    .toLowerCase()
+    .replace(".", "");
   if (e === "jpg" || e === "jpeg") return "image/jpeg";
-  if (e === "png")  return "image/png";
+  if (e === "png") return "image/png";
   if (e === "webp") return "image/webp";
-  if (e === "svg")  return "image/svg+xml";
+  if (e === "svg") return "image/svg+xml";
   return "application/octet-stream";
 }
 
@@ -87,7 +105,10 @@ function bufferToDataUrl(buf, mime) {
 }
 
 function isHttpUrl(s) {
-  return typeof s === "string" && (s.startsWith("http://") || s.startsWith("https://"));
+  return (
+    typeof s === "string" &&
+    (s.startsWith("http://") || s.startsWith("https://"))
+  );
 }
 
 function fetchRemoteAsDataUrl(url, timeoutMs = REMOTE_ASSET_TIMEOUT_MS) {
@@ -97,46 +118,75 @@ function fetchRemoteAsDataUrl(url, timeoutMs = REMOTE_ASSET_TIMEOUT_MS) {
       const client = url.startsWith("https://") ? https : http;
       const req = client.get(
         url,
-        { headers: { "User-Agent": "EtuDocs-PDF/1.0", Accept: "image/*,*/*;q=0.8" } },
+        {
+          headers: {
+            "User-Agent": "EtuDocs-PDF/1.0",
+            Accept: "image/*,*/*;q=0.8",
+          },
+        },
         (res) => {
-          if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          if (
+            res.statusCode >= 300 &&
+            res.statusCode < 400 &&
+            res.headers.location
+          ) {
             const next = res.headers.location.startsWith("http")
               ? res.headers.location
               : new URL(res.headers.location, url).toString();
             res.resume();
             return resolve(fetchRemoteAsDataUrl(next, timeoutMs));
           }
-          if (res.statusCode !== 200) { res.resume(); return resolve(null); }
-          const contentType = res.headers["content-type"] || "application/octet-stream";
+          if (res.statusCode !== 200) {
+            res.resume();
+            return resolve(null);
+          }
+          const contentType =
+            res.headers["content-type"] || "application/octet-stream";
           const chunks = [];
           let total = 0;
           res.on("data", (chunk) => {
             total += chunk.length;
-            if (total > REMOTE_ASSET_MAX_BYTES) { req.destroy(); return resolve(null); }
+            if (total > REMOTE_ASSET_MAX_BYTES) {
+              req.destroy();
+              return resolve(null);
+            }
             chunks.push(chunk);
           });
           res.on("end", () =>
-            resolve(bufferToDataUrl(Buffer.concat(chunks), String(contentType).split(";")[0]))
+            resolve(
+              bufferToDataUrl(
+                Buffer.concat(chunks),
+                String(contentType).split(";")[0],
+              ),
+            ),
           );
-        }
+        },
       );
-      req.setTimeout(timeoutMs, () => { req.destroy(); resolve(null); });
+      req.setTimeout(timeoutMs, () => {
+        req.destroy();
+        resolve(null);
+      });
       req.on("error", () => resolve(null));
-    } catch { resolve(null); }
+    } catch {
+      resolve(null);
+    }
   });
 }
 
 async function imageToDataUrl(filePathOrUrl) {
   try {
     if (!filePathOrUrl) return null;
-    if (isHttpUrl(filePathOrUrl)) return await fetchRemoteAsDataUrl(filePathOrUrl);
+    if (isHttpUrl(filePathOrUrl))
+      return await fetchRemoteAsDataUrl(filePathOrUrl);
     const abs = path.isAbsolute(filePathOrUrl)
       ? filePathOrUrl
       : path.resolve(process.cwd(), filePathOrUrl);
     if (!fs.existsSync(abs)) return null;
     const mime = detectMimeFromExt(path.extname(abs));
     return bufferToDataUrl(fs.readFileSync(abs), mime);
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 async function getLogoInstitution(institution) {
@@ -154,7 +204,9 @@ async function getLogoUAC() {
 
 async function getTamponDA(institution) {
   if (institution?.tamponDirecteurAdjointUrl) {
-    const embedded = await imageToDataUrl(institution.tamponDirecteurAdjointUrl);
+    const embedded = await imageToDataUrl(
+      institution.tamponDirecteurAdjointUrl,
+    );
     if (embedded) return embedded;
   }
   return imageToDataUrl(path.join(ASSETS_DIR, "stamps", "DA.png"));
@@ -175,10 +227,13 @@ async function getTamponDIR(institution) {
 async function generateQRDataURL(text) {
   try {
     return await QRCode.toDataURL(text, {
-      width: 80, margin: 1,
+      width: 80,
+      margin: 1,
       color: { dark: "#000000", light: "#ffffff" },
     });
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -188,93 +243,163 @@ async function generateQRDataURL(text) {
 const UE_STRUCTURES = {
   1: [
     {
-      code: "MTH1121", intitule: "LOGIQUE, ARITHMÉTIQUE ET SES APPLICATIONS", credits: 5,
-      ecus: [{ code: "1MTH1121", intitule: "Logique, arithmétique et applications" }],
+      code: "MTH1121",
+      intitule: "LOGIQUE, ARITHMÉTIQUE ET SES APPLICATIONS",
+      credits: 5,
+      ecus: [
+        { code: "1MTH1121", intitule: "Logique, arithmétique et applications" },
+      ],
     },
     {
-      code: "MTH1122", intitule: "MATHÉMATIQUES FONDAMENTALES", credits: 5,
+      code: "MTH1122",
+      intitule: "MATHÉMATIQUES FONDAMENTALES",
+      credits: 5,
       ecus: [
         { code: "1MTH1122", intitule: "Algèbre linéaire et applications" },
         { code: "2MTH1122", intitule: "Analyse et applications" },
       ],
     },
     {
-      code: "MTH1123", intitule: "PROBABILITÉ ET STATISTIQUE", credits: 5,
+      code: "MTH1123",
+      intitule: "PROBABILITÉ ET STATISTIQUE",
+      credits: 5,
       ecus: [
-        { code: "1MTH1123", intitule: "Analyse combinatoire, calcul des probabilités et applications" },
-        { code: "2MTH1123", intitule: "Statistiques inférentielles et applications" },
+        {
+          code: "1MTH1123",
+          intitule:
+            "Analyse combinatoire, calcul des probabilités et applications",
+        },
+        {
+          code: "2MTH1123",
+          intitule: "Statistiques inférentielles et applications",
+        },
       ],
     },
     {
-      code: "INF1124", intitule: "ARCHITECTURE ET TOPOLOGIE DES RÉSEAUX INFORMATIQUES", credits: 4,
-      ecus: [{ code: "1INF1124", intitule: "Architecture et topologie des réseaux informatiques" }],
+      code: "INF1124",
+      intitule: "ARCHITECTURE ET TOPOLOGIE DES RÉSEAUX INFORMATIQUES",
+      credits: 4,
+      ecus: [
+        {
+          code: "1INF1124",
+          intitule: "Architecture et topologie des réseaux informatiques",
+        },
+      ],
     },
     {
-      code: "INF1125", intitule: "SYSTÈME D'EXPLOITATION ET OUTILS DE BASE EN INFORMATIQUE", credits: 4,
+      code: "INF1125",
+      intitule: "SYSTÈME D'EXPLOITATION ET OUTILS DE BASE EN INFORMATIQUE",
+      credits: 4,
       ecus: [
-        { code: "1INF1125", intitule: "Utilisation et administration sous Windows/Linux" },
+        {
+          code: "1INF1125",
+          intitule: "Utilisation et administration sous Windows/Linux",
+        },
         { code: "2INF1125", intitule: "Outils de base en informatique" },
       ],
     },
     {
-      code: "INF1126", intitule: "BASE DE LA PROGRAMMATION", credits: 4,
+      code: "INF1126",
+      intitule: "BASE DE LA PROGRAMMATION",
+      credits: 4,
       ecus: [
         { code: "1INF1126", intitule: "Algorithmique" },
         { code: "2INF1126", intitule: "Langages C" },
       ],
     },
     {
-      code: "DRP1127", intitule: "DÉONTOLOGIE ET DROIT LIÉS AUX TIC", credits: 2,
-      ecus: [{ code: "1DRP1127", intitule: "Déontologie et droit liés aux TIC" }],
+      code: "DRP1127",
+      intitule: "DÉONTOLOGIE ET DROIT LIÉS AUX TIC",
+      credits: 2,
+      ecus: [
+        { code: "1DRP1127", intitule: "Déontologie et droit liés aux TIC" },
+      ],
     },
     {
-      code: "TCC1128", intitule: "TECHNIQUES D'EXPRESSION ÉCRITE ET ORALE", credits: 1,
-      ecus: [{ code: "1TCC1128", intitule: "Techniques d'expression écrite et orale" }],
+      code: "TCC1128",
+      intitule: "TECHNIQUES D'EXPRESSION ÉCRITE ET ORALE",
+      credits: 1,
+      ecus: [
+        {
+          code: "1TCC1128",
+          intitule: "Techniques d'expression écrite et orale",
+        },
+      ],
     },
   ],
   2: [
     {
-      code: "MTH1221", intitule: "ALGÈBRE LINÉAIRE AVANCÉE", credits: 5,
+      code: "MTH1221",
+      intitule: "ALGÈBRE LINÉAIRE AVANCÉE",
+      credits: 5,
       ecus: [
-        { code: "1MTH1221", intitule: "Espaces vectoriels et applications linéaires" },
+        {
+          code: "1MTH1221",
+          intitule: "Espaces vectoriels et applications linéaires",
+        },
         { code: "2MTH1221", intitule: "Matrices et déterminants" },
       ],
     },
     {
-      code: "INF1222", intitule: "PROGRAMMATION ORIENTÉE OBJET", credits: 5,
+      code: "INF1222",
+      intitule: "PROGRAMMATION ORIENTÉE OBJET",
+      credits: 5,
       ecus: [
         { code: "1INF1222", intitule: "Concepts POO et Java" },
-        { code: "2INF1222", intitule: "Structures de données et algorithmes avancés" },
+        {
+          code: "2INF1222",
+          intitule: "Structures de données et algorithmes avancés",
+        },
       ],
     },
     {
-      code: "INF1223", intitule: "BASE DE DONNÉES", credits: 4,
+      code: "INF1223",
+      intitule: "BASE DE DONNÉES",
+      credits: 4,
       ecus: [
         { code: "1INF1223", intitule: "Modélisation et conception de BDD" },
         { code: "2INF1223", intitule: "SQL et administration" },
       ],
     },
     {
-      code: "INF1224", intitule: "SYSTÈMES D'INFORMATION", credits: 4,
+      code: "INF1224",
+      intitule: "SYSTÈMES D'INFORMATION",
+      credits: 4,
       ecus: [
         { code: "1INF1224", intitule: "Analyse et conception des SI" },
         { code: "2INF1224", intitule: "UML et méthodes agiles" },
       ],
     },
     {
-      code: "INF1225", intitule: "RÉSEAUX INFORMATIQUES", credits: 4,
+      code: "INF1225",
+      intitule: "RÉSEAUX INFORMATIQUES",
+      credits: 4,
       ecus: [
         { code: "1INF1225", intitule: "Protocoles réseau TCP/IP" },
         { code: "2INF1225", intitule: "Administration réseau" },
       ],
     },
     {
-      code: "DRP1226", intitule: "DROIT DU NUMÉRIQUE", credits: 2,
-      ecus: [{ code: "1DRP1226", intitule: "Cybercriminalité et protection des données" }],
+      code: "DRP1226",
+      intitule: "DROIT DU NUMÉRIQUE",
+      credits: 2,
+      ecus: [
+        {
+          code: "1DRP1226",
+          intitule: "Cybercriminalité et protection des données",
+        },
+      ],
     },
     {
-      code: "TCC1227", intitule: "COMMUNICATION PROFESSIONNELLE", credits: 1,
-      ecus: [{ code: "1TCC1227", intitule: "Rédaction professionnelle et présentation orale" }],
+      code: "TCC1227",
+      intitule: "COMMUNICATION PROFESSIONNELLE",
+      credits: 1,
+      ecus: [
+        {
+          code: "1TCC1227",
+          intitule: "Rédaction professionnelle et présentation orale",
+        },
+      ],
     },
   ],
 };
@@ -291,9 +416,9 @@ function getCote(note) {
   if (note >= 12) return "B−";
   if (note >= 11) return "C+";
   if (note >= 10) return "C";
-  if (note >= 9)  return "C−";
-  if (note >= 8)  return "D+";
-  if (note >= 5)  return "D";
+  if (note >= 9) return "C−";
+  if (note >= 8) return "D+";
+  if (note >= 5) return "D";
   return "F";
 }
 
@@ -307,9 +432,10 @@ function generateRandomNotes(semestre) {
 
   const rows = ues.map((ue) => {
     const ecuNotes = ue.ecus.map((ecu) => ({ ...ecu, note: randNote(7, 19) }));
-    const moyUE = Math.round(
-      (ecuNotes.reduce((s, e) => s + e.note, 0) / ecuNotes.length) * 100
-    ) / 100;
+    const moyUE =
+      Math.round(
+        (ecuNotes.reduce((s, e) => s + e.note, 0) / ecuNotes.length) * 100,
+      ) / 100;
     const valide = moyUE >= 10;
     const sessionValidation = valide
       ? `VALIDE EN Févr ${anneeActuelle}`
@@ -319,49 +445,78 @@ function generateRandomNotes(semestre) {
     if (valide) totalCreditsValides += ue.credits;
     sommePonderee += moyUE * ue.credits;
 
-    return { ...ue, moyUE, cote: getCote(moyUE), valide, sessionValidation, ecus: ecuNotes };
+    return {
+      ...ue,
+      moyUE,
+      cote: getCote(moyUE),
+      valide,
+      sessionValidation,
+      ecus: ecuNotes,
+    };
   });
 
-  const moyenneSemestrielle = Math.round((sommePonderee / totalCredits) * 100) / 100;
-  const creditsCapitalises  = Math.round((totalCreditsValides / totalCredits) * 10000) / 100;
-  const decision            = moyenneSemestrielle >= 10 ? "Continue" : "Redouble";
+  const moyenneSemestrielle =
+    Math.round((sommePonderee / totalCredits) * 100) / 100;
+  const creditsCapitalises =
+    Math.round((totalCreditsValides / totalCredits) * 10000) / 100;
+  const decision = moyenneSemestrielle >= 10 ? "Continue" : "Redouble";
 
-  return { rows, moyenneSemestrielle, creditsCapitalises, decision, totalCredits };
+  return {
+    rows,
+    moyenneSemestrielle,
+    creditsCapitalises,
+    decision,
+    totalCredits,
+  };
 }
 
 // ─────────────────────────────────────────────
 // GÉNÉRATION RELEVÉ DE NOTES
 // ─────────────────────────────────────────────
 
-exports.generateDocument = async (demande, etudiant, notesData, reference, institution, qrData) => {
-  const [logoUACBase64, logoInstitutionBase64, tamponDABase64, tamponDIRBase64, qrBase64] =
-    await Promise.all([
-      getLogoUAC(),
-      getLogoInstitution(institution),
-      getTamponDA(institution),
-      getTamponDIR(institution),
-      generateQRDataURL(qrData),
-    ]);
+exports.generateDocument = async (
+  demande,
+  etudiant,
+  notesData,
+  reference,
+  institution,
+  qrData,
+) => {
+  const [
+    logoUACBase64,
+    logoInstitutionBase64,
+    tamponDABase64,
+    tamponDIRBase64,
+    qrBase64,
+  ] = await Promise.all([
+    getLogoUAC(),
+    getLogoInstitution(institution),
+    getTamponDA(institution),
+    getTamponDIR(institution),
+    generateQRDataURL(qrData),
+  ]);
 
-  const etudiantNom         = (etudiant?.nom    || "").toUpperCase();
-  const etudiantPrenom      =  etudiant?.prenom || "";
-  const etudiantMatricule   =  etudiant?.numeroEtudiant || "";
-  const etudiantFiliere     =  etudiant?.filiere || "";
-  const etudiantNiveau      =  etudiant?.niveau  || "";
+  const etudiantNom = (etudiant?.nom || "").toUpperCase();
+  const etudiantPrenom = etudiant?.prenom || "";
+  const etudiantMatricule = etudiant?.numeroEtudiant || "";
+  const etudiantFiliere = etudiant?.filiere || "";
+  const etudiantNiveau = etudiant?.niveau || "";
 
-  const institutionNom        = institution?.nom                   || "";
-  const institutionSigle      = institution?.sigle                 || "IFRI";
-  const directeurNom          = institution?.directeurNom          || "";
-  const directeurTitre        = institution?.directeurTitre        || "";
-  const directeurAdjointNom   = institution?.directeurAdjointNom   || "";
+  const institutionNom = institution?.nom || "";
+  const institutionSigle = institution?.sigle || "IFRI";
+  const directeurNom = institution?.directeurNom || "";
+  const directeurTitre = institution?.directeurTitre || "";
+  const directeurAdjointNom = institution?.directeurAdjointNom || "";
   const directeurAdjointTitre = institution?.directeurAdjointTitre || "";
 
-  const semestre        = demande?.semestre || demande?.semestres?.[0] || 1;
-  const now             = new Date();
-  const annee           = now.getFullYear();
+  const semestre = demande?.semestre || demande?.semestres?.[0] || 1;
+  const now = new Date();
+  const annee = now.getFullYear();
   const anneeAcademique = `${annee - 1}-${annee}`;
-  const dateGeneration  = now.toLocaleDateString("fr-FR", {
-    day: "2-digit", month: "2-digit", year: "numeric",
+  const dateGeneration = now.toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   });
 
   const notes = generateRandomNotes(semestre);
@@ -370,20 +525,34 @@ exports.generateDocument = async (demande, etudiant, notesData, reference, insti
   const instConfig = getInstitutionConfig(institutionSigle);
 
   const html = buildHtml({
-    logoUACBase64, logoInstitutionBase64,
-    institutionNom, institutionSigle,
-    directeurNom, directeurTitre,
-    directeurAdjointNom, directeurAdjointTitre,
-    tamponDABase64, tamponDIRBase64,
-    etudiantNom, etudiantPrenom, etudiantMatricule, etudiantFiliere, etudiantNiveau,
-    reference, semestre, anneeAcademique, notes, qrBase64, dateGeneration,
+    logoUACBase64,
+    logoInstitutionBase64,
+    institutionNom,
+    institutionSigle,
+    directeurNom,
+    directeurTitre,
+    directeurAdjointNom,
+    directeurAdjointTitre,
+    tamponDABase64,
+    tamponDIRBase64,
+    etudiantNom,
+    etudiantPrenom,
+    etudiantMatricule,
+    etudiantFiliere,
+    etudiantNiveau,
+    reference,
+    semestre,
+    anneeAcademique,
+    notes,
+    qrBase64,
+    dateGeneration,
     // Infos institution dynamiques
     domaine: instConfig.domaine,
-    grade:   instConfig.grade,
+    grade: instConfig.grade,
     mention: instConfig.mention,
     adresse: instConfig.adresse,
     siteWeb: instConfig.siteWeb,
-    email:   instConfig.email,
+    email: instConfig.email,
   });
 
   const browser = await getBrowser();
@@ -394,10 +563,13 @@ exports.generateDocument = async (demande, etudiant, notesData, reference, insti
     page.setDefaultNavigationTimeout(PDF_TIMEOUT_MS);
     page.setDefaultTimeout(PDF_TIMEOUT_MS);
 
-    await page.setContent(html, { waitUntil: "domcontentloaded", timeout: PDF_TIMEOUT_MS });
+    await page.setContent(html, {
+      waitUntil: "domcontentloaded",
+      timeout: PDF_TIMEOUT_MS,
+    });
     await sleep(120);
 
-    const fileName   = `${reference}.pdf`;
+    const fileName = `${reference}.pdf`;
     const outputPath = path.join(OUTPUT_DIR, fileName);
 
     log("Generating PDF:", outputPath);
@@ -420,7 +592,11 @@ exports.generateDocument = async (demande, etudiant, notesData, reference, insti
     err.statusCode = 500;
     throw err;
   } finally {
-    if (page) { try { await page.close(); } catch {} }
+    if (page) {
+      try {
+        await page.close();
+      } catch {}
+    }
   }
 };
 
@@ -499,7 +675,7 @@ function buildQRPlaceholder() {
 function buildSemestresLabel(semestres) {
   if (!semestres || semestres.length === 0) return "Semestres 3 et 4";
   if (semestres.length === 1) return `Semestre ${semestres[0]}`;
-  const last   = semestres[semestres.length - 1];
+  const last = semestres[semestres.length - 1];
   const others = semestres.slice(0, -1).join(", ");
   return `Semestres ${others} et ${last}`;
 }
@@ -508,41 +684,62 @@ function buildSemestresLabel(semestres) {
 // GÉNÉRATION ATTESTATION D'INSCRIPTION
 // ─────────────────────────────────────────────
 
-exports.generateAttestationInscription = async (demande, etudiant, reference, institution, qrData) => {
+exports.generateAttestationInscription = async (
+  demande,
+  etudiant,
+  reference,
+  institution,
+  qrData,
+) => {
   const [logoUACBase64, qrBase64] = await Promise.all([
     getLogoUAC(),
     generateQRDataURL(qrData),
   ]);
 
-  const etudiantNom           =  etudiant?.nom            || "";
-  const etudiantPrenom        =  etudiant?.prenom         || "";
-  const etudiantDateNaissance =  etudiant?.dateNaissance  || null;
-  const etudiantLieuNaissance =  etudiant?.lieuNaissance  || null;
-  const etudiantMatricule     =  etudiant?.numeroEtudiant || etudiant?.matricule || "";
-  const etudiantFiliere       =  etudiant?.filiere || demande?.filiere || "Licence en Génie Logiciel";
+  const etudiantNom = etudiant?.nom || "";
+  const etudiantPrenom = etudiant?.prenom || "";
+  const etudiantDateNaissance = etudiant?.dateNaissance || null;
+  const etudiantLieuNaissance = etudiant?.lieuNaissance || null;
+  const etudiantMatricule =
+    etudiant?.numeroEtudiant || etudiant?.matricule || "";
+  const etudiantFiliere =
+    etudiant?.filiere || demande?.filiere || "Licence en Génie Logiciel";
 
   const etudiantSemestres = demande?.semestres
-    ? Array.isArray(demande.semestres) ? demande.semestres : [demande.semestres]
+    ? Array.isArray(demande.semestres)
+      ? demande.semestres
+      : [demande.semestres]
     : demande?.semestre
       ? [demande.semestre]
       : [3, 4];
 
-  const institutionNom   = institution?.nom   || "INSTITUT DE FORMATION ET DE RECHERCHE EN INFORMATIQUE";
+  const institutionNom =
+    institution?.nom || "INSTITUT DE FORMATION ET DE RECHERCHE EN INFORMATIQUE";
   const institutionSigle = institution?.sigle || "IFRI";
 
-  const now             = new Date();
-  const annee           = now.getFullYear();
+  const now = new Date();
+  const annee = now.getFullYear();
   const anneeAcademique = `${annee - 1}-${annee}`;
-  const dateGeneration  = now.toLocaleDateString("fr-FR", {
-    day: "numeric", month: "long", year: "numeric",
+  const dateGeneration = now.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
   });
 
   const html = buildAttestationInscriptionHtml({
     logoUACBase64,
-    etudiantNom, etudiantPrenom, etudiantDateNaissance, etudiantLieuNaissance,
-    etudiantMatricule, etudiantFiliere, etudiantSemestres,
-    institutionNom, institutionSigle,
-    anneeAcademique, dateGeneration, qrBase64,
+    etudiantNom,
+    etudiantPrenom,
+    etudiantDateNaissance,
+    etudiantLieuNaissance,
+    etudiantMatricule,
+    etudiantFiliere,
+    etudiantSemestres,
+    institutionNom,
+    institutionSigle,
+    anneeAcademique,
+    dateGeneration,
+    qrBase64,
   });
 
   const browser = await getBrowser();
@@ -553,10 +750,13 @@ exports.generateAttestationInscription = async (demande, etudiant, reference, in
     page.setDefaultNavigationTimeout(PDF_TIMEOUT_MS);
     page.setDefaultTimeout(PDF_TIMEOUT_MS);
 
-    await page.setContent(html, { waitUntil: "domcontentloaded", timeout: PDF_TIMEOUT_MS });
+    await page.setContent(html, {
+      waitUntil: "domcontentloaded",
+      timeout: PDF_TIMEOUT_MS,
+    });
     await sleep(120);
 
-    const fileName   = `${reference}.pdf`;
+    const fileName = `${reference}.pdf`;
     const outputPath = path.join(OUTPUT_DIR, fileName);
 
     await page.pdf({
@@ -576,7 +776,11 @@ exports.generateAttestationInscription = async (demande, etudiant, reference, in
     err.statusCode = 500;
     throw err;
   } finally {
-    if (page) { try { await page.close(); } catch {} }
+    if (page) {
+      try {
+        await page.close();
+      } catch {}
+    }
   }
 };
 
@@ -586,13 +790,20 @@ exports.generateAttestationInscription = async (demande, etudiant, reference, in
 
 function buildAttestationInscriptionHtml({
   logoUACBase64,
-  etudiantNom, etudiantPrenom,
-  etudiantDateNaissance, etudiantLieuNaissance,
-  etudiantMatricule, etudiantFiliere, etudiantSemestres,
-  institutionNom, institutionSigle,
-  anneeAcademique, dateGeneration, qrBase64,
+  etudiantNom,
+  etudiantPrenom,
+  etudiantDateNaissance,
+  etudiantLieuNaissance,
+  etudiantMatricule,
+  etudiantFiliere,
+  etudiantSemestres,
+  institutionNom,
+  institutionSigle,
+  anneeAcademique,
+  dateGeneration,
+  qrBase64,
 }) {
-  const logoSrc  = logoUACBase64
+  const logoSrc = logoUACBase64
     ? `<img src="${logoUACBase64}" style="width:86px;height:86px;object-fit:contain;" alt="UAC"/>`
     : buildLogoSVG("top-arc-L", "bot-arc-L");
 
@@ -604,17 +815,20 @@ function buildAttestationInscriptionHtml({
     ? `<img src="${qrBase64}" style="width:95px;height:95px;" alt="QR Code"/>`
     : buildQRPlaceholder();
 
-  const nomComplet = `${(etudiantNom || "").toUpperCase()} ${etudiantPrenom || ""}`.trim();
+  const nomComplet =
+    `${(etudiantNom || "").toUpperCase()} ${etudiantPrenom || ""}`.trim();
 
   const dateNaissanceFormatee = etudiantDateNaissance
     ? new Date(etudiantDateNaissance).toLocaleDateString("fr-FR", {
-        day: "numeric", month: "long", year: "numeric",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
       })
     : "—";
 
-  const lieuNaissance  = etudiantLieuNaissance || "—";
+  const lieuNaissance = etudiantLieuNaissance || "—";
   const semestresLabel = buildSemestresLabel(etudiantSemestres);
-  const filiere        = etudiantFiliere || "Informatique";
+  const filiere = etudiantFiliere || "Informatique";
 
   const institutionLabel = institutionNom
     ? `${institutionNom}${institutionSigle ? ` (${institutionSigle})` : ""}`

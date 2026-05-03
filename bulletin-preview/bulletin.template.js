@@ -97,6 +97,7 @@ function buildHtml(payload) {
 
 html, body {
   width: 210mm;
+  
   font-family: 'Times New Roman', Times, serif;
   color: #111;
   font-size: 8.5pt;
