@@ -12,7 +12,7 @@ const css = `
 
   /* ── CARD ── */
   .doc-file-card {
-    background:#1e2535; border-radius:16px;
+    background:#2a3647; border-radius:16px;
     overflow:hidden; display:flex; flex-direction:column;
     transition:box-shadow .2s, transform .2s;
     border:1px solid #2d3748;
@@ -22,7 +22,7 @@ const css = `
   /* ── MINIATURE ── */
   .doc-thumb {
     width:100%; height:160px;
-    background:#161d2e; position:relative; overflow:hidden;
+    background:#1f2a38; position:relative; overflow:hidden;
   }
   .doc-thumb iframe {
     width:100%; height:400px;
@@ -76,8 +76,8 @@ const css = `
     width:9px; height:9px; border-radius:50%;
     background:#2d3748; transition:background .4s, transform .3s;
   }
-  .dl-pip.pip-1 { background:#16a34a; }
-  .dl-pip.pip-2 { background:#eab308; }
+  .dl-pip.pip-1 { background:#2e7d32; }
+  .dl-pip.pip-2 { background:#fcd116; }
   .dl-pip.pip-3 { background:#ef4444; }
   .dl-pip.pip-pulse { animation:pipPulse .5s ease; }
   @keyframes pipPulse {
@@ -91,35 +91,35 @@ const css = `
     font-family:'Sora',sans-serif; font-weight:700; font-size:.65rem;
     padding:3px 10px; border-radius:20px; letter-spacing:.04em;
   }
-  .doc-badge--valide   { background:rgba(22,163,74,.15); color:#4ade80; border:1px solid rgba(22,163,74,.3); }
-  .doc-badge--expiring { background:rgba(234,179,8,.15);  color:#fbbf24; border:1px solid rgba(234,179,8,.3); }
+  .doc-badge--valide   { background:rgba(46,125,50,.15); color:#66bb6a; border:1px solid rgba(46,125,50,.3); }
+  .doc-badge--expiring { background:rgba(252,209,22,.15);  color:#fcd116; border:1px solid rgba(252,209,22,.3); }
   .doc-badge--expired  { background:rgba(239,68,68,.15);  color:#f87171; border:1px solid rgba(239,68,68,.3); }
 
   /* ── INFOS DOCUMENT ── */
   .doc-file-name {
     font-family:'Sora',sans-serif; font-weight:700;
-    font-size:.92rem; color:#f1f5f9;
+    font-size:1rem; color:#f1f5f9;
   }
-  .doc-file-date { font-size:.78rem; color:#64748b; margin-top:3px; }
+  .doc-file-date { font-family:'DM Sans', sans-serif; font-size:.78rem; color:#64748b; margin-top:3px; }
 
   /* ── BUTTONS ── */
   .btn-dl {
     width:100%; display:inline-flex; align-items:center; justify-content:center; gap:8px;
-    background:#16a34a; color:#fff; border:none; border-radius:9px;
+    background:#2e7d32; color:#fff; border:none; border-radius:9px;
     font-family:'Sora',sans-serif; font-weight:700; font-size:.82rem;
     padding:11px 14px; cursor:pointer; transition:background .2s;
   }
-  .btn-dl:hover { background:#15803d; }
+  .btn-dl:hover { background:#1b5e20; }
   .btn-dl:disabled { opacity:.6; cursor:not-allowed; }
 
   .btn-pay {
     width:100%; display:inline-flex; align-items:center; justify-content:center; gap:8px;
-    background:rgba(234,179,8,.12); color:#fbbf24;
-    border:1px solid rgba(234,179,8,.3); border-radius:9px;
+    background:transparent; color:#fcd116;
+    border:1px solid #fcd116; border-radius:9px;
     font-family:'Sora',sans-serif; font-weight:700; font-size:.82rem;
     padding:11px 14px; cursor:pointer; transition:background .2s;
   }
-  .btn-pay:hover { background:rgba(234,179,8,.2); }
+  .btn-pay:hover { background:rgba(252,209,22,.1); }
 
   .btn-unavailable {
     width:100%; display:inline-flex; align-items:center; justify-content:center; gap:8px;
@@ -300,6 +300,7 @@ function DocCard({ doc, onDownload }) {
         {/* Nom + date */}
         <div>
           <div className="doc-file-name">{doc.title}</div>
+          <div className="doc-file-date">{doc.date}</div>
         </div>
 
         {/* Bouton */}

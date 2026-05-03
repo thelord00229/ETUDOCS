@@ -26,6 +26,17 @@ const normalizeService = (s) => {
 const getServiceCible = (typeDocument) =>
   normalizeField(typeDocument) === RELEVE_NOTES ? EXAMENS : SCOLARITE;
 
+const getProchainRole = (statut) => {
+  const roleMap = {
+    "TRANSMISE_SECRETAIRE_ADJOINT": "SECRETAIRE_ADJOINT",
+    "TRANSMISE_SECRETAIRE_GENERAL": "SECRETAIRE_GENERAL",
+    "TRANSMISE_CHEF_DIVISION": "CHEF_DIVISION",
+    "ATTENTE_SIGNATURE_DIRECTEUR_ADJOINT": "DIRECTEUR_ADJOINT",
+    "ATTENTE_SIGNATURE_DIRECTEUR": "DIRECTEUR"
+  };
+  return roleMap[statut];
+};
+
 const REQUIRED_PIECES_BY_DOC = {
   RELEVE_NOTES: [
     "JUSTIFICATIF_INSCRIPTION",
@@ -76,7 +87,7 @@ exports.soumettre = async (utilisateurId, institutionId, body, files) => {
 
   const allFiles = Object.values(filesObj).flat();
 
-  return prisma.demande.create({
+  const demande = await prisma.demande.create({
     data: {
       typeDocument: docKey,
       semestres: parseSemestres(semestres),
@@ -101,8 +112,46 @@ exports.soumettre = async (utilisateurId, institutionId, body, files) => {
         },
       },
     },
-    include: { pieces: true },
+    include: {
+      utilisateur: { select: { email: true, prenom: true } }
+    },
   });
+
+  // Envoyer emails après création
+  try {
+    // Récupérer le Secrétaire Adjoint
+    const secretaireAdjoint = await prisma.utilisateur.findFirst({
+      where: { role: "SECRETAIRE_ADJOINT", institutionId },
+      select: { email: true, prenom: true, role: true }
+    });
+
+    // Compter les demandes SOUMISES avant ajout
+    const countSoumises = await prisma.demande.count({
+      where: { institutionId, statut: "SOUMISE" }
+    });
+
+    // Si la file était vide (countSoumises était 0 avant cette demande), notifier le SA
+    if (countSoumises === 1 && secretaireAdjoint) {
+      await emailService.sendAgentNotification(
+        secretaireAdjoint.email,
+        secretaireAdjoint.prenom,
+        secretaireAdjoint.role,
+        1
+      );
+    }
+
+    // Confirmer à l'étudiant
+    await emailService.sendDemandeConfirmee(
+      demande.utilisateur.email,
+      demande.utilisateur.prenom,
+      demande.id, // référence
+      docKey
+    );
+  } catch (e) {
+    console.log("[EMAIL SKIPPED]", e.message);
+  }
+
+  return demande;
 };
 
 exports.getDemandes = async (user) => {
@@ -436,13 +485,50 @@ exports.avancer = async (
     });
   });
 
+  // Envoyer emails selon le nouveau statut
   try {
-    await emailService.sendStatutChange(
-      demande.utilisateur.email,
-      demande.utilisateur.prenom,
-      prochainStatut
-    );
-  } catch {}
+    if (prochainStatut === "REJETEE") {
+      await emailService.sendDemandeRejetee(
+        demande.utilisateur.email,
+        demande.utilisateur.prenom,
+        demande.typeDocument,
+        commentaire || "Demande rejetée"
+      );
+    } else if (prochainStatut === "DISPONIBLE") {
+      await emailService.sendDocumentDisponible(
+        demande.utilisateur.email,
+        demande.utilisateur.prenom,
+        demande.typeDocument
+      );
+    } else {
+      // Pour les autres statuts, notifier l'agent suivant
+      const prochainRole = getProchainRole(prochainStatut);
+      if (prochainRole) {
+        const agent = await prisma.utilisateur.findFirst({
+          where: { role: prochainRole, institutionId },
+          select: { email: true, prenom: true, role: true }
+        });
+
+        if (agent) {
+          // Compter les demandes au statut actuel pour cet agent
+          const count = await prisma.demande.count({
+            where: { institutionId, statut: prochainStatut }
+          });
+
+          if (count === 1) { // Seulement si la file n'était pas vide
+            await emailService.sendAgentNotification(
+              agent.email,
+              agent.prenom,
+              agent.role,
+              count
+            );
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.log("[EMAIL SKIPPED]", e.message);
+  }
 
   return updated;
 };
