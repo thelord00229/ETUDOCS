@@ -151,6 +151,26 @@ select {
   --navy: #1a2744;
   --navy-dk: #0f1a33;
   --gold: #f5a623;
+
+  --bg: #f8fafc;
+  --bg-secondary: #ffffff;
+  --text: #1a2744;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+}
+
+/* ── DARK MODE ── */
+[data-theme="dark"] {
+  --bg: #121212;
+  --bg-secondary: #1e1e1e;
+  --text: #e0e0e0;
+  --text-muted: #a0a0a0;
+  --border: #333333;
+  --white: #1e1e1e;
+  --g50: #1a1a1a;
+  --g100: #252525;
+  --g200: #333333;
+  --g300: #404040;
 }
 
 /* ── BANDEAU DRAPEAU BÉNINOIS ── */
@@ -165,4 +185,8 @@ body::after {
     var(--benin-yellow) 33.33% 66.66%,
     var(--benin-red) 66.66%
   );
+}
+
+i {
+  font-style: normal;
 }

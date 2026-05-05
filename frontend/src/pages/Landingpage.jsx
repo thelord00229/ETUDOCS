@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import logo from "../assets/logo.png";
+import ThemeToggle, { useTheme } from "../components/dark-light-theme";
 import logoIfri from "../assets/IFRI.png";
 import logoEpac from "../assets/EPAC.png";
 import logoFss from "../assets/FSS.png";
+import photo1 from "../assets/screencapture-localhost-5173-dashboardEtu-2026-04-10-00_04_43 1.png";
+import photo2 from "../assets/Capture d'écran 2025-07-18 021923.png";
+import photo3 from "../assets/Capture d'écran 2025-07-18 184203.png";
+import photo4 from "../assets/Capture d'écran 2025-07-23 184718.png";
+import photo5 from "../assets/Capture d'écran 2025-07-23 202528.png";
 
 // px  → fixe, ne change jamais          → bordures, arrondis, ombres
 // rem → relatif à html (1rem = 16px)    → textes, padding, margin
@@ -78,7 +84,8 @@ const styles = `
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-
+    background-color: var(--bg-secondary);
+    color: var(--text);
   }
 
   .nav {
@@ -86,7 +93,12 @@ const styles = `
     flex-direction: row;
     align-items:center;
     justify-content:space-between;
-    padding: 16px 52px; 
+    padding: 1rem 4rem;
+    background-color: var(--bg-secondary);
+  }
+
+  .nav_products a {
+    color: var(--text);
   }
 
   #after{
@@ -106,25 +118,74 @@ const styles = `
     font-size: 0.9rem;
   }
 
-  .nav__buttons {
+  .nav_buttons {
     font-size: 1rem;
+    display: flex;
+    align-items: center;
+    flex-direction: row;  
+    margin-top:-.5rem;
   }
 
-  .nav__buttons--login {
+  .theme-toggle-nav {
+    border-radius: 20px;
+    padding: 3px;
+    border: 1px solid var(--border);
+  }
 
+  .theme-toggle-nav .theme-toggle-btn.active {
+    background: var(--bg-secondary);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  }
+  
+  .theme-toggle-icon-btn i {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  margin-right: 1rem;
+  }
+
+  .theme-toggle-icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    margin-right: 0.6rem;
+    font-size: 1.3rem;
+    color: var(--text);
+    transition: all 0.3s ease;
+  }
+
+  .theme-toggle-icon-btn:hover {
+    color: var(--uac-green);
   }
 
   #nav_button {
     background-color: #2e7d32;
-    color: #fff;
+    color: var(--white);
     border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.5rem;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    display:flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.8rem;
   }
   #nav_button:hover {
     background-color: #1b4d1b;
+  }
+  
+  #nav_button i {
+    font-size: 0.9rem;
   }
    
   .nav_products a::after {
@@ -181,12 +242,12 @@ const styles = `
     
   #hero_content_left_h1{
      width:100%;
+     text-align: center;
      animation-delay: 0.2s;
   }
   #hero_content_left_h2{
-   margin-top: -0.5rem;
-    text-align:center;
-     animation-delay: 0.5s;
+   text-align: center;
+    animation-delay: 0.5s;
   }
 
   .hero__content p {
@@ -213,7 +274,7 @@ const styles = `
 
   #hero_button_1 {
     background-color: #2e7d32;
-    color: #fff;
+    color: var(--white);
     border: none;
     padding: 12px 24px;
     border-radius: 8px;
@@ -234,7 +295,7 @@ const styles = `
   }
   #hero_button_2:hover {
     background-color: #2e7d32;
-    color: #fff;
+    color: var(--white);
   }
 
   .hero_photo {
@@ -265,12 +326,12 @@ const styles = `
     border-collapse: collapse;
   }
   .stats th, .stats td {
-    border: 2px solid #000;
+    border: 2px solid var(--border);
     padding: 1rem;
     text-align: center;
   }
   .stats th {
-    color:black;
+    color:var(--text);
   }
    
   tbody td {
@@ -291,7 +352,7 @@ const styles = `
 
   .bouton-etudocs {
     background-color:var(--benin-yellow);  
-    color: #000;
+    color: var(--text);
     border: none;
     padding: 0.3rem 1rem;
     border-radius: 10px;
@@ -309,11 +370,13 @@ const styles = `
 
   .services {
     margin-top: 3rem;
+    background-color: var(--bg-secondary);
+    padding: 2rem;
     }
 
   .services button {
     background-color:var(--benin-yellow);  
-    color: #000;
+    color: var(--text);
     border: none;
     padding: 0.2rem 0.8rem;
     border-radius: 10px;
@@ -380,9 +443,9 @@ const styles = `
     .services-container-photo {
       width:30%;
       height:450px;
-      background-color:#ffffff;
+      background-color:var(--bg-secondary);
       border-radius: 8px;
-      border: 5px solid #f0f0f0;
+      border: 5px solid var(--border);
 }
       
 #working{
@@ -392,6 +455,8 @@ const styles = `
   justify-content: center;
   align-items: center;
   gap: 2rem;
+  background-color: var(--bg-secondary);
+  padding: 2rem;
 }
 
  iframe {
@@ -410,6 +475,8 @@ const styles = `
   justify-content: center;
   align-items: center;
   gap: 2rem;
+  background-color: var(--bg-secondary);
+  padding: 2rem;
 }
 
 #faq h1 {
@@ -424,10 +491,11 @@ color: var(--uac-green);
   margin-top:2rem;
   display:flex;
   flex-direction:row;
+  justify-content: space-between;
   gap:3.5rem;
   min-height:500px;
   border-radius: 8px;
-  border: 2px solid #f0f0f0;
+  border: 2px solid var(--border);
   padding-bottom: 2rem;
 }
 
@@ -437,12 +505,16 @@ color: var(--uac-green);
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  margin-right:1rem;
+  margin-top:2rem;
+  border: 5px solid var(--border);
+  border-radius: 8px;
+    height: 400px;
 }
 
 #faq-images img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
 }
 
 #faq-questions{ 
@@ -458,7 +530,7 @@ color: var(--uac-green);
   background-color:transparent;
   padding: 1rem;
   border-radius: 8px;
-  border: 2px solid #f0f0f0;
+  border: 2px solid var(--border);
   margin-top: 1rem;
   cursor: pointer;
   transition: background-color 0.3s ease, border-color 0.3s ease;
@@ -478,7 +550,7 @@ color: var(--uac-green);
   transition: max-height 1.2s ease-out;
   margin-top: 0.5rem;
   font-size: 0.8rem;
-  color: #555;
+  color: var(--text-muted);
 }
 
 .faq-question.active .faq-question-down {
@@ -493,9 +565,9 @@ color: var(--uac-green);
   transition: transform 1.2s ease;
 }
 
-.faq-question.active .faq-question-header button {
-  transform: rotate(45deg);
-}
+// .faq-question.active .faq-question-header button {
+//   transform: rotate(45deg);
+// }
 
 #before-footer {
   display: flex;
@@ -505,6 +577,8 @@ color: var(--uac-green);
   justify-content: center;
   margin-top: 5rem; 
   align-items: center;
+  background-color: var(--bg-secondary);
+  padding: 2rem;
 }
 #before-footer h2 {
   font-size: 1.5rem;
@@ -521,6 +595,8 @@ color: var(--uac-green);
   margin-top: 3rem;
   padding: 2rem;
   display: flex;
+  position: relative;
+  align-items: flex-start;
   flex-direction: row;
   justify-content: center;
   gap:2rem;
@@ -528,17 +604,18 @@ color: var(--uac-green);
   width:80%;
   margin-left:10%;
   border-radius: 8px;
-  border: 2px solid #f0f0f0;
+  border: 2px solid var(--border);
   box-shadow: 0 2px 20px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
+  background-color: var(--bg-secondary);
   }
 
   #footer p {
     font-size: 0.8rem;
-    color: #555;
+    color: var(--text-muted);
   }
 
 #footer a {
-    color: #555;
+    color: var(--text-muted);
     text-decoration: none;
     font-size: 0.8rem;
     transition: color 0.3s ease;
@@ -558,6 +635,7 @@ color: var(--uac-green);
     max-width: 300px;
     display: flex;
     flex-direction: column;
+
     gap:0.6rem;
     font-size: 0.9rem;
   }
@@ -573,9 +651,17 @@ color: var(--uac-green);
     flex-direction: row;
     gap: 1rem;
   }
+
+  .theme-toggle {
+    position: absolute;
+    bottom: 2rem;
+    right: 5rem;
+  }
+
 `;
 
 const Landingpage = () => {
+  const { theme, toggleTheme } = useTheme();
   useEffect(() => {
     const tag = document.createElement("style");
     tag.setAttribute("data-page", "landingpage");
@@ -591,31 +677,31 @@ const Landingpage = () => {
       question: "Comment puis-je accéder à mes documents universitaires ?",
       answer:
         "Vous pouvez accéder à vos documents universitaires en vous connectant à votre compte sur notre plateforme. Une fois connecté, vous trouverez une section dédiée où tous vos documents seront disponibles en quelques clics.",
-      img: logoEpac,
+      img: photo1,
     },
     {
       question: "Quels types de documents sont disponibles ?",
       answer:
         "Nous proposons une large gamme de documents universitaires, y compris des attestations, des relevés de notes, des certificats et bien plus encore. Tous les documents sont authentifiés avec QR code pour garantir leur validité.",
-      img: logoIfri,
+      img: photo2,
     },
     {
       question: "Comment puis-je suivre le statut de ma demande ?",
       answer:
         "Vous pouvez suivre chaque étape du traitement de votre demande en temps réel. Notre plateforme vous enverra des notifications instantanées pour vous tenir informé de l'avancement de votre demande jusqu'à sa validation.",
-      img: logoIfri,
+      img: photo3,
     },
     {
       question: "Puis-je imprimer mes documents ?",
       answer:
         "Oui, vous pouvez imprimer vos documents universitaires directement depuis notre plateforme. Assurez-vous d'avoir un imprimante connectée à votre ordinateur.",
-      img: logoEpac,
+      img: photo4,
     },
     {
       question: "Comment puis-je contacter le support ?",
       answer:
         "Vous pouvez contacter notre support à tout moment via le formulaire de contact disponible dans votre espace utilisateur. Notre équipe est là pour vous aider 24h/24 et 7j/7.",
-      img: logoIfri,
+      img: photo5,
     },
   ];
   const [openIndex, setOpenIndex] = useState(0);
@@ -636,8 +722,24 @@ const Landingpage = () => {
           <a href="">Contact</a>
         </div>
         <div className="nav_buttons">
+          <button
+            className="theme-toggle-icon-btn"
+            onClick={toggleTheme}
+            aria-label={
+              theme === "dark"
+                ? "Passer en mode clair"
+                : "Passer en mode sombre"
+            }
+            title={theme === "dark" ? "Mode clair" : "Mode sombre"}
+          >
+            <i
+              className={`fa-regular ${theme === "dark" ? "fa-sun" : "fa-moon"}`}
+            ></i>
+          </button>
           <a href="/login" className="nav__buttons--login">
-            <button id="nav_button">Se connecter</button>
+            <button id="nav_button">
+              Se connecter <i className="fa-regular fa-user"></i>
+            </button>
           </a>
         </div>
       </section>
@@ -781,7 +883,7 @@ const Landingpage = () => {
               >
                 <div className="faq-question-header">
                   <p>{item.question}</p>
-                  <button>{openIndex === index ? "×" : "+"}</button>
+                  <button>{openIndex === index ? "-" : "+"}</button>
                 </div>
                 <div className="faq-question-down">
                   <p className="faq-question-answer">{item.answer}</p>
@@ -848,6 +950,7 @@ const Landingpage = () => {
           <h6>Contact</h6>
           <a href="mailto:contact@etudocs.com">contact@etudocs.com</a>
         </div>
+        <ThemeToggle className="theme-toggle" />
       </section>
     </div>
   );
