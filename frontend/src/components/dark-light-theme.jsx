@@ -54,7 +54,7 @@ export default function ThemeToggle({ className }) {
   const styles = {
     toggle: {
       display: "flex",
-      background: "var(--g200, #e5e5e5)",
+      background: "var(--g300)",
       borderRadius: "20px",
       padding: "3px",
       gap: "3px",
@@ -93,7 +93,9 @@ export default function ThemeToggle({ className }) {
           aria-label={`Mode ${t.label}`}
           title={t.label}
         >
-          <i className={`${t.id === "system" ? "fa-solid" : "fa-regular"} ${t.icon}`}></i>
+          <i
+            className={`${t.id === "system" ? "fa-solid" : "fa-regular"} ${t.icon}`}
+          ></i>
         </button>
       ))}
     </div>
