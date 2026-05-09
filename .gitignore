@@ -40,9 +40,9 @@ build/Release
 # Dependency directories
 node_modules/
 jspm_packages/
-backend/*.json
-frontend/*.json
-bulletin-preview/*.json
+backend/*-lock.json
+frontend/*-lock.json
+bulletin-preview/*-lock.json
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
