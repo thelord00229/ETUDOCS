@@ -43,7 +43,7 @@ jspm_packages/
 backend/*-lock.json
 frontend/*-lock.json
 bulletin-preview/*-lock.json
-/-lock.json
+-lock.json
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
