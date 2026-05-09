@@ -9,14 +9,14 @@ html, body {
   font-family: 'Times New Roman', Times, serif;
   color: #111;
   font-size: 8.5pt;
-  background: #ffc8c8;
+  background-color: #f7c6c6;
 }
 
 .page {
   width: 210mm;
   min-height: 297mm;
   padding: 5mm 7mm 4mm 7mm;
-  background: #ffc8c8;
+  background-color: #f7c6c6;
 }
 
 /* ═══════════════════════════════════════
@@ -134,7 +134,7 @@ html, body {
   gap: 3mm;
   margin: 1.5mm 0;
   padding: 2mm 2.5mm;
-  background: rgba(255,255,255,0.25);
+  background-color: rgba(255,255,255,0.25);
   border: 1px solid rgba(0,0,0,0.15);
 }
 
@@ -209,7 +209,7 @@ html, body {
   text-align: center;
   color: #666;
   flex-shrink: 0;
-  background: rgba(255,255,255,0.4);
+  background-color: rgba(255,255,255,0.4);
 }
 
 /* ═══════════════════════════════════════
