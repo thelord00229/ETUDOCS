@@ -186,7 +186,7 @@ export default function SAInstitutions() {
                   </div>
                 </div>
 
-                <button className="btn-params" type="button">
+                {/* <button className="btn-params" type="button">
                   <svg
                     width="15"
                     height="15"
@@ -201,7 +201,7 @@ export default function SAInstitutions() {
                     <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
                   </svg>
                   Paramètres
-                </button>
+                </button> */}
               </div>
             );
           })}
