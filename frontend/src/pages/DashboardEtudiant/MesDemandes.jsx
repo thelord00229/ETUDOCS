@@ -599,10 +599,6 @@ function DetailDemande({ demande, onBack, onGoDocuments }) {
               <span className="meta-key">Dernière maj</span>
               <span className="meta-val">{updatedStr}</span>
             </div>
-            <div className="meta-row">
-              <span className="meta-key">Intervenant</span>
-              <span className="meta-val">—</span>
-            </div>
           </div>
 
           <div className="help-card">

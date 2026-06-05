@@ -100,14 +100,14 @@ html, body {
   font-family: 'Times New Roman', Times, serif;
   color: #111;
   font-size: 8.5pt;
-  background: #ffc8c8;
+  background: #f7c6c6;
 }
 
 .page {
   width: 210mm;
   min-height: 297mm;
   padding: 5mm 7mm 4mm 7mm;
-  background: #ffc8c8;
+  background: #f7c6c6;
 }
 
 /* ═══════════════════════════════════════
