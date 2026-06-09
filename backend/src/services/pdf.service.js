@@ -45,6 +45,54 @@ if (!fs.existsSync(OUTPUT_DIR)) {
 
 let _browserPromise = null;
 
+function resolveBrowserExecutablePath() {
+  if (PUPPETEER_EXECUTABLE_PATH && fs.existsSync(PUPPETEER_EXECUTABLE_PATH)) {
+    return PUPPETEER_EXECUTABLE_PATH;
+  }
+
+  if (process.platform !== "win32") return "";
+
+  const candidates = [
+    path.join(
+      process.env.PROGRAMFILES || "C:\\Program Files",
+      "Google",
+      "Chrome",
+      "Application",
+      "chrome.exe",
+    ),
+    path.join(
+      process.env["PROGRAMFILES(X86)"] || "C:\\Program Files (x86)",
+      "Google",
+      "Chrome",
+      "Application",
+      "chrome.exe",
+    ),
+    path.join(
+      process.env.LOCALAPPDATA || "",
+      "Google",
+      "Chrome",
+      "Application",
+      "chrome.exe",
+    ),
+    path.join(
+      process.env.PROGRAMFILES || "C:\\Program Files",
+      "Microsoft",
+      "Edge",
+      "Application",
+      "msedge.exe",
+    ),
+    path.join(
+      process.env["PROGRAMFILES(X86)"] || "C:\\Program Files (x86)",
+      "Microsoft",
+      "Edge",
+      "Application",
+      "msedge.exe",
+    ),
+  ];
+
+  return candidates.find((candidate) => candidate && fs.existsSync(candidate)) || "";
+}
+
 async function getBrowser() {
   if (_browserPromise) return _browserPromise;
   const launchOptions = {
@@ -55,8 +103,9 @@ async function getBrowser() {
       "--disable-dev-shm-usage",
     ],
   };
-  if (PUPPETEER_EXECUTABLE_PATH) {
-    launchOptions.executablePath = PUPPETEER_EXECUTABLE_PATH;
+  const executablePath = resolveBrowserExecutablePath();
+  if (executablePath) {
+    launchOptions.executablePath = executablePath;
   }
   _browserPromise = puppeteer.launch(launchOptions);
   return _browserPromise;
