@@ -645,6 +645,7 @@ export default function DashboardSG() {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const openPreview = async (demande) => {
     const reference = getReferenceDoc(demande);
     if (!reference || reference === "—") {

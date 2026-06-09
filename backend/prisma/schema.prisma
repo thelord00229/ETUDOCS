@@ -7,6 +7,132 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Institution {
+  id                           String         @id @default(uuid())
+  nom                          String
+  sigle                        String?
+  createdAt                    DateTime       @default(now())
+  updatedAt                    DateTime       @updatedAt
+  logoUrl                      String?
+  tamponDirecteurUrl           String?
+  tamponDirecteurAdjointUrl    String?
+  directeurNom                 String?
+  directeurTitre               String?
+  directeurAdjointNom          String?
+  directeurAdjointTitre        String?
+  signatureDirecteurUrl        String?
+  signatureDirecteurAdjointUrl String?
+  demandes                     Demande[]
+  pieceRequises                PieceRequise[]
+  utilisateurs                 Utilisateur[]
+}
+
+model Utilisateur {
+  id                 String               @id @default(uuid())
+  nom                String
+  prenom             String
+  email              String               @unique
+  password           String
+  role               Role                 @default(ETUDIANT)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  institutionId      String?
+  numeroEtudiant     String?              @unique
+  service            Service?
+  actif              Boolean              @default(true)
+  emailVerifie       Boolean              @default(false)
+  tokenVerification  String?
+  tokenResetPassword String?
+  tokenResetExpiry   DateTime?
+  filiere            String?
+  niveau             String?
+  demandes           Demande[]
+  piecesValidees     PieceJustificative[] @relation("PieceValideePar")
+  institution        Institution?         @relation(fields: [institutionId], references: [id])
+  actionsWorkflow    WorkflowHistory[]    @relation("ActorWorkflow")
+}
+
+model Demande {
+  id              String               @id @default(uuid())
+  reference       String?              @unique
+  typeDocument    TypeDocument
+  semestres       Int[]
+  anneeAcademique String?
+  serviceCible    Service
+  statut          StatutDemande        @default(SOUMISE)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  deliveredAt     DateTime?
+  utilisateurId   String
+  institutionId   String
+  institution     Institution          @relation(fields: [institutionId], references: [id])
+  utilisateur     Utilisateur          @relation(fields: [utilisateurId], references: [id])
+  documents       Document[]
+  pieces          PieceJustificative[]
+  historique      WorkflowHistory[]
+}
+
+model WorkflowHistory {
+  id          String        @id @default(uuid())
+  statut      StatutDemande
+  commentaire String?
+  createdAt   DateTime      @default(now())
+  demandeId   String
+  actorId     String?
+  actor       Utilisateur?  @relation("ActorWorkflow", fields: [actorId], references: [id])
+  demande     Demande       @relation(fields: [demandeId], references: [id])
+}
+
+model Document {
+  id            String         @id @default(uuid())
+  reference     String         @unique
+  qrPayload     String         @unique
+  urlPdf        String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deliveredAt   DateTime?
+  statut        StatutDocument @default(DOCUMENT_GENERE)
+  signedByDAAt  DateTime?
+  signedByDIRAt DateTime?
+  downloadCount Int            @default(0)
+  maxDownloads  Int            @default(3)
+  blockedAt     DateTime?
+  demandeId     String
+  demande       Demande        @relation(fields: [demandeId], references: [id])
+}
+
+model PieceJustificative {
+  id           String       @id @default(uuid())
+  typePiece    TypePiece
+  nom          String
+  url          String
+  createdAt    DateTime     @default(now())
+  statut       StatutPiece  @default(SOUMISE)
+  commentaire  String?
+  valideeAt    DateTime?
+  valideeParId String?
+  demandeId    String
+  demande      Demande      @relation(fields: [demandeId], references: [id])
+  valideePar   Utilisateur? @relation("PieceValideePar", fields: [valideeParId], references: [id])
+}
+
+model PieceRequise {
+  id            String       @id @default(uuid())
+  typeDocument  TypeDocument
+  typePiece     TypePiece
+  obligatoire   Boolean      @default(true)
+  institutionId String
+  institution   Institution  @relation(fields: [institutionId], references: [id])
+
+  @@unique([institutionId, typeDocument, typePiece])
+}
+
+model playing_with_neon {
+  id    Int    @id @default(autoincrement())
+  name  String
+  value Float? @db.Real
+}
+
 enum Service {
   EXAMENS
   SCOLARITE
@@ -58,149 +184,4 @@ enum StatutPiece {
   SOUMISE
   VALIDEE
   REJETEE
-}
-
-model Institution {
-  id        String   @id @default(uuid())
-  nom       String
-  sigle     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  utilisateurs Utilisateur[]
-  demandes     Demande[]
-
-  pieceRequises PieceRequise[]
-
-  logoUrl                      String?
-  tamponDirecteurUrl           String?
-  tamponDirecteurAdjointUrl    String?
-  directeurNom                 String?
-  directeurTitre               String?
-  directeurAdjointNom          String?
-  directeurAdjointTitre        String?
-  signatureDirecteurUrl        String?
-  signatureDirecteurAdjointUrl String?
-}
-
-model Utilisateur {
-  id        String   @id @default(uuid())
-  nom       String
-  prenom    String
-  email     String   @unique
-  password  String
-  role      Role     @default(ETUDIANT)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  institutionId String?
-  institution   Institution? @relation(fields: [institutionId], references: [id])
-
-  demandes        Demande[]
-  piecesValidees  PieceJustificative[] @relation("PieceValideePar")
-  actionsWorkflow WorkflowHistory[]    @relation("ActorWorkflow")
-
-  numeroEtudiant String?  @unique
-  service        Service?
-
-  actif              Boolean   @default(true)
-  emailVerifie       Boolean   @default(false)
-  tokenVerification  String?
-  tokenResetPassword String?
-  tokenResetExpiry   DateTime?
-
-  filiere  String?
-  niveau   String?
-}
-
-model Demande {
-  id             String       @id @default(uuid())
-  typeDocument   TypeDocument
-  semestres      Int[]
-  anneeAcademique String?
-  serviceCible   Service
-
-  statut      StatutDemande @default(SOUMISE)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  deliveredAt DateTime?
-
-  utilisateurId String
-  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id])
-
-  institutionId String
-  institution   Institution @relation(fields: [institutionId], references: [id])
-
-  pieces     PieceJustificative[]
-  historique WorkflowHistory[]
-
-  documents Document[]
-}
-
-model WorkflowHistory {
-  id          String        @id @default(uuid())
-  statut      StatutDemande
-  commentaire String?
-  createdAt   DateTime      @default(now())
-
-  demandeId String
-  demande   Demande @relation(fields: [demandeId], references: [id])
-
-  actorId String?
-  actor   Utilisateur? @relation("ActorWorkflow", fields: [actorId], references: [id])
-}
-
-model Document {
-  id String @id @default(uuid())
-
-  reference String @unique
-  qrPayload String @unique
-
-  urlPdf      String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deliveredAt DateTime?
-
-  // ✅ statut indépendant par document
-  statut StatutDocument @default(DOCUMENT_GENERE)
-
-  // (optionnel mais utile)
-  signedByDAAt  DateTime?
-  signedByDIRAt DateTime?
-
-  downloadCount Int       @default(0)
-  maxDownloads  Int       @default(3)
-  blockedAt     DateTime?
-
-  demandeId String
-  demande   Demande @relation(fields: [demandeId], references: [id])
-}
-
-model PieceJustificative {
-  id        String    @id @default(uuid())
-  typePiece TypePiece
-  nom       String
-  url       String
-  createdAt DateTime  @default(now())
-
-  statut       StatutPiece  @default(SOUMISE)
-  commentaire  String?
-  valideeAt    DateTime?
-  valideeParId String?
-  valideePar   Utilisateur? @relation("PieceValideePar", fields: [valideeParId], references: [id])
-
-  demandeId String
-  demande   Demande @relation(fields: [demandeId], references: [id])
-}
-
-model PieceRequise {
-  id           String       @id @default(uuid())
-  typeDocument TypeDocument
-  typePiece    TypePiece
-  obligatoire  Boolean      @default(true)
-
-  institutionId String
-  institution   Institution @relation(fields: [institutionId], references: [id])
-
-  @@unique([institutionId, typeDocument, typePiece])
 }

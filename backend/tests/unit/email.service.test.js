@@ -1,21 +1,31 @@
-const emailService = require("../src/services/email.service");
+// Ensure env vars before module load so email.service picks nodemailer transport
+process.env.BREVO_SMTP_HOST = "smtp.example";
+process.env.BREVO_SMTP_PORT = "587";
+process.env.BREVO_SMTP_USER = "user";
+process.env.BREVO_SMTP_PASS = "pass";
 
 // Mock nodemailer
-jest.mock("nodemailer", () => ({
-  createTransport: jest.fn(() => ({
-    sendMail: jest.fn(),
-  })),
-}));
+jest.mock("nodemailer", () => {
+  const transportMock = { sendMail: jest.fn() };
+  return { createTransport: jest.fn(() => transportMock) };
+});
 
 // Mock ejs
 jest.mock("ejs", () => ({
   renderFile: jest.fn(),
 }));
 
-// Mock path
-jest.mock("path", () => ({
-  join: jest.fn((...args) => args.join("/")),
-}));
+// Mock path but preserve native functions like resolve used by dotenv
+jest.mock("path", () => {
+  const realPath = jest.requireActual("path");
+  return {
+    ...realPath,
+    join: jest.fn((...args) => args.join("/")),
+  };
+});
+
+// Import the module under test AFTER mocks to avoid early require side-effects
+const emailService = require("../../src/services/email.service");
 
 describe("Email Service", () => {
   beforeEach(() => {
@@ -23,6 +33,11 @@ describe("Email Service", () => {
     // Set test env
     process.env.FRONTEND_URL = "http://localhost:3000";
     process.env.NODE_ENV = "test";
+    // Ensure transport uses mocked nodemailer
+    process.env.BREVO_SMTP_HOST = "smtp.example";
+    process.env.BREVO_SMTP_PORT = "587";
+    process.env.BREVO_SMTP_USER = "user";
+    process.env.BREVO_SMTP_PASS = "pass";
   });
 
   describe("sendVerificationEmail", () => {

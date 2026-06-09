@@ -378,9 +378,9 @@ export default function MesDocuments() {
           .filter((doc) => doc?.reference)
           .map((doc) => {
             const iso = doc.createdAt || d.updatedAt || d.createdAt || null;
-            const sem =
-              doc.reference?.includes("-S1-") ? " · Semestre 1"
-              : doc.reference?.includes("-S2-") ? " · Semestre 2"
+              const sem =
+              doc.reference?.includes("_S1_") ? " · Semestre 1"
+              : doc.reference?.includes("_S2_") ? " · Semestre 2"
               : "";
             return {
               id: `${d.id}-${doc.reference}`,

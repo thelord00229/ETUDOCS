@@ -3,7 +3,7 @@ import {
   getDemandes,
   getDemandeById,
   avancerDemande,
-  getStatsDI,
+  getChefDivisionStats,
   validerPiece,
 } from "../../services/api";
 
@@ -832,6 +832,11 @@ function ModalMotDePasse({ onClose, onSuccess }) {
   );
 }
 
+const getReferenceDoc = (d) => {
+  const doc = Array.isArray(d?.documents) ? d.documents[0] : null;
+  return doc?.reference || d?.reference || d?.ref || "—";
+};
+
 // ── COMPOSANT PRINCIPAL ────────────────────────────────────
 export default function ChefDivisionExamens() {
   const [view, setView] = useState("dashboard");
@@ -840,14 +845,12 @@ export default function ChefDivisionExamens() {
   const [pieces, setPieces] = useState(defaultPieces);
   const [globalComment, setGlobalComment] = useState("");
   const [modal, setModal] = useState(null);
-  const [motif, setMotif] = useState("");
   const [motifError, setMotifError] = useState("");
-  const [generatedRef, setGeneratedRef] = useState("");
+  const [generatedRef] = useState("");
   const [pieceBusy, setPieceBusy] = useState(null);
   const [preview, setPreview] = useState(null);
   const [genBusy, setGenBusy] = useState(false);
   const [demandes, setDemandes] = useState([]);
-  // getStatsDI retourne : { aSigner, signesCeMois, refuses }
   const [stats, setStats] = useState({
     aSigner: 0,
     signesCeMois: 0,
@@ -880,8 +883,12 @@ export default function ChefDivisionExamens() {
 
   const chargerStats = async () => {
     try {
-      const data = await getStatsDI();
-      setStats(data ?? { aSigner: 0, signesCeMois: 0, refuses: 0 });
+      const data = await getChefDivisionStats();
+      setStats({
+        aSigner: data?.attenteDirecteur ?? 0,
+        signesCeMois: data?.documentGenere ?? 0,
+        refuses: data?.rejetees ?? 0,
+      });
     } catch (e) {
       console.error(e);
       setStats({ aSigner: 0, signesCeMois: 0, refuses: 0 });
@@ -908,7 +915,6 @@ export default function ChefDivisionExamens() {
       }));
       setPieces(mapped.length ? mapped : defaultPieces);
       setGlobalComment(full?.commentaireChefDivision || "");
-      setMotif("");
       setMotifError("");
       setModal(null);
       setPreview(null);
@@ -939,9 +945,6 @@ export default function ChefDivisionExamens() {
       name: piece.fileName || piece.name || "Document",
     });
   };
-
-  const setPieceComment = (id, comment) =>
-    setPieces((prev) => prev.map((p) => (p.id === id ? { ...p, comment } : p)));
 
   const setPieceStatus = async (id, status) => {
     const current = pieces.find((p) => p.id === id);
@@ -1149,7 +1152,7 @@ export default function ChefDivisionExamens() {
                           const nom = `${d?.utilisateur?.nom ?? ""} ${
                             d?.utilisateur?.prenom ?? ""
                           }`.toLowerCase();
-                          const ref = String(d?.ref ?? "").toLowerCase();
+                          const ref = String(getReferenceDoc(d)).toLowerCase();
                           return nom.includes(q) || ref.includes(q);
                         })
                         .map((d) => {
@@ -1158,15 +1161,7 @@ export default function ChefDivisionExamens() {
                               d.utilisateur?.prenom || ""
                             }`.trim() || "—";
                           const num = d.utilisateur?.numeroEtudiant || "—";
-                          const ref =
-                            d.document?.reference ||
-                            d.documents?.[0]?.reference ||
-                            d.ref ||
-                            (d.id || "")
-                              .toString()
-                              .substring(0, 8)
-                              .toUpperCase() ||
-                            "—";
+                          const ref = getReferenceDoc(d);
                           const type =
                             d.typeDocument === "RELEVE_NOTES"
                               ? "Relevé de notes"
@@ -1363,11 +1358,7 @@ export default function ChefDivisionExamens() {
                   Traitement du dossier
                 </h1>
                 <span className="td-ref" style={{ fontSize: 13 }}>
-                  {selected?.document?.reference ||
-                    selected?.documents?.[0]?.reference ||
-                    selected?.ref ||
-                    selected?.id?.substring(0, 8).toUpperCase() ||
-                    "—"}
+                  {getReferenceDoc(selected)}
                 </span>
               </div>
             </div>
@@ -1484,10 +1475,7 @@ export default function ChefDivisionExamens() {
                     <div className="info-row">
                       <div className="info-label">Référence</div>
                       <div className="info-value mono">
-                        {selected?.document?.reference ||
-                          selected?.documents?.[0]?.reference ||
-                          selected?.ref ||
-                          "—"}
+                        {getReferenceDoc(selected)}
                       </div>
                     </div>
                   </div>
@@ -1927,3 +1915,4 @@ function Topbar({ title, name, initials }) {
     </header>
   );
 }
+

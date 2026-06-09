@@ -710,6 +710,11 @@ const FileTextIcon = () => (
 );
 
 // ── Composant principal ──────────────────────────────────
+const getReferenceDoc = (d) => {
+  const doc = Array.isArray(d?.documents) ? d.documents[0] : null;
+  return doc?.reference || d?.reference || d?.ref || "—";
+};
+
 export default function DashboardCS() {
   const [view, setView] = useState("dashboard"); // dashboard | traitement | success
   const [user, setUser] = useState(null);
@@ -730,7 +735,6 @@ export default function DashboardCS() {
   const [pieceBusy, setPieceBusy] = useState(null);
   const [globalComment, setGlobalComment] = useState("");
   const [modal, setModal] = useState(null); // null | "generate" | "reject"
-  const [motif, setMotif] = useState("");
   const [motifError, setMotifError] = useState("");
   const [preview, setPreview] = useState(null);
   const [generatedRef, setGeneratedRef] = useState("");
@@ -813,7 +817,6 @@ export default function DashboardCS() {
       }));
       setPieces(mapped);
       setGlobalComment(full?.commentaireChefDivision || "");
-      setMotif("");
       setMotifError("");
       setPreview(null);
       setModal(null);
@@ -838,10 +841,6 @@ export default function DashboardCS() {
       url: encodeURI(fullUrl),
       name: piece.fileName || piece.name || "Document",
     });
-  };
-
-  const setPieceComment = (id, comment) => {
-    setPieces((prev) => prev.map((p) => (p.id === id ? { ...p, comment } : p)));
   };
 
   const setPieceStatus = async (id, status) => {
@@ -883,9 +882,7 @@ export default function DashboardCS() {
     if (!selected?.id) return;
     try {
       await avancerDemande(selected.id, "GENERER_DOCUMENT");
-      setGeneratedRef(
-        selected.ref || selected.id?.substring(0, 8)?.toUpperCase() || "—"
-      );
+      setGeneratedRef(getReferenceDoc(selected));
       await charger();
       setModal(null);
       setView("success");
@@ -1137,14 +1134,7 @@ export default function DashboardCS() {
                     return (
                       <tr key={d.id}>
                         <td className="td-ref">
-                          {d.document?.reference ||
-                            d.documents?.[0]?.reference ||
-                            d.ref ||
-                            (d.id || "")
-                              .toString()
-                              .substring(0, 8)
-                              .toUpperCase() ||
-                            "—"}
+                          {getReferenceDoc(d)}
                         </td>
                         <td>
                           <div className="td-etudiant-name">{nom}</div>
@@ -1312,14 +1302,7 @@ export default function DashboardCS() {
                   color: "var(--blue)",
                 }}
               >
-                {selected?.document?.reference ||
-                  selected?.documents?.[0]?.reference ||
-                  selected?.ref ||
-                  (selected?.id || "")
-                    .toString()
-                    .substring(0, 8)
-                    .toUpperCase() ||
-                  "—"}
+                {getReferenceDoc(selected)}
               </div>
             </div>
           </div>
@@ -1434,10 +1417,7 @@ export default function DashboardCS() {
                   <div className="info-row">
                     <div className="info-label">Référence</div>
                     <div className="info-value mono">
-                      {selected?.document?.reference ||
-                        selected?.documents?.[0]?.reference ||
-                        selected?.ref ||
-                        "—"}
+                      {getReferenceDoc(selected)}
                     </div>
                   </div>
                 </div>
@@ -1804,3 +1784,5 @@ export default function DashboardCS() {
     </div>
   );
 }
+
+

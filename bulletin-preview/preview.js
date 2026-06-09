@@ -13,7 +13,7 @@ const mockPayload = {
   etudiantMatricule: "21IFRI0042",
   etudiantFiliere: "Génie Logiciel",
   etudiantNiveau: "L2",
-  reference: "IFRI/REL/2024-25/0001",
+  reference: "REL-NOTES_HOUESSOUK_S1_2024",
   semestre: 1,
   anneeAcademique: "2024 - 2025",
   dateGeneration: "20 avril 2025",
