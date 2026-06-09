@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import logo from "../assets/logo.png";
 import ThemeToggle, { useTheme } from "../components/dark-light-theme";
-import logoIfri from "../assets/IFRI.png";
-import logoEpac from "../assets/EPAC.png";
-import logoFss from "../assets/FSS.png";
 import photo1 from "../assets/screencapture-localhost-5173-dashboardEtu-2026-04-10-00_04_43 1.png";
 import photo2 from "../assets/Capture d'écran 2025-07-18 021923.png";
 import photo3 from "../assets/Capture d'écran 2025-07-18 184203.png";
@@ -766,7 +763,7 @@ const Landingpage = () => {
         </div>
         <div className="hero_photo">
           <img
-            src="src\assets\screencapture-localhost-5173-dashboardEtu-2026-04-10-00_04_43 1.png"
+            src={photo1}
             alt="image_principale"
           />
         </div>
@@ -788,7 +785,7 @@ const Landingpage = () => {
         <div className="services_content_down">
           <div className="services_content_down_item_1">
             <div className="services-container-photo">
-              <img src="" alt="" />
+              <img src={photo2} alt="" />
             </div>
             <div className="services-content-right">
               <button className="services-bouton">Accès</button>
@@ -818,12 +815,12 @@ const Landingpage = () => {
               </div>
             </div>
             <div className="services-container-photo">
-              <img src="" alt="" />
+              <img src={photo3} alt="" />
             </div>
           </div>
           <div className="services_content_down_item_1">
             <div className="services-container-photo">
-              <img src="" alt="" />
+              <img src={photo4} alt="" />
             </div>
             <div className="services-content-right">
               <button className="services-bouton">Authenticité</button>
@@ -856,10 +853,10 @@ const Landingpage = () => {
             height="315"
             src="https://www.youtube.com/embed/NETb44ylBak?si=gdbSmS_kAGDK_eBl"
             title="YouTube video player"
-            frameborder="0"
+            frameBorder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            referrerpolicy="strict-origin-when-cross-origin"
-            allowfullscreen
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
           ></iframe>
         </div>
       </section>

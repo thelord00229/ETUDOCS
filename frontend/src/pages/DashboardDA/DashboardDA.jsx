@@ -550,6 +550,11 @@ const EyeIcon = () => (
 );
 
 // ── Composant principal ───────────────────────────────────
+const getReferenceDoc = (d) => {
+  const doc = Array.isArray(d?.documents) ? d.documents[0] : null;
+  return doc?.reference || d?.reference || d?.ref || "—";
+};
+
 export default function DashboardDA() {
   const [user, setUser] = useState(null);
   const [search, setSearch] = useState("");
@@ -602,7 +607,7 @@ export default function DashboardDA() {
         const docs = Array.isArray(d.documents) ? d.documents : [];
         if (docs.length === 0) {
           lignes.push({
-            reference: "—",
+            reference: getReferenceDoc(d),
             etudiant: `${d.utilisateur?.prenom ?? ""} ${
               d.utilisateur?.nom ?? ""
             }`.trim(),
@@ -614,9 +619,9 @@ export default function DashboardDA() {
           });
         } else {
           for (const doc of docs) {
-            const sMatch = doc.reference?.match(/-S(\d+)-/);
+            const sMatch = doc.reference?.match(/_S(\d+)(?:_|$)/);
             lignes.push({
-              reference: doc.reference,
+              reference: doc.reference || getReferenceDoc(d),
               etudiant: `${d.utilisateur?.prenom ?? ""} ${
                 d.utilisateur?.nom ?? ""
               }`.trim(),
@@ -991,3 +996,4 @@ export default function DashboardDA() {
     </div>
   );
 }
+

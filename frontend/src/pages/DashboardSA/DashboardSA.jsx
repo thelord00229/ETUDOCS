@@ -383,6 +383,11 @@ const fmtDate = (d) =>
       })
     : "—";
 
+const getReferenceDoc = (d) => {
+  const doc = Array.isArray(d?.documents) ? d.documents[0] : null;
+  return doc?.reference || d?.reference || d?.ref || "—";
+};
+
 const initials = (nom = "", prenom = "") =>
   `${prenom?.[0] || ""}${nom?.[0] || ""}`.toUpperCase();
 
@@ -1232,8 +1237,8 @@ export default function DashboardSA() {
                   filtered.map((d) => {
                     const u = d.utilisateur || {};
                     return (
-                      <tr key={d.id}>
-                        <td className="td-ref">{d.id}</td>
+                      <tr key={d.id || getReferenceDoc(d)}>
+                        <td className="td-ref">{getReferenceDoc(d)}</td>
                         <td>
                           <div className="td-etudiant-name">
                             {u.prenom} {u.nom}

@@ -57,10 +57,56 @@ const DEFAULT_REQUIRED = ["CIP", "QUITTANCE"];
 const parseSemestres = (semestres) => {
   if (!semestres) return [];
   if (Array.isArray(semestres))
-    return semestres.map((s) => parseInt(s, 10)).filter(Boolean);
-  const n = parseInt(semestres, 10);
+    return semestres.map((s) => {
+      const match = String(s).match(/\d+/);
+      return match ? parseInt(match[0], 10) : null;
+    }).filter(Boolean);
+  const match = String(semestres).match(/\d+/);
+  const n = match ? parseInt(match[0], 10) : null;
   return Number.isFinite(n) ? [n] : [];
 };
+
+async function generateUniqueReference(typeDocument, semestres, anneeAcademique, etudiant) {
+  const formatNomPrenom = (nom, prenom) => {
+    const n = String(nom || "").trim();
+    const p = String(prenom || "").trim();
+    // Keep letters (including accented), remove spaces and non-letter chars
+    const cleanNom = n.replace(/\s+/g, "").replace(/[^A-Za-zÀ-ž]/g, "");
+    const initial = p ? String(p[0]).toUpperCase() : "";
+    // Example: Kouliho + P => KoulihoP
+    return `${cleanNom}${initial}`;
+  };
+
+  const nomPrenom = formatNomPrenom(etudiant.nom, etudiant.prenom);
+  const annee = anneeAcademique ? String(anneeAcademique).substring(0, 4) : new Date().getFullYear();
+
+  let prefix = "DOC";
+  if (typeDocument === "ATTESTATION_INSCRIPTION") prefix = "ATT-INSC";
+  else if (typeDocument === "RELEVE_NOTES") prefix = "REL-NOTES";
+  else if (typeDocument === "ATTESTATION_SUCCES") prefix = "ATT-SUCC";
+  else if (typeDocument === "ATTESTATION_ADMISSIBILITE") prefix = "ATT-ADMIS";
+
+  let sPart = "";
+  if ((typeDocument === "ATTESTATION_INSCRIPTION" || typeDocument === "RELEVE_NOTES") && semestres && semestres.length > 0) {
+    // For multiple semesters, join with '-' but keep leading `_S`
+    sPart = `_S${semestres.join("-")}`;
+  }
+
+  const baseRef = `${prefix}_${nomPrenom}${sPart}_${annee}`;
+  let finalRef = baseRef;
+  let counter = 1;
+
+  // Ensure uniqueness across both Demande.reference and Document.reference
+  while (
+    (await prisma.demande.findUnique({ where: { reference: finalRef } })) ||
+    (await prisma.document.findUnique({ where: { reference: finalRef } }))
+  ) {
+    counter++;
+    finalRef = `${baseRef}_${counter}`;
+  }
+
+  return finalRef;
+}
 
 exports.soumettre = async (utilisateurId, institutionId, body, files) => {
   const { typeDocument, semestres, anneeAcademique } = body;
@@ -87,10 +133,15 @@ exports.soumettre = async (utilisateurId, institutionId, body, files) => {
 
   const allFiles = Object.values(filesObj).flat();
 
+  const etudiant = await prisma.utilisateur.findUnique({ where: { id: utilisateurId } });
+  const parsedSemestres = parseSemestres(semestres);
+  const reference = await generateUniqueReference(docKey, parsedSemestres, anneeAcademique, etudiant);
+
   const demande = await prisma.demande.create({
     data: {
+      reference,
       typeDocument: docKey,
-      semestres: parseSemestres(semestres),
+      semestres: parsedSemestres,
       anneeAcademique: anneeAcademique ? String(anneeAcademique).trim() : null,
       serviceCible: normalizeService(getServiceCible(docKey)),
       statut: "SOUMISE",
@@ -144,7 +195,7 @@ exports.soumettre = async (utilisateurId, institutionId, body, files) => {
     await emailService.sendDemandeConfirmee(
       demande.utilisateur.email,
       demande.utilisateur.prenom,
-      demande.id, // référence
+      demande.reference, // référence attribuée à la demande
       docKey
     );
   } catch (e) {
@@ -309,13 +360,10 @@ async function generateDocumentsOutsideTransaction({ demande, institutionId }) {
   const baseUrl = process.env.APP_URL || "http://localhost:5000";
 
   const results = [];
+  const reference = demande.reference;
+  const qrData = `${baseUrl}/verify/${reference}`;
 
   if (demande.typeDocument === "ATTESTATION_INSCRIPTION") {
-    const reference = `ETD-${annee}-${sigle}-ATT-${String(demande.id)
-      .substring(0, 5)
-      .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
-    const qrData = `${baseUrl}/verify/${reference}`;
-
     const pdfPath = await pdfService.generateAttestationInscription(
       demande,
       etudiant,
@@ -332,32 +380,22 @@ async function generateDocumentsOutsideTransaction({ demande, institutionId }) {
   if (demande.typeDocument === "RELEVE_NOTES") {
     const semestres = demande.semestres?.length ? demande.semestres : [1];
 
-    for (const semestre of semestres) {
-      const reference = `ETD-${annee}-${sigle}-S${semestre}-${String(demande.id)
-        .substring(0, 5)
-        .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
-      const qrData = `${baseUrl}/verify/${reference}`;
+    // Note: since the unique reference is tied to the Demande, we generate ONE document.
+    // If the template needs semestres we pass the whole array, or just run the template.
+    // Assuming pdfService.generateDocument handles the `demande` object natively.
+    const pdfPath = await pdfService.generateDocument(
+      demande,
+      etudiant,
+      null,
+      reference,
+      institution,
+      qrData
+    );
 
-      const pdfPath = await pdfService.generateDocument(
-        { ...demande, semestre },
-        etudiant,
-        null,
-        reference,
-        institution,
-        qrData
-      );
-
-      await qrcodeService.generate(qrData, reference);
-      results.push({ reference, qrPayload: qrData, urlPdf: pdfPath });
-    }
-
+    await qrcodeService.generate(qrData, reference);
+    results.push({ reference, qrPayload: qrData, urlPdf: pdfPath });
     return results;
   }
-
-  const reference = `ETD-${annee}-${sigle}-${String(demande.id)
-    .substring(0, 5)
-    .toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
-  const qrData = `${baseUrl}/verify/${reference}`;
 
   const pdfPath = await pdfService.generateDocument(
     demande,

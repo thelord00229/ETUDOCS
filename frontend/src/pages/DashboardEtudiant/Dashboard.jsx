@@ -300,10 +300,10 @@ const uiTitle = (type) => {
 };
 
 const uiRef = (type, rawRef) => {
-  if (type === "RELEVE_NOTES") return rawRef || "ETD-2026-IFRI-S1-00847-XK29";
+  if (type === "RELEVE_NOTES") return rawRef || "REL-NOTES_KoulihoP_S1_2026";
   if (type === "ATTESTATION_INSCRIPTION")
-    return rawRef || "ETD-2026-IFRI-INS-00234-LM47";
-  return rawRef || "ETD-2026-IFRI-INS-00234-LM47";
+    return rawRef || "ATT-INSC_KoulihoP_S3_2026";
+  return rawRef || "ATT-SUCC_KoulihoP_2026";
 };
 
 const uiIntervenant = (type) => {
@@ -484,7 +484,7 @@ function DetailDemande({ demande, onBack }) {
   const status = demande.statut ? uiStatus(demande.statut) : demande.status;
   const ref = uiRef(
     demande.typeDocument,
-    demande.document?.reference || demande.ref_
+    demande.reference || demande.id
   );
   const steps = getSteps(status);
   const isReleve =
@@ -731,7 +731,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const [detailDemande, setDetailDemande] = useState(null);
   const navigate = useNavigate();
 
   // ✅ Notifications
@@ -833,7 +832,7 @@ export default function Dashboard() {
       .map((d) => ({
         ...d,
         title: uiTitle(d.typeDocument),
-        ref_: uiRef(d.typeDocument, d.document?.reference || d.id),
+        ref_: d.reference,
         date: new Date(d.createdAt).toLocaleDateString("fr-FR", {
           day: "2-digit",
           month: "short",
@@ -949,7 +948,7 @@ export default function Dashboard() {
       onDeleteNotif: deleteNotif,
       onClearAllNotifs: clearAllNotifs,
     }),
-    [fullName, meta, initials, notifications]
+    [fullName, meta, initials, notifications, deleteNotif, clearAllNotifs]
   );
 
   return (
