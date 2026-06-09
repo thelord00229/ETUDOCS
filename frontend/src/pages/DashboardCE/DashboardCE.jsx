@@ -8,7 +8,7 @@ import {
 } from "../../services/api";
 
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap');
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -19,12 +19,12 @@ const styles = `
     --text: #1e293b; --text-muted: #64748b;
     --border: #e2e8f0; --success: #10b981; --danger: #ef4444;
     --orange: #f97316; --blue: #1e4db7;
-    --sidebar-width: 240px;
+    --sidebar-width: 220px;
   }
 
   body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); }
   .layout { display: flex; min-height: 100vh; }
-  .main { margin-left: 240px; flex: 1; display: flex; flex-direction: column; }
+  .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; }
 
   .sidebar {
     width: var(--sidebar-width); background: #fff;

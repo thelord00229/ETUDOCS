@@ -9,7 +9,7 @@ const css = `
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
   .demand-row__info { flex: 1; }
-  .demand-row__title { font-family: 'Sora', sans-serif; font-weight: 600; font-size: 0.9rem; color: #1a2744; }
+  .demand-row__title { font-family: 'Sora', sans-serif; font-weight: 600; font-size: 0.9rem; color: #1e293b; }
   .demand-row__meta { font-size: 0.78rem; color: #94a3b8; margin-top: 2px; }
   .demand-row__right { display: flex; align-items: center; gap: 12px; }
   .badge-status {
@@ -29,7 +29,7 @@ const css = `
     border-radius: 8px; padding: 6px 14px; cursor: pointer; white-space: nowrap;
     transition: border-color .2s, color .2s;
   }
-  .btn-details:hover { border-color: #1a2744; color: #1a2744; }
+  .btn-details:hover { border-color: #2e7d32; color: #1e293b; }
 `;
 
 const STATUS_CLASS = {

@@ -10,7 +10,7 @@ const css = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --navy:      #1a2744;
+    --navy:      #1e293b;
     --navy-dark: #0f1a33;
     --navy-mid:  #243057;
     --gold:      #f5a623;
@@ -462,7 +462,7 @@ const css = `
     text-align:center; transition:box-shadow .2s, transform .2s;
   }
   .inst-card:hover { box-shadow:0 8px 32px rgba(0,0,0,.08); transform:translateY(-4px); }
-  .inst-card--ifri { border:2px solid #1a2744; }
+  .inst-card--ifri { border:2px solid #2e7d32; }
   .inst-card--epac { border:2px solid #0f766e; }
   .inst-card--fss  { border:2px solid #d97706; }
   .inst-logo-wrap {

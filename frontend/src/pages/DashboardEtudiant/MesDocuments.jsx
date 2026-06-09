@@ -7,7 +7,7 @@ import { useToast } from "../../hooks/useToast.js";
 const MAX_DL = 3;
 
 const css = `
-  .docs-title { font-family:'Sora',sans-serif; font-weight:800; font-size:1.5rem; color:#1a2744; margin-bottom:4px; }
+  .docs-title { font-family:'Sora',sans-serif; font-weight:800; font-size:1.5rem; color:#1e293b; margin-bottom:4px; }
   .docs-sub   { color:#475569; font-size:.9rem; }
 
   .docs-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }

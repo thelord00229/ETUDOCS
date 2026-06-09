@@ -8,7 +8,7 @@ const css = `
   .sa-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
   .sa-2col { display: grid; grid-template-columns: 1fr 360px; gap: 20px; align-items: start; }
   .sa-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; }
-  .sa-card__title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem; color: #1a2744; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+  .sa-card__title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem; color: #1e293b; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
   .inst-tbl { width: 100%; border-collapse: collapse; }
   .inst-tbl th { text-align: left; padding: 10px 0; font-family: 'Sora', sans-serif; font-weight: 600; font-size: .8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid #f1f5f9; }
   .inst-tbl td { padding: 14px 0; border-bottom: 1px solid #f8fafc; font-size: .9rem; color: #334155; vertical-align: middle; }
@@ -18,14 +18,14 @@ const css = `
   .num-green  { color: #16a34a; font-weight: 700; font-family: 'Sora', sans-serif; }
   .activity-list { display: flex; flex-direction: column; gap: 16px; }
   .activity-item { display: flex; align-items: flex-start; gap: 12px; }
-  .activity-dot  { width: 8px; height: 8px; border-radius: 50%; background: #1a2744; flex-shrink: 0; margin-top: 5px; }
-  .activity-title { font-family: 'Sora', sans-serif; font-weight: 600; font-size: .88rem; color: #1a2744; margin-bottom: 2px; }
+  .activity-dot  { width: 8px; height: 8px; border-radius: 50%; background: #2e7d32; flex-shrink: 0; margin-top: 5px; }
+  .activity-title { font-family: 'Sora', sans-serif; font-weight: 600; font-size: .88rem; color: #1e293b; margin-bottom: 2px; }
   .activity-sub   { font-size: .8rem; color: #475569; margin-bottom: 2px; }
   .activity-time  { font-size: .75rem; color: #94a3b8; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .sa-spinner {
     display: inline-block; width: 28px; height: 28px;
-    border: 3px solid #e2e8f0; border-top-color: #1a2744; border-radius: 50%;
+    border: 3px solid #e2e8f0; border-top-color: #2e7d32; border-radius: 50%;
     animation: spin .7s linear infinite;
     margin: 40px auto; display: block;
   }
@@ -66,7 +66,7 @@ export default function SADashboard() {
           label: "Total demandes",
           value: stats.kpis?.totalDemandes ?? 0,
           sub: "Toutes institutions",
-          accentColor: "#1a2744",
+          accentColor: "#2e7d32",
           iconBg: "#eff6ff",
           icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -148,7 +148,7 @@ export default function SADashboard() {
           <div className="sa-2col">
             <div className="sa-card">
               <div className="sa-card__title">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a2744" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
                 </svg>
                 Par institution

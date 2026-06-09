@@ -4,7 +4,7 @@ import Toggle from "../../components/DashboardEtudiant/Toggle.jsx";
 import { getMe } from "../../services/api.js";
 
 const css = `
-  .profil-title { font-family:'Sora',sans-serif; font-weight:800; font-size:1.5rem; color:#1a2744; margin-bottom:4px; }
+  .profil-title { font-family:'Sora',sans-serif; font-weight:800; font-size:1.5rem; color:#1e293b; margin-bottom:4px; }
   .profil-sub   { color:#475569; font-size:.9rem; }
 
   .profil-section {
@@ -12,7 +12,7 @@ const css = `
     margin-bottom:20px;
   }
   .profil-section__title {
-    font-family:'Sora',sans-serif; font-weight:700; font-size:1rem; color:#1a2744;
+    font-family:'Sora',sans-serif; font-weight:700; font-size:1rem; color:#1e293b;
     margin-bottom:24px; padding-bottom:14px; border-bottom:1px solid #f1f5f9;
   }
 
@@ -22,12 +22,12 @@ const css = `
     padding:18px 20px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;
   }
   .avatar-big {
-    width:64px; height:64px; border-radius:50%; background:#1a2744; flex-shrink:0;
+    width:64px; height:64px; border-radius:50%; background:#2e7d32; flex-shrink:0;
     display:flex; align-items:center; justify-content:center;
     font-family:'Sora',sans-serif; font-weight:800; font-size:1.2rem; color:#fff;
   }
   .avatar-info__name {
-    font-family:'Sora',sans-serif; font-weight:700; font-size:1rem; color:#1a2744;
+    font-family:'Sora',sans-serif; font-weight:700; font-size:1rem; color:#1e293b;
     margin-bottom:5px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
   }
   .avatar-info__sub { color:#94a3b8; font-size:.82rem; }
@@ -58,7 +58,7 @@ const css = `
     background:#fff; outline:none; transition:border-color .2s;
     width:100%; box-sizing:border-box;
   }
-  .form-input:focus { border-color:#1a2744; }
+  .form-input:focus { border-color:#2e7d32; }
   .form-input:disabled { background:#f8fafc; color:#94a3b8; cursor:not-allowed; border-color:#f1f5f9; }
 
   .form-select {
@@ -69,7 +69,7 @@ const css = `
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
     background-repeat:no-repeat; background-position:right 14px center; padding-right:36px;
   }
-  .form-select:focus { border-color:#1a2744; }
+  .form-select:focus { border-color:#2e7d32; }
 
   .field-readonly {
     padding:10px 14px; border:1.5px solid #f1f5f9; border-radius:10px;
@@ -92,9 +92,9 @@ const css = `
     background:#fff; font-family:'DM Sans',sans-serif; font-size:.88rem; font-weight:500;
     color:#475569; cursor:pointer; transition:border-color .2s;
   }
-  .btn-cancel:hover { border-color:#1a2744; color:#1a2744; }
+  .btn-cancel:hover { border-color:#2e7d32; color:#1e293b; }
   .btn-save {
-    padding:10px 24px; background:#1a2744; border:none; border-radius:10px;
+    padding:10px 24px; background:#2e7d32; border:none; border-radius:10px;
     font-family:'Sora',sans-serif; font-size:.88rem; font-weight:700; color:#fff;
     cursor:pointer; transition:background .2s;
   }
@@ -102,7 +102,7 @@ const css = `
   .btn-save:disabled { opacity:.6; cursor:not-allowed; }
 
   .btn-pwd {
-    padding:10px 24px; background:#1a2744; border:none; border-radius:10px;
+    padding:10px 24px; background:#2e7d32; border:none; border-radius:10px;
     font-family:'Sora',sans-serif; font-size:.88rem; font-weight:700; color:#fff;
     cursor:pointer; transition:background .2s; margin-top:4px; align-self:flex-start;
   }

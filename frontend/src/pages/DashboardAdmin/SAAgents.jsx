@@ -47,7 +47,7 @@ const css = `
   .sa-search-bar input::placeholder { color: #cbd5e1; }
 
   /* ── Tableau ── */
-  .agents-table-wrap { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; }
+  .agents-table-wrap { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; }
   .agents-tbl { width: 100%; border-collapse: collapse; }
   .agents-tbl th {
     text-align: left; padding: 12px 20px;
@@ -57,10 +57,10 @@ const css = `
   .agents-tbl td { padding: 14px 20px; border-bottom: 1px solid #f8fafc; vertical-align: middle; }
   .agents-tbl tbody tr:last-child td { border-bottom: none; }
   .agents-tbl tbody tr:hover { background: #fafbff; }
-  .ag-name  { font-family: 'Sora', sans-serif; font-weight: 600; font-size: .9rem; color: #1a2744; }
+  .ag-name  { font-family: 'Sora', sans-serif; font-weight: 600; font-size: .9rem; color: #1e293b; }
   .ag-inst-logo { width: 32px; height: 32px; object-fit: contain; border-radius: 6px; border: 1px solid #e2e8f0; background: #f8fafc; padding: 2px; }
   .ag-inst-logo-fallback {
-    width: 32px; height: 32px; border-radius: 6px; background: #1a2744;
+    width: 32px; height: 32px; border-radius: 6px; background: #2e7d32;
     display: flex; align-items: center; justify-content: center;
     font-family: 'Sora', sans-serif; font-weight: 700; font-size: .7rem; color: #fff;
     border: 1px solid #e2e8f0; flex-shrink: 0;
@@ -76,7 +76,7 @@ const css = `
   }
   .btn-delete:hover { color: #ef4444; background: #fef2f2; }
   .btn-mail { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 4px; transition: color .2s; border-radius: 6px; }
-  .btn-mail:hover { color: #1a2744; background: #f1f5f9; }
+  .btn-mail:hover { color: #2e7d32; background: #f1f8e9; }
 
   /* ── Overlay / Modal ── */
   .modal-overlay {
@@ -93,9 +93,9 @@ const css = `
   }
   .modal-box.modal-sm { max-width: 380px; }
   @keyframes slideUp { from { transform: translateY(16px); opacity:0 } to { transform: translateY(0); opacity:1 } }
-  .modal-title { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.15rem; color: #1a2744; margin-bottom: 6px; }
+  .modal-title { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.15rem; color: #1e293b; margin-bottom: 6px; }
   .modal-sub { font-size: .88rem; color: #64748b; margin-bottom: 24px; }
-  .modal-sub strong { color: #1a2744; }
+  .modal-sub strong { color: #1e293b; }
   .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
 
   /* ── Form ── */
@@ -105,20 +105,20 @@ const css = `
   .form-label { font-family: 'Sora', sans-serif; font-weight: 600; font-size: .78rem; color: #475569; text-transform: uppercase; letter-spacing: .05em; }
   .form-input, .form-select, .form-textarea {
     padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 9px; width: 100%;
-    font-family: 'DM Sans', sans-serif; font-size: .9rem; color: #1a2744; outline: none;
+    font-family: 'DM Sans', sans-serif; font-size: .9rem; color: #1e293b; outline: none;
     transition: border-color .15s; background: #f8fafc;
   }
-  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: #1a2744; background: #fff; }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: #2e7d32; background: #fff; }
   .form-textarea { resize: vertical; min-height: 90px; }
   .form-hint { font-size: .75rem; color: #94a3b8; margin-top: 2px; }
 
   /* ── Boutons ── */
   .btn-primary {
-    padding: 10px 22px; background: #1a2744; color: #fff; border: none; border-radius: 9px;
+    padding: 10px 22px; background: #2e7d32; color: #fff; border: none; border-radius: 9px;
     font-family: 'Sora', sans-serif; font-weight: 700; font-size: .88rem;
     cursor: pointer; transition: background .2s;
   }
-  .btn-primary:hover { background: #0f172a; }
+  .btn-primary:hover { background: #1b5e20; }
   .btn-primary:disabled { background: #94a3b8; cursor: not-allowed; }
   .btn-danger {
     padding: 10px 22px; background: #ef4444; color: #fff; border: none; border-radius: 9px;
@@ -131,7 +131,7 @@ const css = `
     border-radius: 9px; font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: .88rem;
     cursor: pointer; transition: border-color .2s, color .2s;
   }
-  .btn-ghost:hover { border-color: #94a3b8; color: #1a2744; }
+  .btn-ghost:hover { border-color: #2e7d32; color: #2e7d32; }
 
   /* ── Icône alerte ── */
   .delete-icon-wrap {
@@ -155,7 +155,7 @@ const css = `
   /* ── Spinner chargement ── */
   .sa-spinner {
     display: inline-block; width: 20px; height: 20px;
-    border: 2px solid #e2e8f0; border-top-color: #1a2744;
+    border: 2px solid #e2e8f0; border-top-color: #2e7d32;
     border-radius: 50%; animation: spin .7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }

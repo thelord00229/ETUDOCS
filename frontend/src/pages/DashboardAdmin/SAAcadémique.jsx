@@ -13,7 +13,7 @@ const css = `
     background: #f8fafc; outline: none; appearance: none; cursor: pointer;
     transition: border-color .2s;
   }
-  .da-select:focus { border-color: #1a2744; background: #fff; }
+  .da-select:focus { border-color: #2e7d32; background: #fff; }
 
   .da-tabs { display: flex; gap: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 4px; width: fit-content; }
   .da-tab {
@@ -21,10 +21,10 @@ const css = `
     font-family: 'DM Sans', sans-serif; font-size: .88rem; font-weight: 500;
     color: #475569; cursor: pointer; transition: background .15s, color .15s;
   }
-  .da-tab.active { background: #1a2744; color: #fff; }
+  .da-tab.active { background: #2e7d32; color: #fff; }
 
   .da-import-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 20px; }
-  .da-import-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem; color: #1a2744; }
+  .da-import-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem; color: #1e293b; }
 
   .btn-dl-model {
     display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
@@ -32,31 +32,31 @@ const css = `
     font-family: 'DM Sans', sans-serif; font-size: .88rem; font-weight: 500;
     color: #475569; cursor: pointer; transition: border-color .2s, color .2s; width: fit-content;
   }
-  .btn-dl-model:hover { border-color: #1a2744; color: #1a2744; }
+  .btn-dl-model:hover { border-color: #2e7d32; color: #2e7d32; }
 
   .da-format-box {
     background: #f0f6ff; border: 1px solid #bfdbfe; border-radius: 10px;
     padding: 18px 20px; font-size: .85rem; color: #334155; line-height: 2;
   }
-  .da-format-box .da-fmt-title { font-weight: 700; color: #1a2744; margin-bottom: 4px; }
-  .da-format-box strong { color: #1a2744; }
+  .da-format-box .da-fmt-title { font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+  .da-format-box strong { color: #1e293b; }
 
   .da-upload-zone {
     border: 2px dashed #e2e8f0; border-radius: 12px; padding: 44px 20px;
     display: flex; flex-direction: column; align-items: center; gap: 10px;
     cursor: pointer; transition: border-color .2s, background .2s;
   }
-  .da-upload-zone:hover { border-color: #1a2744; background: #fafbff; }
+  .da-upload-zone:hover { border-color: #2e7d32; background: #f1f8e9; }
   .da-upload-title { font-family: 'Sora', sans-serif; font-weight: 600; font-size: .95rem; color: #334155; }
   .da-upload-sub   { font-size: .82rem; color: #94a3b8; }
   .da-upload-hint  { font-size: .78rem; color: #94a3b8; }
 
   .btn-parcourir {
-    padding: 11px 30px; background: #1a2744; color: #fff; border: none; border-radius: 10px;
+    padding: 11px 30px; background: #2e7d32; color: #fff; border: none; border-radius: 10px;
     font-family: 'Sora', sans-serif; font-weight: 700; font-size: .9rem;
     cursor: pointer; transition: background .2s;
   }
-  .btn-parcourir:hover { background: #243057; }
+  .btn-parcourir:hover { background: #1b5e20; }
 
   .da-footer { display: flex; justify-content: flex-end; gap: 12px; padding-top: 8px; }
   .btn-annuler {
@@ -64,7 +64,7 @@ const css = `
     font-family: 'DM Sans', sans-serif; font-size: .9rem; font-weight: 500;
     color: #475569; cursor: pointer; transition: border-color .2s;
   }
-  .btn-annuler:hover { border-color: #1a2744; }
+  .btn-annuler:hover { border-color: #2e7d32; }
   .btn-importer {
     padding: 10px 24px; background: #16a34a; color: #fff; border: none; border-radius: 10px;
     font-family: 'Sora', sans-serif; font-weight: 700; font-size: .9rem;

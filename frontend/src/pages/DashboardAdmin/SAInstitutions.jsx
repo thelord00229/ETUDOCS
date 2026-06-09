@@ -5,17 +5,17 @@ import SAInstBadge from "../../components/DashboardAdmin/SAInstBadge.jsx";
 import { getInstitutions } from "../../services/admin.service"; // à créer si besoin
 
 const css = `
-  .inst-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .inst-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
   .inst-card {
-    background: #fff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 24px;
-    border-top: 4px solid #1a2744; display: flex; flex-direction: column; gap: 14px;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px;
+    border-top: 4px solid #2e7d32; display: flex; flex-direction: column; gap: 14px;
     min-width: 0;
   }
   .inst-card__head  { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .inst-card__name  { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.05rem; color: #1a2744; margin-bottom: 3px; }
+  .inst-card__name  { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.05rem; color: #1e293b; margin-bottom: 3px; }
   .inst-card__desc  { font-size: .82rem; color: #94a3b8; line-height: 1.5; }
   .inst-card__stats { display: flex; gap: 24px; flex-wrap: wrap; }
-  .inst-stat-val    { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem; color: #1a2744; }
+  .inst-stat-val    { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem; color: #1e293b; }
   .inst-stat-lbl    { font-size: .75rem; color: #94a3b8; margin-top: 1px; }
   .btn-params {
     width: 100%; padding: 10px; border: 1.5px solid #e2e8f0; border-radius: 10px;
@@ -23,7 +23,7 @@ const css = `
     color: #475569; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
     transition: border-color .2s, color .2s;
   }
-  .btn-params:hover { border-color: #1a2744; color: #1a2744; }
+  .btn-params:hover { border-color: #2e7d32; color: #2e7d32; }
   .add-inst-card {
     border: 2px dashed #e2e8f0; border-radius: 16px; padding: 40px 24px;
     display: flex; flex-direction: column; align-items: center; gap: 12px;
@@ -31,18 +31,18 @@ const css = `
     grid-column: 1 / -1;
     min-width: 0;
   }
-  /* .add-inst-card:hover { border-color: #1a2744; background: #f0f4ff; }
+  /* .add-inst-card:hover { border-color: #2e7d32; background: #f0f4ff; }
   .add-inst-card__icon { width: 56px; height: 56px; border-radius: 16px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; }
-  .add-inst-card__title { font-family: 'Sora', sans-serif; font-weight: 700; color: #1a2744; font-size: 1rem; text-align:center; }
+  .add-inst-card__title { font-family: 'Sora', sans-serif; font-weight: 700; color: #1e293b; font-size: 1rem; text-align:center; }
   .add-inst-card__sub   { font-size: .85rem; color: #94a3b8; text-align:center; } */
   .btn-add-inst {
-    padding: 11px 28px; background: #1a2744; color: #fff; border: none; border-radius: 10px;
+    padding: 11px 28px; background: #2e7d32; color: #fff; border: none; border-radius: 10px;
     font-family: 'Sora', sans-serif; font-weight: 700; font-size: .9rem; cursor: pointer;
     transition: background .2s;
   }
-  .btn-add-inst:hover { background: #243057; }
+  .btn-add-inst:hover { background: #1b5e20; }
   .sa-empty {
-    background:#fff; border:1.5px solid #e2e8f0; border-radius:16px; padding:18px;
+    background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:18px;
     color:#64748b; font-size:.9rem;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -51,7 +51,7 @@ const css = `
   }
   .sa-spinner {
     display: inline-block; width: 28px; height: 28px;
-    border: 3px solid #e2e8f0; border-top-color: #1a2744; border-radius: 50%;
+    border: 3px solid #e2e8f0; border-top-color: #2e7d32; border-radius: 50%;
     animation: spin .7s linear infinite;
   }
   @media (max-width: 900px) { .inst-grid { grid-template-columns: 1fr; } }

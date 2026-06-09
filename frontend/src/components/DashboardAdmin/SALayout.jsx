@@ -18,20 +18,20 @@ const css = `
     height: 48px; width: auto; object-fit: contain; /* ✅ agrandi : 38px → 48px */
   }
   .sa-brand__name {
-    font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.1rem; color: #1a2744;
+    font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.1rem; color: #1e293b;
     letter-spacing: -.01em;
   }
   .sa-nav { flex: 1; padding: 0 12px; display: flex; flex-direction: column; gap: 2px; }
   .sa-nav__link {
-    display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px;
+    display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 10px;
     font-family: 'DM Sans', sans-serif; font-size: .9rem; font-weight: 500;
     color: #475569; text-decoration: none; transition: background .15s, color .15s;
   }
-  .sa-nav__link:hover { background: #f1f5f9; color: #1a2744; }
-  .sa-nav__link.active { background: #1a2744; color: #fff; }
+  .sa-nav__link:hover { background: #f1f8e9; color: #2e7d32; }
+  .sa-nav__link.active { background: #2e7d32; color: #fff; font-weight: 700; box-shadow: 0 4px 14px rgba(46,125,50,.2); }
   .sa-nav__link.active svg { stroke: #fff; }
   .sa-nav__link svg { stroke: #94a3b8; transition: stroke .15s; }
-  .sa-nav__link:hover svg { stroke: #1a2744; }
+  .sa-nav__link:hover svg { stroke: #2e7d32; }
   .sa-divider { height: 1px; background: #e2e8f0; margin: 12px 12px; }
   .sa-logout {
     display: flex; align-items: center; gap: 12px; padding: 10px 24px;
@@ -54,10 +54,10 @@ const css = `
     display: flex; align-items: center; justify-content: center;
     font-family: 'Sora', sans-serif; font-weight: 700; font-size: .82rem; color: #fff;
   }
-  .sa-topbar__name { font-family: 'Sora', sans-serif; font-weight: 700; font-size: .88rem; color: #1a2744; }
+  .sa-topbar__name { font-family: 'Sora', sans-serif; font-weight: 700; font-size: .88rem; color: #1e293b; }
   .sa-topbar__meta { font-size: .75rem; color: #94a3b8; }
   .sa-content { padding: 28px 32px; display: flex; flex-direction: column; gap: 24px; padding-bottom: 48px; }
-  .sa-page-title { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.55rem; color: #1a2744; margin-bottom: 4px; }
+  .sa-page-title { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.55rem; color: #1e293b; margin-bottom: 4px; }
   .sa-page-sub { color: #475569; font-size: .9rem; }
 `;
 

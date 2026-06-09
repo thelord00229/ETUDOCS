@@ -2,7 +2,7 @@ import { useState } from "react";
 
 const css = `
   .sa-toggle { width: 42px; height: 23px; border-radius: 12px; border: none; cursor: pointer; position: relative; transition: background .2s; flex-shrink: 0; }
-  .sa-toggle--on  { background: #1a2744; }
+  .sa-toggle--on  { background: #2e7d32; }
   .sa-toggle--off { background: #e2e8f0; }
   .sa-toggle__knob { position: absolute; top: 3px; width: 17px; height: 17px; border-radius: 50%; background: #fff; transition: left .2s; }
   .sa-toggle__knob--on  { left: 22px; }

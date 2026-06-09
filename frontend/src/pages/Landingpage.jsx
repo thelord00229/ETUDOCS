@@ -223,7 +223,7 @@ const styles = `
     font-weight: 800;
     font-size: 2rem;
     color: #2e7d32;
-    letter-spacing: -0.3px;
+    letter-spacing: -0.5px;
     line-height: 1.2;
     opacity: 0;
     transform: translateY(30px);
@@ -277,6 +277,8 @@ const styles = `
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    font-family: 'Sora', sans-serif;
+    font-weight: 600;
   }
   #hero_button_1:hover {
     background-color: #1b4d1b;
@@ -289,6 +291,8 @@ const styles = `
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.3s ease, color 0.3s ease;
+    font-family: 'Sora', sans-serif;
+    font-weight: 600;
   }
   #hero_button_2:hover {
     background-color: #2e7d32;
@@ -893,8 +897,8 @@ const Landingpage = () => {
         </div>
       </section>
       <section id="before-footer">
-        <h2 id="services_content_up_h1">Demarre maintenant avec Etudocs</h2>
-        <p>Gère tes document aisément</p>
+        <h2 id="services_content_up_h1">Démarrez maintenant avec EtuDocs</h2>
+        <p>Gérez vos documents aisément</p>
         <a href="/login"><button id="nav_button">Commencer</button></a>
       </section>
       <section id="footer">

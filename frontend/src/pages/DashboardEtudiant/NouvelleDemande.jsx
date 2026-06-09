@@ -8,7 +8,7 @@ import { useToast } from "../../hooks/useToast.js";
 
 const css = `
   /* PAGE HEADER */
-  .nd-title { font-family:'Sora',sans-serif; font-weight:800; font-size:1.5rem; color:#1a2744; margin-bottom:6px; }
+  .nd-title { font-family:'Sora',sans-serif; font-weight:800; font-size:1.5rem; color:#1e293b; margin-bottom:6px; }
   .nd-sub   { color:#475569; font-size:.9rem; margin-bottom:24px; }
 
   /* STEP 1 - DOC GRID */
@@ -24,14 +24,14 @@ const css = `
     background:#fee2e2; border:1px solid #fecaca; color:#b91c1c;
     font-size:.72rem; font-weight:800; padding:6px 10px; border-radius:999px; letter-spacing:.2px;
   }
-  .doc-card:hover   { border-color:#1a2744; box-shadow:0 4px 16px rgba(26,39,68,.08); }
-  .doc-card.selected { border-color:#1a2744; background:#f0f4ff; box-shadow:0 4px 16px rgba(26,39,68,.1); }
+  .doc-card:hover   { border-color:#2e7d32; box-shadow:0 4px 16px rgba(26,39,68,.08); }
+  .doc-card.selected { border-color:#2e7d32; background:#f0f4ff; box-shadow:0 4px 16px rgba(26,39,68,.1); }
   .doc-card__icon {
     width:44px; height:44px; border-radius:10px; background:#f1f5f9; flex-shrink:0;
     display:flex; align-items:center; justify-content:center;
   }
   .doc-card.selected .doc-card__icon { background:#e0e7ff; }
-  .doc-card__title { font-family:'Sora',sans-serif; font-weight:700; font-size:.95rem; color:#1a2744; margin-bottom:6px; }
+  .doc-card__title { font-family:'Sora',sans-serif; font-weight:700; font-size:.95rem; color:#1e293b; margin-bottom:6px; }
   .doc-card__meta  { display:flex; align-items:center; gap:5px; font-size:.78rem; color:#94a3b8; margin-bottom:4px; }
   .doc-card__pieces { font-size:.78rem; color:#94a3b8; }
 
@@ -39,21 +39,21 @@ const css = `
   .step2-grid { display:grid; grid-template-columns:1fr 360px; gap:20px; align-items:start; }
   .upload-card { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:22px; }
   .upload-card__header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
-  .upload-card__title { font-family:'Sora',sans-serif; font-weight:600; font-size:.95rem; color:#1a2744; }
+  .upload-card__title { font-family:'Sora',sans-serif; font-weight:600; font-size:.95rem; color:#1e293b; }
   .upload-card__fmt   { font-size:.78rem; color:#94a3b8; margin-bottom:14px; }
   .upload-zone {
     border:2px dashed #e2e8f0; border-radius:10px; padding:28px 20px;
     display:flex; flex-direction:column; align-items:center; gap:8px;
     cursor:pointer; transition:border-color .2s, background .2s; margin-bottom:12px;
   }
-  .upload-zone:hover { border-color:#1a2744; background:#fafbff; }
+  .upload-zone:hover { border-color:#2e7d32; background:#fafbff; }
   .upload-zone__text { font-size:.85rem; color:#94a3b8; }
   .btn-browse {
     padding:6px 16px; border:1.5px solid #e2e8f0; border-radius:8px; background:#fff;
     font-family:'DM Sans',sans-serif; font-size:.85rem; color:#334155; cursor:pointer;
     transition:border-color .2s;
   }
-  .btn-browse:hover { border-color:#1a2744; }
+  .btn-browse:hover { border-color:#2e7d32; }
   .upload-file {
     display:flex; align-items:center; gap:8px;
     background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 14px;
@@ -65,7 +65,7 @@ const css = `
     background:#fff; border:1.5px solid #f5a623; border-radius:14px; padding:22px;
   }
   .paiement-card__title {
-    font-family:'Sora',sans-serif; font-weight:700; font-size:.95rem; color:#1a2744;
+    font-family:'Sora',sans-serif; font-weight:700; font-size:.95rem; color:#1e293b;
     display:flex; align-items:center; gap:8px; margin-bottom:6px;
   }
   .paiement-card__opts { font-size:.82rem; color:#94a3b8; margin-bottom:16px; }
@@ -83,10 +83,10 @@ const css = `
   }
   .paiement-account-num {
     font-family:'DM Mono',monospace; font-size:.88rem; font-weight:700;
-    color:#1a2744; letter-spacing:.5px;
+    color:#1e293b; letter-spacing:.5px;
   }
   .paiement-copy-btn {
-    background:#1a2744; color:#fff; border:none; border-radius:6px;
+    background:#2e7d32; color:#fff; border:none; border-radius:6px;
     font-size:.75rem; font-weight:700; padding:5px 12px; cursor:pointer;
     flex-shrink:0; transition:background .2s;
   }
@@ -108,15 +108,15 @@ const css = `
   }
   .paiement-card__amount-label { font-size:.82rem; color:#94a3b8; margin-bottom:4px; }
   .paiement-card__amount {
-    font-family:'Sora',sans-serif; font-weight:800; font-size:1.6rem; color:#1a2744;
+    font-family:'Sora',sans-serif; font-weight:800; font-size:1.6rem; color:#1e293b;
   }
 
   /* STEP 3 - RECAP */
   .recap-section { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:22px; }
-  .recap-section__title { font-family:'Sora',sans-serif; font-weight:700; font-size:1rem; color:#1a2744; margin-bottom:16px; }
+  .recap-section__title { font-family:'Sora',sans-serif; font-weight:700; font-size:1rem; color:#1e293b; margin-bottom:16px; }
   .recap-doc-card { background:#f8fafc; border-radius:10px; padding:14px 16px; display:flex; align-items:center; gap:14px; }
-  .recap-doc-icon { width:42px; height:42px; border-radius:10px; background:#1a2744; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .recap-doc-title { font-family:'Sora',sans-serif; font-weight:700; font-size:.95rem; color:#1a2744; }
+  .recap-doc-icon { width:42px; height:42px; border-radius:10px; background:#2e7d32; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .recap-doc-title { font-family:'Sora',sans-serif; font-weight:700; font-size:.95rem; color:#1e293b; }
   .recap-doc-sub   { font-size:.82rem; color:#94a3b8; margin-top:2px; }
   .recap-piece { background:#f0fdf4; border-radius:8px; padding:10px 14px; display:flex; align-items:center; gap:10px; font-size:.88rem; color:#16a34a; font-weight:500; margin-bottom:8px; }
   .recap-piece:last-child { margin-bottom:0; }
@@ -129,10 +129,10 @@ const css = `
     background:#fff; font-family:'DM Sans',sans-serif; font-size:.9rem; font-weight:500;
     color:#475569; cursor:pointer; transition:border-color .2s, color .2s; text-decoration:none;
   }
-  .btn-back:hover { border-color:#1a2744; color:#1a2744; }
+  .btn-back:hover { border-color:#2e7d32; color:#1e293b; }
   .btn-next {
     display:inline-flex; align-items:center; gap:8px;
-    padding:11px 26px; background:#1a2744; border:none; border-radius:10px;
+    padding:11px 26px; background:#2e7d32; border:none; border-radius:10px;
     font-family:'Sora',sans-serif; font-size:.9rem; font-weight:700; color:#fff;
     cursor:pointer; transition:background .2s, opacity .2s;
   }
@@ -290,7 +290,7 @@ export default function NouvelleDemande() {
               >
                 {!d.enabled && <span className="coming-badge">Bientôt disponible</span>}
                 <div className="doc-card__icon">
-                  <DocIcon color={selected === d.id ? "#1a2744" : "#475569"} />
+                  <DocIcon color={selected === d.id ? "#2e7d32" : "#475569"} />
                 </div>
                 <div>
                   <div className="doc-card__title">{d.title}</div>
@@ -308,7 +308,7 @@ export default function NouvelleDemande() {
 
           {isReleve && (
             <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:14, padding:"14px 16px", marginTop:14 }}>
-              <div style={{ fontFamily:"Sora,sans-serif", fontWeight:700, color:"#1a2744", marginBottom:10 }}>
+              <div style={{ fontFamily:"Sora,sans-serif", fontWeight:700, color:"#2e7d32", marginBottom:10 }}>
                 Pour quel(s) semestre(s) ?
               </div>
               {["S1","S2","S3","S4","S5","S6"].map(s => (
@@ -322,7 +322,7 @@ export default function NouvelleDemande() {
 
           {isAttestation && (
             <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:14, padding:"14px 16px", marginTop:14 }}>
-              <div style={{ fontFamily:"Sora,sans-serif", fontWeight:700, color:"#1a2744", marginBottom:10 }}>
+              <div style={{ fontFamily:"Sora,sans-serif", fontWeight:700, color:"#2e7d32", marginBottom:10 }}>
                 Pour quelle année académique ?
               </div>
               <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
@@ -330,10 +330,10 @@ export default function NouvelleDemande() {
                   <label key={a} style={{
                     display:"flex", alignItems:"center", gap:8, cursor:"pointer",
                     padding:"8px 14px", borderRadius:8, border:"1.5px solid",
-                    borderColor: anneeAcademique === a ? "#1a2744" : "#e2e8f0",
+                    borderColor: anneeAcademique === a ? "#2e7d32" : "#e2e8f0",
                     background: anneeAcademique === a ? "#f0f4ff" : "#fff",
                     fontWeight: anneeAcademique === a ? 700 : 400,
-                    color:"#1a2744", fontSize:".88rem", transition:"all .15s"
+                    color:"#2e7d32", fontSize:".88rem", transition:"all .15s"
                   }}>
                     <input
                       type="radio" name="annee" value={a}

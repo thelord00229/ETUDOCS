@@ -28,7 +28,7 @@ export function useTheme() {
     } else {
       root.style.setProperty("--bg", "#f8fafc");
       root.style.setProperty("--bg-secondary", "#ffffff");
-      root.style.setProperty("--text", "#1a2744");
+      root.style.setProperty("--text", "#1e293b");
       root.style.setProperty("--text-muted", "#64748b");
       root.style.setProperty("--border", "#e2e8f0");
       root.style.setProperty("--white", "#ffffff");

@@ -1,7 +1,7 @@
 const css = `
   .sa-inst-badge {
     display: inline-flex; align-items: center; justify-content: center;
-    border-radius: 8px; background: #1a2744; color: #fff;
+    border-radius: 8px; background: #2e7d32; color: #fff;
     font-family: 'Sora', sans-serif; font-weight: 700; flex-shrink: 0;
   }
   .sa-inst-badge--lg { width: 52px; height: 52px; border-radius: 12px; font-size: .95rem; }

@@ -12,7 +12,7 @@ const css = `
     display: flex; align-items: center; justify-content: center;
   }
   .stat-card__value {
-    font-family: 'Sora', sans-serif; font-weight: 800; font-size: 2rem; color: #1a2744;
+    font-family: 'Sora', sans-serif; font-weight: 800; font-size: 2rem; color: #1e293b;
     line-height: 1;
   }
   .stat-card__sub { font-size: 0.8rem; color: #94a3b8; }

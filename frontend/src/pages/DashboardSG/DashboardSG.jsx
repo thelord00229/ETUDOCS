@@ -14,7 +14,7 @@ const css = `
   .sg-layout { display: flex; min-height: 100vh; background: #f4f6f9; font-family: 'DM Sans', sans-serif; }
 
   .sg-sidebar {
-    width: 200px; min-height: 100vh; flex-shrink: 0;
+    width: 220px; min-height: 100vh; flex-shrink: 0;
     background: #fff; border-right: 1px solid #e2e8f0;
     display: flex; flex-direction: column;
     padding: 0 0 24px 0;
@@ -34,14 +34,14 @@ const css = `
   .sg-sidebar__nav { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 0 10px; }
   .sg-sidebar__link {
     display: flex; align-items: center; gap: 12px;
-    padding: 10px 12px; border-radius: 10px;
+    padding: 11px 14px; border-radius: 10px;
     font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500;
     color: #475569; text-decoration: none;
     transition: background .15s, color .15s;
     border: none; background: none; cursor: pointer; width: 100%; text-align: left;
   }
   .sg-sidebar__link:hover { background: #f1f8e9; color: #2e7d32; }
-  .sg-sidebar__link.active { background: #2e7d32; color: #fff; }
+  .sg-sidebar__link.active { background: #2e7d32; color: #fff; font-weight: 700; box-shadow: 0 4px 14px rgba(46,125,50,.2); }
   .sg-sidebar__link.active svg { stroke: #fff; }
   .sg-sidebar__link svg { stroke: #94a3b8; transition: stroke .15s; }
   .sg-sidebar__link:hover svg { stroke: #2e7d32; }
@@ -56,7 +56,7 @@ const css = `
   .sg-sidebar__logout:hover svg { stroke: #ef4444; }
   .sg-sidebar__logout svg { stroke: #94a3b8; transition: stroke .15s; }
 
-  .sg-main { margin-left: 200px; flex: 1; display: flex; flex-direction: column; }
+  .sg-main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; }
 
   .sg-topbar {
     background: #fff; border-bottom: 1px solid #e2e8f0;

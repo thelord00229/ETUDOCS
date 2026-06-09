@@ -22,7 +22,7 @@ const css = `
     margin: 0;
     font-family: 'Sora', sans-serif;
     font-weight: 800;
-    color: #0f172a;
+    color: #1e293b;
     letter-spacing: -0.02em;
   }
   .sa-ana-title p {
@@ -84,15 +84,15 @@ const css = `
 
   .sa-ana-kpis {
     display:grid;
-    grid-template-columns: 1fr 1.35fr 1fr 1fr;
-    gap: 14px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
     margin-bottom: 16px;
   }
   .sa-ana-card {
     background: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 16px;
-    padding: 18px;
+    padding: 24px;
     box-shadow: 0 1px 0 rgba(15,23,42,.03);
     height: 100%;
   }
@@ -122,7 +122,7 @@ const css = `
     font-family: 'Sora', sans-serif;
     font-weight: 900;
     font-size: 2rem;
-    color: #0f172a;
+    color: #1e293b;
     line-height: 1.05;
   }
   .sa-ana-kpi-label {
@@ -186,7 +186,7 @@ const css = `
   .sa-ana-section-title {
     font-family: 'Sora', sans-serif;
     font-weight: 800;
-    color: #0f172a;
+    color: #1e293b;
     margin: 0 0 4px 0;
   }
   .sa-ana-section-sub {
@@ -744,7 +744,7 @@ export default function SAAnalytics() {
       {/* KPI row (inchangé) */}
       {loadingKpis && (
         <div style={{ marginBottom: 8, color: "#64748b", display: "flex", alignItems: "center" }}>
-          <span style={{display:"inline-block",width:14,height:14,border:"2px solid rgba(26,39,68,.15)",borderTopColor:"#1a2744",borderRadius:"50%",animation:"spin .7s linear infinite",verticalAlign:"middle",marginRight:6}} />
+          <span style={{display:"inline-block",width:14,height:14,border:"2px solid rgba(46,125,50,.15)",borderTopColor:"#2e7d32",borderRadius:"50%",animation:"spin .7s linear infinite",verticalAlign:"middle",marginRight:6}} />
           Mise à jour KPIs…
         </div>
       )}
@@ -829,7 +829,7 @@ export default function SAAnalytics() {
           <h3 className="sa-ana-section-title">Radar des goulots</h3>
           {radarLoading && (
             <div style={{ color:"#64748b", fontSize: ".85rem", marginBottom: 8, display: "flex", alignItems: "center" }}>
-              <span style={{display:"inline-block",width:14,height:14,border:"2px solid rgba(26,39,68,.15)",borderTopColor:"#1a2744",borderRadius:"50%",animation:"spin .7s linear infinite",verticalAlign:"middle",marginRight:6}} />
+              <span style={{display:"inline-block",width:14,height:14,border:"2px solid rgba(46,125,50,.15)",borderTopColor:"#2e7d32",borderRadius:"50%",animation:"spin .7s linear infinite",verticalAlign:"middle",marginRight:6}} />
               Mise à jour…
             </div>
           )}

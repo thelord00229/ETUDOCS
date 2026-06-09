@@ -1,6 +1,5 @@
 // frontend/src/pages/DashboardEtudiant/Dashboard.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { getMe, getDemandes } from "../../services/api";
 
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
@@ -534,7 +533,7 @@ function DetailDemande({ demande, onBack }) {
                       width: 10,
                       height: 10,
                       borderRadius: "50%",
-                      background: "#1a2744",
+                      background: "#2e7d32",
                     }}
                   />
                 )}
@@ -638,7 +637,7 @@ function DetailDemande({ demande, onBack }) {
               support à{" "}
               <a
                 href="mailto:support@etudocs.bj"
-                style={{ color: "#1a2744", fontWeight: 600 }}
+                style={{ color: "#2e7d32", fontWeight: 600 }}
               >
                 support@etudocs.bj
               </a>
@@ -730,8 +729,7 @@ export default function Dashboard() {
   const [demandes, setDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
-
-  const navigate = useNavigate();
+  const [detailDemande, setDetailDemande] = useState(null);
 
   // ✅ Notifications
   const [notifications, setNotifications] = useState(() => {
@@ -1052,7 +1050,7 @@ export default function Dashboard() {
               height="22"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#1a2744"
+              stroke="#2e7d32"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"

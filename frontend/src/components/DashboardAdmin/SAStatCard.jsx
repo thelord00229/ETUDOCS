@@ -7,11 +7,11 @@ const css = `
   .sa-stat-card__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
   .sa-stat-card__label  { font-size: .85rem; color: #475569; font-family: 'DM Sans', sans-serif; }
   .sa-stat-card__icon   { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-  .sa-stat-card__value  { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 2rem; color: #1a2744; line-height: 1; margin-bottom: 4px; }
+  .sa-stat-card__value  { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 2rem; color: #1e293b; line-height: 1; margin-bottom: 4px; }
   .sa-stat-card__sub    { font-size: .8rem; color: #94a3b8; }
 `;
 
-export default function SAStatCard({ label, value, sub, icon, accentColor = "#1a2744", iconBg = "#f1f5f9" }) {
+export default function SAStatCard({ label, value, sub, icon, accentColor = "#2e7d32", iconBg = "#f1f5f9" }) {
     return (
         <>
             <style>{css}</style>
