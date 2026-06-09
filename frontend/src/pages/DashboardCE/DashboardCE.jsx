@@ -314,6 +314,7 @@ const styles = `
   .sa-toast { position: fixed; bottom: 28px; right: 28px; z-index: 400; background: var(--uac); color: #fff; padding: 13px 20px; border-radius: 11px; font-family: 'DM Sans', sans-serif; font-size: .88rem; font-weight: 500; box-shadow: 0 8px 30px rgba(0,0,0,.2); animation: sa-toast-in .2s ease; }
   .sa-toast--error { background: var(--danger); }
   @keyframes sa-toast-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
 `;
 
 // ── SVG Icons ──────────────────────────────────────────────
@@ -914,7 +915,7 @@ export default function ChefDivisionExamens() {
       setView("traitement");
     } catch (e) {
       console.error(e);
-      alert("Impossible d'ouvrir le dossier.");
+      showToast("Impossible d'ouvrir le dossier.", true);
     }
   };
 
@@ -926,7 +927,7 @@ export default function ChefDivisionExamens() {
   const openPreview = (piece) => {
     const raw = piece?.url || "";
     if (!raw) {
-      alert("Fichier introuvable.");
+      showToast("Fichier introuvable.", true);
       return;
     }
     const safe = String(raw).replace(/\\/g, "/");
@@ -958,7 +959,7 @@ export default function ChefDivisionExamens() {
       setPieces((prev) =>
         prev.map((p) => (p.id === id ? { ...p, status: null } : p))
       );
-      alert("Échec validation pièce.");
+      showToast("Échec validation pièce.", true);
     } finally {
       setPieceBusy(null);
     }
@@ -987,7 +988,7 @@ export default function ChefDivisionExamens() {
       setView("dashboard");
     } catch (e) {
       console.error(e);
-      alert(e?.message || "Erreur lors de la génération");
+      showToast(e?.message || "Erreur lors de la génération", true);
     } finally {
       setGenBusy(false);
     }
@@ -1010,7 +1011,7 @@ export default function ChefDivisionExamens() {
       setView("dashboard");
     } catch (e) {
       console.error(e);
-      alert(e?.message || "Erreur lors du rejet");
+      showToast(e?.message || "Erreur lors du rejet", true);
     } finally {
       setGenBusy(false);
     }
@@ -1737,8 +1738,8 @@ export default function ChefDivisionExamens() {
             </div>
             <div className="modal-body">
               Vous allez déclencher la génération automatique du relevé de notes
-              pour <strong>{selected?.etudiant}</strong> (
-              <span className="modal-ref">{selected?.ref}</span>).
+              pour <strong>{selected?.utilisateur ? `${selected.utilisateur.nom || ""} ${selected.utilisateur.prenom || ""}`.trim() : "—"}</strong> (
+              <span className="modal-ref">{selected?.document?.reference || selected?.documents?.[0]?.reference || selected?.ref || "—"}</span>).
               <br />
               <br />
               Le système va automatiquement récupérer les données académiques
@@ -1759,6 +1760,9 @@ export default function ChefDivisionExamens() {
                 onClick={handleGenerate}
                 disabled={genBusy}
               >
+                {genBusy && (
+                  <span style={{display:"inline-block",width:13,height:13,border:"2px solid rgba(255,255,255,.35)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .6s linear infinite",verticalAlign:"middle",marginRight:6}} />
+                )}
                 {genBusy
                   ? "Génération en cours..."
                   : "✓ Confirmer la génération"}
@@ -1777,8 +1781,8 @@ export default function ChefDivisionExamens() {
             </div>
             <div className="modal-body">
               Vous allez rejeter la demande{" "}
-              <span className="modal-ref">{selected?.ref}</span> de{" "}
-              <strong>{selected?.etudiant}</strong>.<br />
+              <span className="modal-ref">{selected?.document?.reference || selected?.documents?.[0]?.reference || selected?.ref || "—"}</span> de{" "}
+              <strong>{selected?.utilisateur ? `${selected.utilisateur.nom || ""} ${selected.utilisateur.prenom || ""}`.trim() : "—"}</strong>.<br />
               L'étudiant recevra une notification :{" "}
               <em>"Rejet de demande: {globalComment}"</em>
             </div>
@@ -1803,6 +1807,9 @@ export default function ChefDivisionExamens() {
                 onClick={handleReject}
                 disabled={genBusy}
               >
+                {genBusy && (
+                  <span style={{display:"inline-block",width:13,height:13,border:"2px solid rgba(255,255,255,.35)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .6s linear infinite",verticalAlign:"middle",marginRight:6}} />
+                )}
                 {genBusy ? "Traitement..." : "✗ Confirmer le rejet"}
               </button>
             </div>

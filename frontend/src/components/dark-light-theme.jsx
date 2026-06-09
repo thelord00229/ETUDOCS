@@ -41,7 +41,7 @@ export function useTheme() {
 
   return { theme, setTheme, toggleTheme };
 }
-
+  
 export default function ThemeToggle({ className }) {
   const { theme, setTheme } = useTheme();
 

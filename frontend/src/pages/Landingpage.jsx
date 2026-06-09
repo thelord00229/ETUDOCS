@@ -593,7 +593,7 @@ color: var(--uac-green);
 
 #footer {
   margin-top: 3rem;
-  padding: 2rem;
+  padding: 2rem 0.3rem;
   display: flex;
   position: relative;
   align-items: flex-start;
@@ -635,7 +635,6 @@ color: var(--uac-green);
     max-width: 300px;
     display: flex;
     flex-direction: column;
-
     gap:0.6rem;
     font-size: 0.9rem;
   }
@@ -694,7 +693,7 @@ const Landingpage = () => {
     {
       question: "Puis-je imprimer mes documents ?",
       answer:
-        "Oui, vous pouvez imprimer vos documents universitaires directement depuis notre plateforme. Assurez-vous d'avoir un imprimante connectée à votre ordinateur.",
+        "Oui, vous pouvez imprimer vos documents universitaires directement depuis notre plateforme. Assurez-vous d'avoir une imprimante connectée à votre ordinateur.",
       img: photo4,
     },
     {
@@ -755,7 +754,7 @@ const Landingpage = () => {
               fast, and built for Africa.
             </p>
             <div className="hero_buttons">
-              <a href="">
+              <a href="/login">
                 <button id="hero_button_1">Se connecter</button>
               </a>
               <a href="#working">
@@ -766,7 +765,7 @@ const Landingpage = () => {
         </div>
         <div className="hero_photo">
           <img
-            src="src\assets\screencapture-localhost-5173-dashboardEtu-2026-04-10-00_04_43 1.png"
+            src={photo1}
             alt="image_principale"
           />
         </div>
@@ -788,7 +787,7 @@ const Landingpage = () => {
         <div className="services_content_down">
           <div className="services_content_down_item_1">
             <div className="services-container-photo">
-              <img src="" alt="" />
+              <img src={photo2} alt="" />
             </div>
             <div className="services-content-right">
               <button className="services-bouton">Accès</button>
@@ -818,12 +817,12 @@ const Landingpage = () => {
               </div>
             </div>
             <div className="services-container-photo">
-              <img src="" alt="" />
+              <img src={photo3} alt="" />
             </div>
           </div>
           <div className="services_content_down_item_1">
             <div className="services-container-photo">
-              <img src="" alt="" />
+              <img src={photo4} alt="" />
             </div>
             <div className="services-content-right">
               <button className="services-bouton">Authenticité</button>
@@ -892,14 +891,14 @@ const Landingpage = () => {
             ))}
           </div>
           <div id="faq-images">
-            <img src={faqData[openIndex ?? 0].img} alt="" />
+            <img src={faqData[openIndex ?? 0]?.img} alt="" />
           </div>
         </div>
       </section>
       <section id="before-footer">
         <h2 id="services_content_up_h1">Demarre maintenant avec Etudocs</h2>
         <p>Gère tes document aisément</p>
-        <button id="nav_button">Commencer</button>
+        <a href="/login"><button id="nav_button">Commencer</button></a>
       </section>
       <section id="footer">
         <div id="footer1">

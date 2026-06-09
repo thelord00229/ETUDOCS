@@ -391,6 +391,8 @@ const css = `
     .sa-ana-bottom { grid-template-columns: 1fr; }
     .sa-ana-select { min-width: 100%; }
   }
+
+  @keyframes spin { to { transform:rotate(360deg); } }
 `;
 
 function fmtH(v) {
@@ -740,7 +742,12 @@ export default function SAAnalytics() {
       </div>
 
       {/* KPI row (inchangé) */}
-      {loadingKpis && <div style={{ marginBottom: 8, color: "#64748b" }}>Mise à jour KPIs…</div>}
+      {loadingKpis && (
+        <div style={{ marginBottom: 8, color: "#64748b", display: "flex", alignItems: "center" }}>
+          <span style={{display:"inline-block",width:14,height:14,border:"2px solid rgba(26,39,68,.15)",borderTopColor:"#1a2744",borderRadius:"50%",animation:"spin .7s linear infinite",verticalAlign:"middle",marginRight:6}} />
+          Mise à jour KPIs…
+        </div>
+      )}
       {errorKpis && <div style={{ marginBottom: 8, color: "crimson" }}>{errorKpis}</div>}
       <div className="sa-ana-kpis">
         <div className="sa-ana-card">
@@ -820,7 +827,12 @@ export default function SAAnalytics() {
       <div className="sa-ana-main">
         <div className="sa-ana-card radar-card">
           <h3 className="sa-ana-section-title">Radar des goulots</h3>
-          {radarLoading && <div style={{ color:"#64748b", fontSize: ".85rem", marginBottom: 8 }}>Mise à jour…</div>}
+          {radarLoading && (
+            <div style={{ color:"#64748b", fontSize: ".85rem", marginBottom: 8, display: "flex", alignItems: "center" }}>
+              <span style={{display:"inline-block",width:14,height:14,border:"2px solid rgba(26,39,68,.15)",borderTopColor:"#1a2744",borderRadius:"50%",animation:"spin .7s linear infinite",verticalAlign:"middle",marginRight:6}} />
+              Mise à jour…
+            </div>
+          )}
           {radarError && <div style={{ color:"crimson", fontSize: ".85rem", marginBottom: 8 }}>{radarError}</div>}
           <p className="sa-ana-section-sub">Temps maximum habituel observé par étape</p>
 
@@ -913,9 +925,9 @@ export default function SAAnalytics() {
           </div>
 
           <div className="quick" aria-label="Actions rapides">
-            <button className="btn btn-primary" type="button">Exporter un rapport (bientôt)</button>
-            <button className="btn" type="button">Alertes (bientôt)</button>
-            <button className="btn" type="button">Détails par institution (bientôt)</button>
+            <span style={{display:"inline-flex",alignItems:"center",padding:"3px 10px",background:"#f1f5f9",color:"#94a3b8",borderRadius:"20px",fontSize:".75rem",fontWeight:600}}>Bientôt</span>
+            <span style={{display:"inline-flex",alignItems:"center",padding:"3px 10px",background:"#f1f5f9",color:"#94a3b8",borderRadius:"20px",fontSize:".75rem",fontWeight:600}}>Bientôt</span>
+            <span style={{display:"inline-flex",alignItems:"center",padding:"3px 10px",background:"#f1f5f9",color:"#94a3b8",borderRadius:"20px",fontSize:".75rem",fontWeight:600}}>Bientôt</span>
           </div>
         </div>
       </div>

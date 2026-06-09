@@ -108,6 +108,16 @@ const css = `
   }
   .btn-pwd:hover { background:#243057; }
 
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .btn-spinner {
+    display:inline-block; width:13px; height:13px;
+    border:2px solid rgba(255,255,255,.35); border-top-color:#fff;
+    border-radius:50%; animation:spin .6s linear infinite;
+    vertical-align:middle; margin-right:6px;
+  }
+
+  .pwd-mismatch { font-size:.78rem; color:#dc2626; margin-top:3px; }
+
   .toast-ok  { background:#f0fdf4; border:1px solid #bbf7d0; color:#16a34a; padding:10px 16px; border-radius:10px; font-size:.85rem; font-weight:600; margin-bottom:16px; }
   .toast-err { background:#fef2f2; border:1px solid #fecaca; color:#dc2626; padding:10px 16px; border-radius:10px; font-size:.85rem; font-weight:600; margin-bottom:16px; }
 
@@ -367,7 +377,8 @@ export default function MonProfil() {
         <div className="form-actions">
           <button className="btn-cancel" onClick={handleCancel} type="button">Annuler</button>
           <button className="btn-save" onClick={handleSave} disabled={saving} type="button">
-            {saving ? "Enregistrement..." : "Enregistrer les modifications"}
+            {saving && <span className="btn-spinner" />}
+            {saving ? "Enregistrement…" : "Enregistrer les modifications"}
           </button>
         </div>
       </div>
@@ -395,6 +406,9 @@ export default function MonProfil() {
             <div className="form-field">
               <label>Confirmer le nouveau mot de passe</label>
               <input className="form-input" type="password" value={pwdConfirm} onChange={e => setPwdConfirm(e.target.value)} />
+              {pwdConfirm.length > 0 && pwdNew !== pwdConfirm && (
+                <span className="pwd-mismatch">Les mots de passe ne correspondent pas</span>
+              )}
             </div>
           </div>
           <button className="btn-pwd" onClick={handleChangePwd} type="button">Modifier le mot de passe</button>

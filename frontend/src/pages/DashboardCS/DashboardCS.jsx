@@ -738,6 +738,7 @@ export default function DashboardCS() {
   // État pour le modal mot de passe et le toast
   const [showPwd, setShowPwd] = useState(false);
   const [toast, setToast] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     try {
@@ -775,6 +776,7 @@ export default function DashboardCS() {
   };
 
   const charger = async () => {
+    setLoading(true);
     try {
       const [data, st] = await Promise.all([
         getDemandes(),
@@ -787,6 +789,8 @@ export default function DashboardCS() {
       console.error(e);
       setDemandes([]);
       setStats(normalizeStats(null));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -816,14 +820,14 @@ export default function DashboardCS() {
       setView("traitement");
     } catch (e) {
       console.error(e);
-      alert("Impossible d'ouvrir le dossier.");
+      showToast("Impossible d'ouvrir le dossier.", true);
     }
   };
 
   const openPreview = (piece) => {
     const raw = piece?.url || "";
     if (!raw) {
-      alert("Fichier introuvable.");
+      showToast("Fichier introuvable.", true);
       return;
     }
     const safe = String(raw).replace(/\\/g, "/");
@@ -856,7 +860,7 @@ export default function DashboardCS() {
       setPieces((prev) =>
         prev.map((p) => (p.id === id ? { ...p, status: null } : p))
       );
-      alert("Échec validation pièce.");
+      showToast("Échec validation pièce.", true);
     } finally {
       setPieceBusy(null);
     }
@@ -887,7 +891,7 @@ export default function DashboardCS() {
       setView("success");
     } catch (e) {
       console.error(e);
-      alert(e?.message || "Erreur lors de la génération.");
+      showToast(e?.message || "Erreur lors de la génération.", true);
     }
   };
 
@@ -907,7 +911,7 @@ export default function DashboardCS() {
       setView("dashboard");
     } catch (e) {
       console.error(e);
-      alert(e?.message || "Erreur lors du rejet.");
+      showToast(e?.message || "Erreur lors du rejet.", true);
     }
   };
 
@@ -1182,7 +1186,7 @@ export default function DashboardCS() {
                       </tr>
                     );
                   })}
-                  {filtered.length === 0 && (
+                  {!loading && filtered.length === 0 && (
                     <tr>
                       <td
                         colSpan="6"

@@ -112,6 +112,16 @@ const css = `
     transform: none; box-shadow: none;
   }
 
+  /* ── SPINNER ── */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .btn-spinner {
+    display: inline-block; width: 15px; height: 15px;
+    border: 2px solid rgba(255,255,255,.35);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin .6s linear infinite;
+    vertical-align: middle; margin-right: 6px;
+  }
+
   /* ── FOOTER ── */
   .card__footer {
     border-top: 1px solid #f1f5f9;
@@ -182,7 +192,7 @@ export default function Login() {
       if (msg === "UNAUTHORIZED") {
         setError("Session expirée. Veuillez vous reconnecter.");
       } else {
-        setError(err?.message || "Erreur réseau (backend éteint ?)");
+        setError(err?.message || "Erreur réseau. Vérifiez votre connexion.");
       }
     } finally {
       setLoading(false);
@@ -262,7 +272,8 @@ export default function Login() {
           )}
 
           <button className="btn-submit" disabled={loading}>
-            {loading ? "Connexion..." : "Se connecter"}
+            {loading && <span className="btn-spinner" />}
+            {loading ? "Connexion…" : "Se connecter"}
           </button>
         </form>
 

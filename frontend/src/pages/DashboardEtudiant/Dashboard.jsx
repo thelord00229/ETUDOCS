@@ -742,12 +742,7 @@ export default function Dashboard() {
       : [];
   });
 
-  const statusMapRef = useRef(() => {
-    const saved = localStorage.getItem(STATUSMAP_KEY);
-    return safeJsonParse(saved, {});
-  });
-  if (typeof statusMapRef.current === "function")
-    statusMapRef.current = statusMapRef.current();
+  const statusMapRef = useRef(safeJsonParse(localStorage.getItem(STATUSMAP_KEY), {}));
 
   const persistNotifs = (list) =>
     localStorage.setItem(NOTIF_KEY, JSON.stringify(list));
@@ -984,6 +979,13 @@ export default function Dashboard() {
 
       {errorMsg && <div className="hint-error">{errorMsg}</div>}
 
+      {detailDemande ? (
+        <DetailDemande
+          demande={detailDemande}
+          onBack={() => setDetailDemande(null)}
+        />
+      ) : (
+      <>
       <div className="stats-grid">
         <StatCard
           label="Demandes en cours"
@@ -1038,9 +1040,7 @@ export default function Dashboard() {
             ref_={d.ref_}
             date={d.date}
             status={d.status}
-            onDetails={() =>
-              navigate("/dashboardEtu/demandes", { state: { openId: d.id } })
-            }
+            onDetails={() => setDetailDemande(d)}
           />
         ))}
       </div>
@@ -1112,6 +1112,8 @@ export default function Dashboard() {
           <a href="tel:+22900000000">+229 XX XX XX XX</a>
         </div>
       </div>
+      </>
+      )}
     </DashboardLayout>
   );
 }

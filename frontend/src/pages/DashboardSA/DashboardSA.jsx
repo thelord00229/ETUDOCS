@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { getDemandes, avancerDemande, clearSession } from "../../services/api";
 import logo from "../../assets/logo.png";
 
@@ -756,6 +756,7 @@ function ModalVerifier({ demande, onClose, onSuccess }) {
 
 /* ─── Component principal ─────────────────────────────── */
 export default function DashboardSA() {
+  const navigate = useNavigate();
   const [demandes, setDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -818,7 +819,7 @@ export default function DashboardSA() {
     } catch (e) {
       if (e?.message === "UNAUTHORIZED") {
         clearSession();
-        window.location.href = "/login";
+        navigate("/login");
       } else {
         setError("Impossible de charger les demandes.");
       }

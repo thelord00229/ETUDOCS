@@ -176,6 +176,20 @@ const css = `
 
   button:disabled { opacity:.55; cursor:not-allowed; transform:none !important; box-shadow:none !important; }
 
+  /* ── SPINNER ── */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .btn-spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,.35);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin .6s linear infinite;
+    vertical-align: middle; margin-right: 6px;
+  }
+  .btn-spinner--dark {
+    border-color: rgba(0,0,0,.15);
+    border-top-color: var(--g700);
+  }
+
   /* ── FOOTER ── */
   .card__footer {
     border-top:1px solid var(--g100); margin-top:22px; padding-top:16px;
@@ -530,7 +544,8 @@ export default function Register() {
                 ← Retour
               </button>
               <button type="submit" className="btn-green" disabled={loading}>
-                {loading ? "Création..." : "Créer mon compte"}
+                {loading && <span className="btn-spinner" />}
+                {loading ? "Création…" : "Créer mon compte"}
               </button>
             </div>
           </form>

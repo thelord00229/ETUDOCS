@@ -70,7 +70,7 @@ const css = `
   .badge--disponible { background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; }
   .badge--attente    { background:#fffbeb; color:#d97706; border:1px solid #fde68a; }
   .badge--rejete     { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
-  .badge--expire     { <background: id="f"></background:>1f5f9; color:#64748b; border:1px solid #e2e8f0; }
+  .badge--expire     { background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; }
 
   .state-box { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:18px 20px; color:#475569; }
   .state-error { color:#dc2626; }

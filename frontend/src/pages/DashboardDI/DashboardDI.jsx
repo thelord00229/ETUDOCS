@@ -660,7 +660,7 @@ export default function DashboardDI() {
       const url = window.URL.createObjectURL(blob);
       setPreview({ url, name: reference });
     } catch (e) {
-      alert(e?.message || "Impossible d'ouvrir le document");
+      showToast(e?.message || "Impossible d'ouvrir le document", true);
     }
   };
 

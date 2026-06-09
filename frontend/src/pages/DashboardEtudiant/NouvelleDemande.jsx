@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
 import Stepper from "../../components/DashboardEtudiant/Stepper.jsx";
 import { submitDemande } from "../../services/api";
+import Toast from "../../components/Toast.jsx";
+import { useToast } from "../../hooks/useToast.js";
 
 const css = `
   /* PAGE HEADER */
@@ -143,6 +145,16 @@ const css = `
     cursor:pointer; transition:background .2s;
   }
   .btn-submit-green:hover { background:#15803d; }
+  .btn-submit-green:disabled { opacity:.6; cursor:not-allowed; }
+
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .btn-spinner {
+    display:inline-block; width:14px; height:14px;
+    border:2px solid rgba(255,255,255,.35);
+    border-top-color:#fff; border-radius:50%;
+    animation:spin .6s linear infinite;
+    vertical-align:middle; margin-right:6px;
+  }
 `;
 
 const DOCS = [
@@ -214,6 +226,7 @@ export default function NouvelleDemande() {
   const [copied, setCopied] = useState(false);
   const [anneeAcademique, setAnneeAcademique] = useState("");
   const navigate = useNavigate();
+  const { toast, showToast, hideToast } = useToast();
 
   const cipInputRef  = useRef(null);
   const qttInputRef  = useRef(null);
@@ -335,8 +348,7 @@ export default function NouvelleDemande() {
             </div>
           )}
 
-          <div className="step-nav">
-            <div />
+          <div className="step-nav" style={{ justifyContent:"flex-end" }}>
             <button className="btn-next" disabled={!step1Ok} onClick={() => setStep(1)} type="button">
               Continuer <span>→</span>
             </button>
@@ -530,18 +542,21 @@ export default function NouvelleDemande() {
                   await submitDemande(payload);
                   navigate("/dashboardEtu/demandes");
                 } catch (e) {
-                  alert(e?.message || "Erreur lors de la soumission");
+                  showToast(e?.message || "Erreur lors de la soumission", "error");
                 } finally {
                   setLoading(false);
                 }
               }}
               type="button"
             >
-              <CheckCircle /> {loading ? "Soumission..." : "Soumettre ma demande"}
+              {loading && <span className="btn-spinner" />}
+              {loading ? "Soumission…" : "Soumettre ma demande"}
             </button>
           </div>
         </>
       )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
     </DashboardLayout>
   );
 }

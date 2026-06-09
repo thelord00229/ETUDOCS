@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
 import { getDemandes, downloadDocument, previewDocumentBlob } from "../../services/api";
+import Toast from "../../components/Toast.jsx";
+import { useToast } from "../../hooks/useToast.js";
 
 const MAX_DL = 3;
 
@@ -200,6 +202,7 @@ function DocCard({ doc, onDownload }) {
   const [localCount, setLocalCount]   = useState(doc.downloadCount ?? 0);
   const [pulseLast, setPulseLast]     = useState(false);
   const [previewUrl, setPreviewUrl]   = useState(null);
+  const { toast, showToast, hideToast } = useToast();
 
   const exhausted = localCount >= MAX_DL;
 
@@ -234,14 +237,14 @@ function DocCard({ doc, onDownload }) {
       setPulseLast(true);
       setTimeout(() => setPulseLast(false), 600);
     } catch (e) {
-      alert(e?.message || "Téléchargement impossible");
+      showToast(e?.message || "Téléchargement impossible", "error");
     } finally {
       setDownloading(false);
     }
   };
 
   const handlePay = () => {
-    alert("Redirection vers le paiement — à intégrer.");
+    showToast("Paiement bientôt disponible.", "info");
   };
 
   const pipColor = (i) => {
@@ -338,6 +341,7 @@ function DocCard({ doc, onDownload }) {
           </button>
         )}
       </div>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
     </div>
   );
 }

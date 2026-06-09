@@ -138,6 +138,27 @@ const css = `
     width: 52px; height: 52px; border-radius: 50%; background: #fef2f2;
     display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
   }
+
+  /* ── Toast notifications ── */
+  .sa-toast {
+    position: fixed; bottom: 28px; right: 28px; z-index: 9999;
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 20px; border-radius: 12px; min-width: 260px; max-width: 380px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.14);
+    font-family: 'DM Sans', sans-serif; font-size: .9rem; font-weight: 500;
+    animation: toastIn .22s ease;
+  }
+  .sa-toast.success { background: #f0fdf4; color: #15803d; border: 1.5px solid #bbf7d0; }
+  .sa-toast.error   { background: #fef2f2; color: #dc2626; border: 1.5px solid #fecaca; }
+  @keyframes toastIn { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: translateY(0); } }
+
+  /* ── Spinner chargement ── */
+  .sa-spinner {
+    display: inline-block; width: 20px; height: 20px;
+    border: 2px solid #e2e8f0; border-top-color: #1a2744;
+    border-radius: 50%; animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 `;
 
 /* ─── Composant logo institution ─── */
@@ -275,8 +296,10 @@ function ModalAddAgent({ onClose, onSubmit, loading, institutions }) {
     institutionId: "",
     service: "",
   });
+  const [fieldError, setFieldError] = useState("");
 
   const set = (k, v) => {
+    setFieldError("");
     setForm((f) => ({
       ...f,
       [k]: v,
@@ -289,12 +312,12 @@ function ModalAddAgent({ onClose, onSubmit, loading, institutions }) {
 
     // ✅ Institution obligatoire
     if (!form.institutionId) {
-      alert("Veuillez sélectionner une institution");
+      setFieldError("Veuillez sélectionner une institution");
       return;
     }
 
     if (form.role === "CHEF_DIVISION" && !form.service) {
-      alert("Veuillez sélectionner le service du Chef de division");
+      setFieldError("Veuillez sélectionner le service du Chef de division");
       return;
     }
 
@@ -403,6 +426,12 @@ function ModalAddAgent({ onClose, onSubmit, loading, institutions }) {
           )}
         </div>
 
+        {fieldError && (
+          <p style={{ color: "#dc2626", fontSize: ".82rem", marginTop: 10, fontFamily: "'DM Sans', sans-serif" }}>
+            {fieldError}
+          </p>
+        )}
+
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose} disabled={loading}>
             Annuler
@@ -437,6 +466,13 @@ export default function SAAgents() {
   // ✅ Institutions (pour le select)
   const [institutions, setInstitutions] = useState([]);
 
+  // ── Toast ──
+  const [toast, setToast] = useState(null); // { message, type: 'success'|'error' }
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
   /* ── Chargement agents ── */
   const loadAgents = async () => {
     setLoading(true);
@@ -450,7 +486,7 @@ export default function SAAgents() {
       );
     } catch (err) {
       console.error(err);
-      alert("Erreur lors du chargement des agents");
+      showToast("Erreur lors du chargement des agents", "error");
     } finally {
       setLoading(false);
     }
@@ -481,7 +517,7 @@ export default function SAAgents() {
       );
     } catch (err) {
       console.error(err);
-      alert("Erreur lors du changement de statut");
+      showToast("Erreur lors du changement de statut", "error");
     }
   };
 
@@ -492,9 +528,10 @@ export default function SAAgents() {
       await deleteAgent(toDelete.id);
       setAgents((prev) => prev.filter((a) => a.id !== toDelete.id));
       setToDelete(null);
+      showToast("Agent supprimé avec succès", "success");
     } catch (err) {
       console.error(err);
-      alert("Erreur lors de la suppression");
+      showToast("Erreur lors de la suppression", "error");
     } finally {
       setModalLoading(false);
     }
@@ -506,10 +543,10 @@ export default function SAAgents() {
     try {
       await sendMailToAgent(toMail.id, { subject, body });
       setToMail(null);
-      alert("Mail envoyé avec succès !");
+      showToast("Mail envoyé avec succès !", "success");
     } catch (err) {
       console.error(err);
-      alert("Erreur lors de l'envoi du mail");
+      showToast("Erreur lors de l'envoi du mail", "error");
     } finally {
       setModalLoading(false);
     }
@@ -524,7 +561,7 @@ export default function SAAgents() {
       setShowAddModal(false);
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.message || "Erreur lors de la création de l'agent");
+      showToast(err?.response?.data?.message || "Erreur lors de la création de l'agent", "error");
     } finally {
       setModalLoading(false);
     }
@@ -599,7 +636,7 @@ export default function SAAgents() {
       <div className="agents-table-wrap">
         {loading ? (
           <div style={{ padding: "40px", textAlign: "center", color: "#94a3b8" }}>
-            Chargement…
+            <span className="sa-spinner" />
           </div>
         ) : (
           <table className="agents-tbl">
@@ -724,6 +761,24 @@ export default function SAAgents() {
           loading={modalLoading}
           institutions={institutions} // ✅ PASSER LA LISTE
         />
+      )}
+
+      {/* ── Toast ── */}
+      {toast && (
+        <div className={`sa-toast ${toast.type}`}>
+          {toast.type === "success" ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          )}
+          {toast.message}
+        </div>
       )}
     </SALayout>
   );

@@ -45,6 +45,15 @@ const css = `
     background:#fff; border:1.5px solid #e2e8f0; border-radius:16px; padding:18px;
     color:#64748b; font-size:.9rem;
   }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .sa-spinner-center {
+    display: flex; justify-content: center; padding: 40px 0;
+  }
+  .sa-spinner {
+    display: inline-block; width: 28px; height: 28px;
+    border: 3px solid #e2e8f0; border-top-color: #1a2744; border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
   @media (max-width: 900px) { .inst-grid { grid-template-columns: 1fr; } }
 `;
 
@@ -151,7 +160,7 @@ export default function SAInstitutions() {
       </div>
 
       {loading ? (
-        <div className="sa-empty">Chargement...</div>
+        <div className="sa-spinner-center"><span className="sa-spinner" /></div>
       ) : institutions.length === 0 ? (
         <div className="sa-empty">
           Aucune institution trouvée. Vérifie l’API <code>/api/admin/institutions</code>.
@@ -186,49 +195,10 @@ export default function SAInstitutions() {
                   </div>
                 </div>
 
-                {/* <button className="btn-params" type="button">
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="3" />
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
-                  </svg>
-                  Paramètres
-                </button> */}
               </div>
             );
           })}
 
-          {/* <div className="add-inst-card">
-            <div className="add-inst-card__icon">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#94a3b8"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
-              </svg>
-            </div>
-            <div className="add-inst-card__title">Ajouter une institution</div>
-            <div className="add-inst-card__sub">
-              Connectez une nouvelle institution à EtuDocs
-            </div>
-            <button className="btn-add-inst" type="button">
-              Ajouter une institution
-            </button>
-          </div> */}
         </div>
       )}
     </SALayout>

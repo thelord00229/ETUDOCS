@@ -648,14 +648,16 @@ export default function DashboardDA() {
   }, [rows, search]);
 
   const openPreview = async (reference) => {
-    if (!reference || reference === "—")
-      return alert("Aucune référence trouvée.");
+    if (!reference || reference === "—") {
+      showToast("Aucune référence trouvée.", true);
+      return;
+    }
     try {
       const blob = await previewDocumentBlob(reference);
       const url = window.URL.createObjectURL(blob);
       setPreview({ url, name: reference });
     } catch (e) {
-      alert(e?.message || "Impossible d'ouvrir le document");
+      showToast(e?.message || "Impossible d'ouvrir le document", true);
     }
   };
 

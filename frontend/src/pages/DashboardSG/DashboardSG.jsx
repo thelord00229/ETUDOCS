@@ -604,7 +604,7 @@ export default function DashboardSG() {
     } catch (e) {
       console.error(e);
       setDemandes([]);
-      alert(e?.message || "Erreur chargement demandes");
+      showToast(e?.message || "Erreur chargement demandes", true);
     } finally {
       setLoading(false);
     }
@@ -639,7 +639,7 @@ export default function DashboardSG() {
       await charger();
     } catch (e) {
       console.error(e);
-      alert(e?.message || "Erreur transmission");
+      showToast(e?.message || "Erreur transmission", true);
     } finally {
       setBusyId(null);
     }
@@ -648,7 +648,7 @@ export default function DashboardSG() {
   const openPreview = async (demande) => {
     const reference = getReferenceDoc(demande);
     if (!reference || reference === "—") {
-      alert("Aucune référence de document trouvée.");
+      showToast("Aucune référence de document trouvée.", true);
       return;
     }
     try {
@@ -657,7 +657,7 @@ export default function DashboardSG() {
       setPreview({ url, name: reference });
     } catch (e) {
       console.error(e);
-      alert(e?.message || "Impossible d'ouvrir le document");
+      showToast(e?.message || "Impossible d'ouvrir le document", true);
     }
   };
 
@@ -941,11 +941,7 @@ export default function DashboardSG() {
                 style={{ width: "100%", height: "100%", border: "none" }}
               />
             </div>
-            <div className="sg-modal__actions">
-              <button className="sg-btn outline" onClick={closePreview}>
-                Fermer
-              </button>
-            </div>
+            <div className="sg-modal__actions" />
           </div>
         </div>
       )}

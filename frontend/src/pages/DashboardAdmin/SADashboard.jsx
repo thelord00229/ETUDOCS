@@ -22,6 +22,18 @@ const css = `
   .activity-title { font-family: 'Sora', sans-serif; font-weight: 600; font-size: .88rem; color: #1a2744; margin-bottom: 2px; }
   .activity-sub   { font-size: .8rem; color: #475569; margin-bottom: 2px; }
   .activity-time  { font-size: .75rem; color: #94a3b8; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .sa-spinner {
+    display: inline-block; width: 28px; height: 28px;
+    border: 3px solid #e2e8f0; border-top-color: #1a2744; border-radius: 50%;
+    animation: spin .7s linear infinite;
+    margin: 40px auto; display: block;
+  }
+  .sa-error-block {
+    background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px;
+    padding: 14px 18px; color: #b91c1c; font-size: .9rem;
+    display: flex; align-items: center; gap: 10px;
+  }
   @media (max-width: 900px) {
     .sa-stats-grid { grid-template-columns: repeat(2, 1fr); }
     .sa-2col { grid-template-columns: 1fr; }
@@ -115,9 +127,14 @@ export default function SADashboard() {
       </div>
 
       {loading ? (
-        <div>Chargement...</div>
+        <div style={{ textAlign: "center", padding: "40px 0" }}>
+          <span className="sa-spinner" />
+        </div>
       ) : !stats ? (
-        <div style={{ padding: 16, color: "#dc2626" }}>
+        <div className="sa-error-block">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
           Impossible de charger les statistiques.
         </div>
       ) : (
@@ -168,43 +185,11 @@ export default function SADashboard() {
               </table>
             </div>
 
-            {/* Activité système : tu peux la garder statique pour l’instant */}
             <div className="sa-card">
               <div className="sa-card__title">Activité système</div>
-              <div className="activity-list">
-                <div className="activity-item">
-                  <div className="activity-dot" />
-                  <div>
-                    <div className="activity-title">Nouvel agent ajouté</div>
-                    <div className="activity-sub">—</div>
-                    <div className="activity-time">—</div>
-                  </div>
-                </div>
-                <div className="activity-item">
-                  <div className="activity-dot" />
-                  <div>
-                    <div className="activity-title">Signature mise à jour</div>
-                    <div className="activity-sub">—</div>
-                    <div className="activity-time">—</div>
-                  </div>
-                </div>
-                <div className="activity-item">
-                  <div className="activity-dot" />
-                  <div>
-                    <div className="activity-title">Import de données académiques</div>
-                    <div className="activity-sub">—</div>
-                    <div className="activity-time">—</div>
-                  </div>
-                </div>
-                <div className="activity-item">
-                  <div className="activity-dot" />
-                  <div>
-                    <div className="activity-title">Nouvelle demande validée</div>
-                    <div className="activity-sub">—</div>
-                    <div className="activity-time">—</div>
-                  </div>
-                </div>
-              </div>
+              <p style={{ color: "#94a3b8", fontStyle: "italic", fontSize: ".9rem", padding: "8px 0" }}>
+                Aucune activité récente
+              </p>
             </div>
           </div>
         </>
