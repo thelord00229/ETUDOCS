@@ -275,6 +275,9 @@ const css = `
     .stepper { flex-wrap: wrap; gap: 16px; }
     .stepper::before { display: none; }
   }
+  @media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr; }
+  }
 `;
 
 /* ─────────────────────────────────────────────────────────────

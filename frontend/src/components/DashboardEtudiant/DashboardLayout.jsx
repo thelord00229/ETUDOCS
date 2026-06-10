@@ -17,6 +17,21 @@ const css = `
     display:flex; flex-direction:column; gap:24px;
     padding-bottom:48px;
   }
+  .dash-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 150;
+  }
+  .dash-overlay--visible { display: block; }
+
+  @media (max-width: 768px) {
+    .dash-main { margin-left: 0; }
+    .dash-content { padding: 20px 16px; gap: 16px; }
+  }
+  @media (max-width: 480px) {
+    .dash-content { padding: 14px 12px; gap: 12px; }
+  }
 `;
 
 const labelType = (t) => {
@@ -56,15 +71,12 @@ const normalizeInst = (v) =>
     .toUpperCase();
 
 function getInstitutionCodeFromUser(user) {
-  // priorité : user.institution.sigle
   const sigle = normalizeInst(user?.institution?.sigle);
   if (sigle) return sigle;
 
-  // fallback : parfois on stocke le code dans institutionId par erreur
   const maybeCode = normalizeInst(user?.institutionId);
   if (["IFRI", "EPAC", "FSS"].includes(maybeCode)) return maybeCode;
 
-  // fallback localStorage (défini au login)
   const stored = normalizeInst(localStorage.getItem("etudocs_institution"));
   if (stored) return stored;
 
@@ -78,17 +90,16 @@ export default function DashboardLayout({ children }) {
   const nom = user.nom || "";
   const fullName = `${prenom} ${nom}`.trim() || "Étudiant";
 
-  // ✅ source fiable
   const email = user.email || "";
   const initials = `${prenom[0] || ""}${nom[0] || ""}`.toUpperCase() || "EU";
 
-  // ✅ TU VEUX TOUJOURS L'EMAIL
   const meta = email;
 
-  // ✅ institution code pour adapter branding
   const instCode = useMemo(() => getInstitutionCodeFromUser(user), [user]);
 
   const [notifications, setNotifications] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -100,7 +111,6 @@ export default function DashboardLayout({ children }) {
         const notifs = [];
 
         for (const d of demandes) {
-          // ✅ Notification document disponible
           if (d.statut === "DISPONIBLE") {
             const id = `${d.id}-DISPONIBLE`;
             if (!dismissed.includes(id)) {
@@ -114,7 +124,6 @@ export default function DashboardLayout({ children }) {
             }
           }
 
-          // ✅ Notification rejet avec commentaire
           if (d.statut === "REJETEE" || d.statut === "REJETE") {
             const id = `${d.id}-REJET`;
             if (!dismissed.includes(id)) {
@@ -156,10 +165,20 @@ export default function DashboardLayout({ children }) {
     <div className="dash-layout">
       <style>{css}</style>
 
-      {/* ✅ on passe l'institution pour branding */}
-      <Sidebar institution={instCode} />
+      <div
+        className={`dash-overlay${sidebarOpen ? " dash-overlay--visible" : ""}`}
+        onClick={() => setSidebarOpen(false)}
+      />
 
-      <div className="dash-main">
+      <Sidebar
+        institution={instCode}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(v => !v)}
+      />
+
+      <div className="dash-main" style={{ marginLeft: sidebarCollapsed ? 62 : 200, transition: 'margin-left 0.25s ease' }}>
         <TopBar
           name={fullName}
           meta={meta}
@@ -168,6 +187,7 @@ export default function DashboardLayout({ children }) {
           notifications={notifications}
           onDeleteNotif={handleDelete}
           onClearAllNotifs={handleClearAll}
+          onMenuToggle={() => setSidebarOpen((v) => !v)}
         />
         <div className="dash-content">{children}</div>
       </div>

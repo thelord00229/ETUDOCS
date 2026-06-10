@@ -21,7 +21,24 @@ const css = `
     display: flex; flex-direction: column;
     position: fixed; top: 0; left: 0; bottom: 0; z-index: 50;
     padding-bottom: 24px;
+    transition: width 0.25s ease, transform .25s ease;
+    overflow: hidden;
   }
+  /* ── COLLAPSE ── */
+  .agent-sidebar--collapsed { width: 62px; }
+  .agent-sidebar--collapsed .agent-sidebar__brand { justify-content: center; padding: 20px 0; }
+  .agent-sidebar--collapsed .agent-sidebar__brand-name { display: none; }
+  .agent-sidebar--collapsed .agent-sidebar__link { justify-content: center; gap: 0; padding: 11px 0; }
+  .agent-sidebar--collapsed .agent-sidebar__link-label { display: none; }
+  .agent-sidebar--collapsed .agent-sidebar__logout { justify-content: center; gap: 0; padding: 11px 0; }
+  .agent-sidebar--collapsed .agent-sidebar__logout-label { display: none; }
+  .agent-sidebar__toggle {
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer; width: 100%;
+    padding: 8px; color: #94a3b8; transition: color .15s;
+  }
+  .agent-sidebar__toggle:hover { color: #2e7d32; }
+  @media (max-width: 768px) { .agent-sidebar--collapsed { width: 220px; } }
   .agent-sidebar__brand {
     display: flex; align-items: center; gap: 10px;
     padding: 20px 20px 20px;
@@ -337,6 +354,28 @@ const css = `
   }
   .sa-toast--error { background: #dc2626; }
   @keyframes sa-toast-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── RESPONSIVE ── */
+  .agent-sidebar { z-index: 200; transition: transform .25s ease; }
+  .agent-sidebar--open { transform: translateX(0) !important; box-shadow: 4px 0 24px rgba(0,0,0,.12); }
+  .agent-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 150; }
+  .agent-overlay--visible { display: block; }
+  .agent-topbar__burger { display: none; background: none; border: none; cursor: pointer; color: #475569; padding: 6px; border-radius: 8px; transition: background .15s; }
+  .agent-topbar__burger:hover { background: #f1f5f9; }
+  @media (max-width: 1024px) {
+    .agent-stats { grid-template-columns: 1fr 1fr !important; }
+  }
+  @media (max-width: 768px) {
+    .agent-sidebar { transform: translateX(-220px); }
+    .agent-main { margin-left: 0 !important; }
+    .agent-topbar { padding: 0 16px; }
+    .agent-topbar__burger { display: flex; align-items: center; justify-content: center; }
+    .agent-topbar__info { display: none; }
+  }
+  @media (max-width: 480px) {
+    .agent-stats { grid-template-columns: 1fr !important; }
+    .agent-content { padding: 16px !important; }
+  }
 `;
 
 const NAV = [
@@ -769,6 +808,8 @@ export default function DashboardSA() {
   const [selected, setSelected] = useState(null);
   const [showPwd, setShowPwd] = useState(false);
   const [toast, setToast] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Compteur de transmissions persisté dans localStorage.
   // On stocke les IDs pour éviter les doublons (même demande transmise deux fois).
@@ -906,8 +947,10 @@ export default function DashboardSA() {
         />
       )}
 
+      <div className={`agent-overlay${sidebarOpen ? " agent-overlay--visible" : ""}`} onClick={() => setSidebarOpen(false)} />
+
       {/* ── SIDEBAR ── */}
-      <aside className="agent-sidebar">
+      <aside className={`agent-sidebar${sidebarOpen ? " agent-sidebar--open" : ""}${sidebarCollapsed ? " agent-sidebar--collapsed" : ""}`}>
         {/* Logo identique au dashboard étudiant */}
         <a href="/dashboardsa" className="agent-sidebar__brand">
           <img src={logo} alt="EtuDocs" className="agent-sidebar__brand-logo" />
@@ -923,6 +966,7 @@ export default function DashboardSA() {
               className={({ isActive }) =>
                 "agent-sidebar__link" + (isActive ? " active" : "")
               }
+              title={sidebarCollapsed ? n.label : undefined}
             >
               <svg
                 width="18"
@@ -935,7 +979,7 @@ export default function DashboardSA() {
               >
                 <path d={n.d} />
               </svg>
-              {n.label}
+              <span className="agent-sidebar__link-label">{n.label}</span>
             </NavLink>
           ))}
 
@@ -943,6 +987,7 @@ export default function DashboardSA() {
           <button
             className="agent-sidebar__link"
             onClick={() => setShowPwd(true)}
+            title={sidebarCollapsed ? "Modifier mot de passe" : undefined}
           >
             <svg
               width="18"
@@ -956,13 +1001,25 @@ export default function DashboardSA() {
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
-            Modifier mot de passe
+            <span className="agent-sidebar__link-label">Modifier mot de passe</span>
           </button>
         </nav>
 
         <div className="agent-sidebar__divider" />
 
-        <button className="agent-sidebar__logout" onClick={handleLogout}>
+        <button
+          className="agent-sidebar__toggle"
+          onClick={() => setSidebarCollapsed(v => !v)}
+          type="button"
+          aria-label={sidebarCollapsed ? "Agrandir le menu" : "Réduire le menu"}
+          title={sidebarCollapsed ? "Agrandir le menu" : "Réduire le menu"}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d={sidebarCollapsed ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"} />
+          </svg>
+        </button>
+
+        <button className="agent-sidebar__logout" onClick={handleLogout} title={sidebarCollapsed ? "Déconnexion" : undefined}>
           <svg
             width="18"
             height="18"
@@ -974,15 +1031,20 @@ export default function DashboardSA() {
           >
             <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
-          Déconnexion
+          <span className="agent-sidebar__logout-label">Déconnexion</span>
         </button>
       </aside>
 
       {/* ── MAIN ── */}
-      <div className="agent-main">
+      <div className="agent-main" style={{ marginLeft: sidebarCollapsed ? 62 : 220, transition: 'margin-left 0.25s ease' }}>
         <header className="agent-topbar">
-          <div className="agent-topbar__role">
-            Secrétaire Adjoint — {institution}
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <button className="agent-topbar__burger" type="button" onClick={() => setSidebarOpen(v => !v)} aria-label="Menu">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+            </button>
+            <div className="agent-topbar__role">
+              Secrétaire Adjoint — {institution}
+            </div>
           </div>
           <div className="agent-topbar__right">
             <button className="agent-topbar__notif">

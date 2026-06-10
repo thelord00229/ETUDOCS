@@ -155,6 +155,13 @@ const css = `
     animation:spin .6s linear infinite;
     vertical-align:middle; margin-right:6px;
   }
+
+  @media (max-width: 768px) {
+    .step2-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .doc-grid { grid-template-columns: 1fr; }
+  }
 `;
 
 const DOCS = [

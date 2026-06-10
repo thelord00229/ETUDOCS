@@ -54,6 +54,9 @@ const Toast = ({ message, type = "info", onClose }) => {
           color: inherit;
         }
         .etd-toast-close:hover { opacity: 1; }
+        @media (max-width: 480px) {
+          .etd-toast { right: 12px; left: 12px; max-width: none; bottom: 16px; }
+        }
       `}</style>
       <div
         className="etd-toast"

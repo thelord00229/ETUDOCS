@@ -201,6 +201,46 @@ const css = `
   .sa-toast { position:fixed; bottom:28px; right:28px; z-index:400; background:var(--uac); color:#fff; padding:13px 20px; border-radius:11px; font-family:'DM Sans',sans-serif; font-size:.88rem; font-weight:500; box-shadow:0 8px 30px rgba(0,0,0,.2); animation:sa-toast-in .2s ease; }
   .sa-toast--error { background:var(--danger); }
   @keyframes sa-toast-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── COLLAPSE ── */
+  .agent-sidebar { transition:width 0.25s ease, transform .25s ease; overflow:hidden; }
+  .agent-sidebar--collapsed { width:62px; }
+  .agent-sidebar--collapsed .agent-sidebar__brand { justify-content:center; padding:22px 0; }
+  .agent-sidebar--collapsed .agent-sidebar__brand-name { display:none; }
+  .agent-sidebar--collapsed .agent-sidebar__brand-tag { display:none; }
+  .agent-sidebar--collapsed .agent-sidebar__link { justify-content:center; gap:0; padding:11px 0; }
+  .agent-sidebar--collapsed .agent-sidebar__link-label { display:none; }
+  .agent-sidebar--collapsed .agent-sidebar__logout { justify-content:center; gap:0; padding:11px 0; }
+  .agent-sidebar--collapsed .agent-sidebar__logout-label { display:none; }
+  .agent-sidebar__toggle { display:flex; align-items:center; justify-content:center; background:none; border:none; cursor:pointer; width:100%; padding:8px; color:#94a3b8; transition:color .15s; }
+  .agent-sidebar__toggle:hover { color:#2e7d32; }
+  @media (max-width:768px) { .agent-sidebar--collapsed { width:220px; } }
+
+  /* ── RESPONSIVE ── */
+  .agent-sidebar { z-index:200; }
+  .agent-sidebar--open { transform:translateX(0) !important; box-shadow:4px 0 24px rgba(0,0,0,.12); }
+  .agent-sidebar__close { display:none; position:absolute; top:12px; right:12px; background:none; border:none; cursor:pointer; color:#64748b; font-size:1.1rem; padding:4px 8px; border-radius:6px; }
+  .agent-sidebar__close:hover { background:#f1f5f9; }
+  .cs-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:150; }
+  .cs-overlay--visible { display:block; }
+  .agent-topbar__burger { display:none; background:none; border:none; cursor:pointer; color:#475569; padding:6px; border-radius:8px; transition:background .15s; }
+  .agent-topbar__burger:hover { background:#f1f5f9; }
+  @media (max-width: 1024px) {
+    .agent-stats { grid-template-columns:1fr 1fr !important; }
+    .traitement-grid { grid-template-columns:1fr !important; }
+  }
+  @media (max-width: 768px) {
+    .agent-sidebar { transform:translateX(-220px); }
+    .agent-main { margin-left:0 !important; }
+    .agent-topbar { padding:0 16px; }
+    .agent-topbar__burger { display:flex; align-items:center; justify-content:center; }
+    .agent-topbar__info { display:none; }
+    .agent-sidebar__close { display:flex; align-items:center; justify-content:center; }
+  }
+  @media (max-width: 480px) {
+    .agent-stats { grid-template-columns:1fr !important; }
+    .agent-content { padding:16px !important; }
+  }
 `;
 
 const NAV = [
@@ -492,9 +532,10 @@ function ModalMotDePasse({ onClose, onSuccess }) {
 }
 
 // ── Sidebar & Topbar ─────────────────────────────────────
-function Sidebar({ onLogout, onChangePwd }) {
+function Sidebar({ onLogout, onChangePwd, open, onClose, collapsed, onToggleCollapse }) {
   return (
-    <aside className="agent-sidebar">
+    <aside className={`agent-sidebar${open ? " agent-sidebar--open" : ""}${collapsed ? " agent-sidebar--collapsed" : ""}`}>
+      <button className="agent-sidebar__close" onClick={onClose} type="button" aria-label="Fermer">✕</button>
       <NavLink to="/dashboardsc" className="agent-sidebar__brand">
         <div className="agent-sidebar__brand-icon">
           <svg
@@ -511,7 +552,7 @@ function Sidebar({ onLogout, onChangePwd }) {
             <polyline points="14 2 14 8 20 8" />
           </svg>
         </div>
-        EtuDocs <span className="agent-sidebar__brand-tag">Agent</span>
+        <span className="agent-sidebar__brand-name">EtuDocs </span><span className="agent-sidebar__brand-tag">Agent</span>
       </NavLink>
 
       <nav className="agent-sidebar__nav">
@@ -523,6 +564,7 @@ function Sidebar({ onLogout, onChangePwd }) {
             className={({ isActive }) =>
               "agent-sidebar__link" + (isActive ? " active" : "")
             }
+            title={collapsed ? n.label : undefined}
           >
             <svg
               width="18"
@@ -536,7 +578,7 @@ function Sidebar({ onLogout, onChangePwd }) {
             >
               <path d={n.d} />
             </svg>
-            {n.label}
+            <span className="agent-sidebar__link-label">{n.label}</span>
           </NavLink>
         ))}
 
@@ -545,6 +587,7 @@ function Sidebar({ onLogout, onChangePwd }) {
           className="agent-sidebar__link"
           onClick={onChangePwd}
           type="button"
+          title={collapsed ? "Modifier mot de passe" : undefined}
         >
           <svg
             width="18"
@@ -559,14 +602,27 @@ function Sidebar({ onLogout, onChangePwd }) {
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
           </svg>
-          Modifier mot de passe
+          <span className="agent-sidebar__link-label">Modifier mot de passe</span>
         </button>
       </nav>
+
+      <button
+        className="agent-sidebar__toggle"
+        onClick={onToggleCollapse}
+        type="button"
+        aria-label={collapsed ? "Agrandir le menu" : "Réduire le menu"}
+        title={collapsed ? "Agrandir le menu" : "Réduire le menu"}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d={collapsed ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"} />
+        </svg>
+      </button>
 
       <button
         className="agent-sidebar__logout"
         onClick={onLogout}
         type="button"
+        title={collapsed ? "Déconnexion" : undefined}
       >
         <svg
           width="18"
@@ -580,13 +636,13 @@ function Sidebar({ onLogout, onChangePwd }) {
         >
           <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
         </svg>
-        Déconnexion
+        <span className="agent-sidebar__logout-label">Déconnexion</span>
       </button>
     </aside>
   );
 }
 
-function Topbar({ user }) {
+function Topbar({ user, onMenuToggle }) {
   const initials = useMemo(() => {
     const nom = user?.nom || "";
     const prenom = user?.prenom || "";
@@ -600,6 +656,7 @@ function Topbar({ user }) {
 
   return (
     <header className="agent-topbar">
+      <button className="agent-topbar__burger" onClick={onMenuToggle} type="button" aria-label="Menu">☰</button>
       <div className="agent-topbar__role">Chef Div. Scolarité — IFRI</div>
       <div className="agent-topbar__right">
         <button
@@ -743,6 +800,8 @@ export default function DashboardCS() {
   const [showPwd, setShowPwd] = useState(false);
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     try {
@@ -948,9 +1007,10 @@ export default function DashboardCS() {
       <div className="agent-layout">
         <style>{css}</style>
         {sharedOverlays}
-        <Sidebar onLogout={logout} onChangePwd={() => setShowPwd(true)} />
-        <div className="agent-main">
-          <Topbar user={user} />
+        <div className={`cs-overlay${sidebarOpen ? " cs-overlay--visible" : ""}`} onClick={() => setSidebarOpen(false)} />
+        <Sidebar onLogout={logout} onChangePwd={() => setShowPwd(true)} open={sidebarOpen} onClose={() => setSidebarOpen(false)} collapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(v => !v)} />
+        <div className="agent-main" style={{ marginLeft: sidebarCollapsed ? 62 : 220, transition: 'margin-left 0.25s ease' }}>
+          <Topbar user={user} onMenuToggle={() => setSidebarOpen(v => !v)} />
           <div className="agent-content">
             <div className="agent-page-header">
               <div>
@@ -1205,8 +1265,8 @@ export default function DashboardCS() {
       <div className="agent-layout">
         <style>{css}</style>
         {sharedOverlays}
-        <Sidebar onLogout={logout} onChangePwd={() => setShowPwd(true)} />
-        <div className="agent-main">
+        <Sidebar onLogout={logout} onChangePwd={() => setShowPwd(true)} collapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(v => !v)} />
+        <div className="agent-main" style={{ marginLeft: sidebarCollapsed ? 62 : 220, transition: 'margin-left 0.25s ease' }}>
           <Topbar user={user} />
           <div
             className="agent-content"
@@ -1265,8 +1325,8 @@ export default function DashboardCS() {
     <div className="agent-layout">
       <style>{css}</style>
       {sharedOverlays}
-      <Sidebar onLogout={logout} onChangePwd={() => setShowPwd(true)} />
-      <div className="agent-main">
+      <Sidebar onLogout={logout} onChangePwd={() => setShowPwd(true)} collapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(v => !v)} />
+      <div className="agent-main" style={{ marginLeft: sidebarCollapsed ? 62 : 220, transition: 'margin-left 0.25s ease' }}>
         <Topbar user={user} />
         <div className="agent-content">
           {/* Back + header */}

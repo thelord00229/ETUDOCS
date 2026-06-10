@@ -658,10 +658,49 @@ color: var(--uac-green);
     right: 5rem;
   }
 
+  /* ── RESPONSIVE ── */
+  .nav__burger { display:none; background:none; border:none; cursor:pointer; font-size:1.4rem; color:var(--text); padding:4px 8px; line-height:1; }
+
+  @media (max-width: 768px) {
+    .nav { padding:1rem 1.5rem; position:relative; align-items:center; }
+    .nav_products {
+      display:none; flex-direction:column; position:absolute; top:100%; left:0; right:0;
+      background:var(--bg-secondary); border-bottom:1px solid var(--border);
+      padding:1rem 1.5rem; gap:1rem; z-index:500;
+    }
+    .nav--open .nav_products { display:flex; }
+    .nav__burger { display:block; }
+
+    .hero { flex-direction:column; padding:2rem 1.5rem; }
+    .hero_content_left { width:100%; margin-left:0; }
+    .hero_photo { width:100%; max-height:320px; overflow:hidden; }
+
+    .services_content_down_item_1 { flex-direction:column; gap:2rem; }
+    .services-container-photo { width:100%; height:240px; }
+    .services-content-right { max-width:100%; }
+
+    iframe { width:100%; max-width:760px; height:clamp(220px, 56vw, 450px); }
+
+    #faq-real { flex-direction:column; width:95%; }
+    #faq-images { display:none; }
+    #faq-questions { width:100%; }
+    #faq h1 { transform:none; }
+
+    #footer1-content { flex-direction:column; }
+    #footer { padding:2rem 1.5rem; }
+  }
+
+  @media (max-width: 480px) {
+    .hero { padding:1.5rem 1rem; }
+    .hero_buttons { flex-direction:column; gap:1rem; align-items:center; }
+    .services { padding:1.5rem 1rem; }
+  }
+
 `;
 
 const Landingpage = () => {
   const { theme, toggleTheme } = useTheme();
+  const [navOpen, setNavOpen] = useState(false);
   useEffect(() => {
     const tag = document.createElement("style");
     tag.setAttribute("data-page", "landingpage");
@@ -712,10 +751,11 @@ const Landingpage = () => {
 
   return (
     <div className="page">
-      <section className="nav">
+      <section className={`nav${navOpen ? " nav--open" : ""}`}>
         <div className="nav__logo">
           <img src={logo} alt="Logo" />
         </div>
+        <button className="nav__burger" onClick={() => setNavOpen(v => !v)} aria-label="Menu">{navOpen ? "✕" : "☰"}</button>
         <div className="nav_products">
           <a href="">Fonctionnalités</a>
           <a href="#working">Comment ça marche ?</a>

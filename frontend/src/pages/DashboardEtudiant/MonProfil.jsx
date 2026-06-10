@@ -131,6 +131,15 @@ const css = `
   }
   .identity-banner__title { font-family:'Sora',sans-serif; font-weight:700; color:#16a34a; margin-bottom:2px; }
   .identity-banner__text  { font-size:.82rem; color:#475569; }
+
+  @media (max-width: 768px) {
+    .form-grid-3 { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 480px) {
+    .form-grid-2 { grid-template-columns: 1fr; }
+    .form-grid-3 { grid-template-columns: 1fr; }
+    .profil-section { padding: 20px 16px; }
+  }
 `;
 
 const FILIERES = {

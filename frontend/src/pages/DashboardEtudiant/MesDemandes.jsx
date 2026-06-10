@@ -203,6 +203,9 @@ const css = `
     .stepper { flex-wrap:wrap; gap:16px; }
     .stepper::before { display:none; }
   }
+  @media (max-width:480px) {
+    .table-card { overflow-x: auto; }
+  }
 `;
 
 const FILTERS = [

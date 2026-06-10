@@ -159,6 +159,17 @@ const css = `
     border-radius: 50%; animation: spin .7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 768px) {
+    .sa-agents-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .agents-table-wrap { overflow-x: auto; }
+    .modal-box { max-width: 95vw !important; }
+    .modal-sm  { max-width: 95vw !important; }
+  }
+  @media (max-width: 480px) {
+    .sa-agents-header { padding: 16px; }
+    .sa-toast { right: 12px; left: 12px; min-width: unset; }
+  }
 `;
 
 /* ─── Composant logo institution ─── */

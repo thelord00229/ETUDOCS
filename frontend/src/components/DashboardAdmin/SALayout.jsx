@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
 
@@ -8,14 +9,31 @@ const css = `
   .sa-sidebar {
     width: 220px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0;
     display: flex; flex-direction: column;
-    position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; padding-bottom: 24px;
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 200; padding-bottom: 24px;
+    transition: width 0.25s ease, transform .25s ease;
+    overflow: hidden;
   }
+  /* ── COLLAPSE ── */
+  .sa-sidebar--collapsed { width: 62px; }
+  .sa-sidebar--collapsed .sa-brand { justify-content: center; padding: 20px 0; }
+  .sa-sidebar--collapsed .sa-brand__name { display: none; }
+  .sa-sidebar--collapsed .sa-nav__link { justify-content: center; gap: 0; padding: 11px 0; }
+  .sa-sidebar--collapsed .sa-nav__link-label { display: none; }
+  .sa-sidebar--collapsed .sa-logout { justify-content: center; gap: 0; padding: 11px 0; }
+  .sa-sidebar--collapsed .sa-logout-label { display: none; }
+  .sa-sidebar__toggle {
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer; width: 100%;
+    padding: 8px; color: #94a3b8; transition: color .15s;
+  }
+  .sa-sidebar__toggle:hover { color: #2e7d32; }
+  @media (max-width: 768px) { .sa-sidebar--collapsed { width: 220px; } }
   .sa-brand {
     display: flex; align-items: center; gap: 10px; padding: 20px 20px 20px;
     text-decoration: none;
   }
   .sa-brand__logo {
-    height: 48px; width: auto; object-fit: contain; /* ✅ agrandi : 38px → 48px */
+    height: 48px; width: auto; object-fit: contain;
   }
   .sa-brand__name {
     font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.1rem; color: #1e293b;
@@ -41,12 +59,29 @@ const css = `
   .sa-logout:hover { color: #ef4444; }
   .sa-logout:hover svg { stroke: #ef4444; }
   .sa-logout svg { stroke: #94a3b8; transition: stroke .15s; }
+  .sa-sidebar__close {
+    display: none;
+    position: absolute; top: 14px; right: 12px;
+    background: none; border: none; cursor: pointer;
+    color: #94a3b8; padding: 6px; border-radius: 8px;
+    transition: background .15s, color .15s;
+  }
+  .sa-sidebar__close:hover { background: #f1f5f9; color: #1e293b; }
   .sa-main { margin-left: 220px; flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .sa-topbar {
     height: 64px; background: #fff; border-bottom: 1px solid #e2e8f0;
-    display: flex; align-items: center; justify-content: flex-end; padding: 0 32px; gap: 16px;
+    display: flex; align-items: center; justify-content: space-between; padding: 0 32px; gap: 16px;
     position: sticky; top: 0; z-index: 40;
   }
+  .sa-topbar__left { display: flex; align-items: center; gap: 12px; }
+  .sa-topbar__right { display: flex; align-items: center; gap: 16px; }
+  .sa-topbar__burger {
+    display: none;
+    background: none; border: none; cursor: pointer;
+    color: #475569; padding: 6px; border-radius: 8px;
+    transition: background .15s, color .15s;
+  }
+  .sa-topbar__burger:hover { background: #f1f5f9; color: #1e293b; }
   .sa-topbar__notif { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 4px; }
   .sa-topbar__user  { display: flex; align-items: center; gap: 10px; }
   .sa-topbar__avatar {
@@ -59,6 +94,26 @@ const css = `
   .sa-content { padding: 28px 32px; display: flex; flex-direction: column; gap: 24px; padding-bottom: 48px; }
   .sa-page-title { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.55rem; color: #1e293b; margin-bottom: 4px; }
   .sa-page-sub { color: #475569; font-size: .9rem; }
+  .sa-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 150;
+  }
+  .sa-overlay--visible { display: block; }
+
+  @media (max-width: 768px) {
+    .sa-sidebar { transform: translateX(-220px); box-shadow: none; }
+    .sa-sidebar--open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,.12); }
+    .sa-sidebar__close { display: flex; align-items: center; justify-content: center; }
+    .sa-main { margin-left: 0; }
+    .sa-topbar { padding: 0 16px; }
+    .sa-topbar__burger { display: flex; align-items: center; justify-content: center; }
+    .sa-topbar__name, .sa-topbar__meta { display: none; }
+    .sa-content { padding: 20px 16px; gap: 16px; }
+  }
+  @media (max-width: 480px) {
+    .sa-topbar { padding: 0 12px; gap: 8px; }
+    .sa-content { padding: 14px 12px; gap: 12px; }
+  }
 `;
 
 const NAV = [
@@ -96,6 +151,8 @@ const NAV = [
 
 export default function SALayout({ children }) {
   const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -107,8 +164,18 @@ export default function SALayout({ children }) {
     <div className="sa-layout">
       <style>{css}</style>
 
-      <aside className="sa-sidebar">
-        {/* ✅ Logo agrandi + nom EtuDocs ajouté */}
+      <div
+        className={`sa-overlay${sidebarOpen ? " sa-overlay--visible" : ""}`}
+        onClick={() => setSidebarOpen(false)}
+      />
+
+      <aside className={`sa-sidebar${sidebarOpen ? " sa-sidebar--open" : ""}${sidebarCollapsed ? " sa-sidebar--collapsed" : ""}`}>
+        <button className="sa-sidebar__close" type="button" onClick={() => setSidebarOpen(false)} aria-label="Fermer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+
         <a href="/superadmin" className="sa-brand">
           <img src={logo} alt="EtuDocs" className="sa-brand__logo" />
           <span className="sa-brand__name">EtuDocs</span>
@@ -121,40 +188,64 @@ export default function SALayout({ children }) {
               to={n.to}
               end={n.end}
               className={({ isActive }) => "sa-nav__link" + (isActive ? " active" : "")}
+              onClick={() => setSidebarOpen(false)}
+              title={sidebarCollapsed ? n.label : undefined}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d={n.d} />
               </svg>
-              {n.label}
+              <span className="sa-nav__link-label">{n.label}</span>
             </NavLink>
           ))}
         </nav>
 
         <div className="sa-divider" />
 
-        <button className="sa-logout" type="button" onClick={handleLogout}>
+        <button
+          className="sa-sidebar__toggle"
+          onClick={() => setSidebarCollapsed(v => !v)}
+          type="button"
+          aria-label={sidebarCollapsed ? "Agrandir le menu" : "Réduire le menu"}
+          title={sidebarCollapsed ? "Agrandir le menu" : "Réduire le menu"}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d={sidebarCollapsed ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"} />
+          </svg>
+        </button>
+
+        <button className="sa-logout" type="button" onClick={handleLogout} title={sidebarCollapsed ? "Déconnexion" : undefined}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
-          Déconnexion
+          <span className="sa-logout-label">Déconnexion</span>
         </button>
       </aside>
 
-      <div className="sa-main">
+      <div className="sa-main" style={{ marginLeft: sidebarCollapsed ? 62 : 220, transition: 'margin-left 0.25s ease' }}>
         <header className="sa-topbar">
-          <button className="sa-topbar__notif" type="button" aria-label="Notifications">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-          </button>
+          <div className="sa-topbar__left">
+            <button className="sa-topbar__burger" type="button" onClick={() => setSidebarOpen((v) => !v)} aria-label="Menu">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12h18M3 6h18M3 18h18" />
+              </svg>
+            </button>
+          </div>
 
-          <div className="sa-topbar__user">
-            <div>
-              <div className="sa-topbar__name">Super Admin</div>
-              <div className="sa-topbar__meta">EtuDocs</div>
+          <div className="sa-topbar__right">
+            <button className="sa-topbar__notif" type="button" aria-label="Notifications">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+            </button>
+
+            <div className="sa-topbar__user">
+              <div>
+                <div className="sa-topbar__name">Super Admin</div>
+                <div className="sa-topbar__meta">EtuDocs</div>
+              </div>
+              <div className="sa-topbar__avatar">SA</div>
             </div>
-            <div className="sa-topbar__avatar">SA</div>
           </div>
         </header>
 

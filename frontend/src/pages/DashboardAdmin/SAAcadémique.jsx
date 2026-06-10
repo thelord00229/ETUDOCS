@@ -76,6 +76,13 @@ const css = `
   .da-saisie-placeholder {
     text-align: center; padding: 48px 20px; color: #94a3b8; font-size: .9rem;
   }
+
+  @media (max-width: 768px) {
+    .da-filter-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .da-saisie-placeholder { padding: 24px 16px; }
+  }
 `;
 
 const FORMAT_FIELDS = [

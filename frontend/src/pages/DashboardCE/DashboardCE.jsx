@@ -31,7 +31,23 @@ const styles = `
     border-right: 1px solid var(--border);
     display: flex; flex-direction: column;
     position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+    transition: width 0.25s ease, transform 0.25s ease; overflow: hidden;
   }
+  /* ── COLLAPSE ── */
+  .sidebar--collapsed { width: 62px; }
+  .sidebar--collapsed .sidebar-logo { justify-content: center; padding: 22px 0 28px; }
+  .sidebar--collapsed .sidebar-brand-text { display: none; }
+  .sidebar--collapsed .nav-item { justify-content: center; gap: 0; padding: 11px 0; }
+  .sidebar--collapsed .sidebar-nav-label { display: none; }
+  .sidebar--collapsed .sidebar-footer { padding: 16px 0; }
+  .sidebar--collapsed .logout-btn { justify-content: center; gap: 0; padding: 10px 0; }
+  .sidebar--collapsed .sidebar-logout-label { display: none; }
+  .sidebar__toggle {
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer; width: 100%;
+    padding: 8px; color: #94a3b8; transition: color .15s;
+  }
+  .sidebar__toggle:hover { color: #2e7d32; }
   .sidebar-logo {
     display: flex; align-items: center; gap: 10px;
     padding: 22px 20px 28px;
@@ -315,6 +331,34 @@ const styles = `
   .sa-toast--error { background: var(--danger); }
   @keyframes sa-toast-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 768px) { .sidebar--collapsed { width: 220px; } }
+
+  /* ── RESPONSIVE ── */
+  .sidebar { z-index:200 !important; }
+  .sidebar--open { transform:translateX(0) !important; box-shadow:4px 0 24px rgba(0,0,0,.12); }
+  .sidebar__close { display:none; position:absolute; top:12px; right:12px; background:none; border:none; cursor:pointer; color:#64748b; font-size:1.1rem; padding:4px 8px; border-radius:6px; }
+  .sidebar__close:hover { background:#f1f5f9; }
+  .ce-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:150; }
+  .ce-overlay--visible { display:block; }
+  .topbar__burger { display:none; background:none; border:none; cursor:pointer; color:#475569; padding:6px; border-radius:8px; transition:background .15s; }
+  .topbar__burger:hover { background:#f1f5f9; }
+  @media (max-width: 1024px) {
+    .stats-grid { grid-template-columns:1fr 1fr !important; }
+    .traitement-layout { grid-template-columns:1fr !important; }
+  }
+  @media (max-width: 768px) {
+    .sidebar { transform:translateX(-220px); }
+    .main { margin-left:0 !important; }
+    .topbar { padding:0 16px !important; left:0 !important; }
+    .topbar__burger { display:flex; align-items:center; justify-content:center; }
+    .topbar__user-info { display:none; }
+    .sidebar__close { display:flex; align-items:center; justify-content:center; }
+  }
+  @media (max-width: 480px) {
+    .stats-grid { grid-template-columns:1fr !important; }
+    .content { padding:16px !important; }
+  }
 `;
 
 // ── SVG Icons ──────────────────────────────────────────────
@@ -860,6 +904,8 @@ export default function ChefDivisionExamens() {
   // État modal mot de passe + toast
   const [showPwd, setShowPwd] = useState(false);
   const [toast, setToast] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     chargerDemandes();
@@ -1053,12 +1099,14 @@ export default function ChefDivisionExamens() {
         <style>{styles}</style>
         {sharedOverlays}
         <div className="layout">
-          <Sidebar onLogout={logout} onChangePwd={() => setShowPwd(true)} />
-          <main className="main">
+          <div className={`ce-overlay${sidebarOpen ? " ce-overlay--visible" : ""}`} onClick={() => setSidebarOpen(false)} />
+          <Sidebar onLogout={logout} onChangePwd={() => setShowPwd(true)} open={sidebarOpen} onClose={() => setSidebarOpen(false)} collapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(v => !v)} />
+          <main className="main" style={{ marginLeft: sidebarCollapsed ? 62 : 220, transition: 'margin-left 0.25s ease' }}>
             <Topbar
               title="Chef de Division des Examens — IFRI"
               name="Serge DOSSOU"
               initials="SD"
+              onMenuToggle={() => setSidebarOpen(v => !v)}
             />
             <div className="content">
               <div className="page-header">
@@ -1242,8 +1290,8 @@ export default function ChefDivisionExamens() {
         <style>{styles}</style>
         {sharedOverlays}
         <div className="layout">
-          <Sidebar onLogout={logout} onChangePwd={() => setShowPwd(true)} />
-          <main className="main">
+          <Sidebar onLogout={logout} onChangePwd={() => setShowPwd(true)} collapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(v => !v)} />
+          <main className="main" style={{ marginLeft: sidebarCollapsed ? 62 : 220, transition: 'margin-left 0.25s ease' }}>
             <Topbar
               title="Chef de Division des Examens — IFRI"
               name="Serge DOSSOU"
@@ -1324,8 +1372,8 @@ export default function ChefDivisionExamens() {
       <style>{styles}</style>
       {sharedOverlays}
       <div className="layout">
-        <Sidebar onLogout={logout} onChangePwd={() => setShowPwd(true)} />
-        <main className="main">
+        <Sidebar onLogout={logout} onChangePwd={() => setShowPwd(true)} collapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(v => !v)} />
+        <main className="main" style={{ marginLeft: sidebarCollapsed ? 62 : 220, transition: 'margin-left 0.25s ease' }}>
           <Topbar
             title="Chef de Division des Examens — IFRI"
             name="Serge DOSSOU"
@@ -1846,9 +1894,10 @@ export default function ChefDivisionExamens() {
 }
 
 // ── Composants partagés ────────────────────────────────────
-function Sidebar({ onLogout, onChangePwd }) {
+function Sidebar({ onLogout, onChangePwd, open, onClose, collapsed, onToggleCollapse }) {
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${open ? " sidebar--open" : ""}${collapsed ? " sidebar--collapsed" : ""}`}>
+      <button className="sidebar__close" onClick={onClose} type="button" aria-label="Fermer">✕</button>
       <div className="sidebar-logo">
         <div className="sidebar-logo__icon">
           <svg
@@ -1865,7 +1914,7 @@ function Sidebar({ onLogout, onChangePwd }) {
             <polyline points="14 2 14 8 20 8" />
           </svg>
         </div>
-        <span>
+        <span className="sidebar-brand-text">
           EtuDocs{" "}
           <span
             style={{ fontSize: ".75rem", fontWeight: 500, color: "#f5a623" }}
@@ -1875,31 +1924,43 @@ function Sidebar({ onLogout, onChangePwd }) {
         </span>
       </div>
       <nav className="sidebar-nav">
-        <button className="nav-item active" type="button">
+        <button className="nav-item active" type="button" title={collapsed ? "Tableau de bord" : undefined}>
           <span className="nav-icon">
             <GridIcon />
           </span>
-          Tableau de bord
+          <span className="sidebar-nav-label">Tableau de bord</span>
         </button>
-        <button className="nav-item" type="button" onClick={onChangePwd}>
+        <button className="nav-item" type="button" onClick={onChangePwd} title={collapsed ? "Modifier mot de passe" : undefined}>
           <span className="nav-icon">
             <LockIcon />
           </span>
-          Modifier mot de passe
+          <span className="sidebar-nav-label">Modifier mot de passe</span>
         </button>
       </nav>
+      <button
+        className="sidebar__toggle"
+        onClick={onToggleCollapse}
+        type="button"
+        aria-label={collapsed ? "Agrandir le menu" : "Réduire le menu"}
+        title={collapsed ? "Agrandir le menu" : "Réduire le menu"}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d={collapsed ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"} />
+        </svg>
+      </button>
       <div className="sidebar-footer">
-        <button className="logout-btn" type="button" onClick={onLogout}>
-          <LogoutIcon /> Déconnexion
+        <button className="logout-btn" type="button" onClick={onLogout} title={collapsed ? "Déconnexion" : undefined}>
+          <LogoutIcon /> <span className="sidebar-logout-label">Déconnexion</span>
         </button>
       </div>
     </aside>
   );
 }
 
-function Topbar({ title, name, initials }) {
+function Topbar({ title, name, initials, onMenuToggle }) {
   return (
     <header className="topbar">
+      <button className="topbar__burger" onClick={onMenuToggle} type="button" aria-label="Menu">☰</button>
       <div className="breadcrumb">{title}</div>
       <div className="topbar-right">
         <button className="notif-btn" type="button" aria-label="Notifications">

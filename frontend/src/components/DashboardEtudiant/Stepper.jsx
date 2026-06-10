@@ -10,13 +10,19 @@ const css = `
   .stepper__circle--done   { background:#2e7d32; color:#fff; }
   .stepper__circle--active { background:#2e7d32; color:#fff; }
   .stepper__circle--idle   { background:#fff; color:#94a3b8; border:2px solid #e2e8f0; }
-  .stepper__label { font-family:'Sora',sans-serif; font-size:.88rem; font-weight:600; white-space:nowrap; }
+  .stepper__label { font-family:'Sora',sans-serif; font-size:.88rem; font-weight:600; }
   .stepper__label--active { color:#1e293b; }
   .stepper__label--idle   { color:#94a3b8; }
   .stepper__label--done   { color:#1e293b; }
   .stepper__line { flex:1; height:2px; margin:0 12px; }
   .stepper__line--done { background:#2e7d32; }
   .stepper__line--idle { background:#e2e8f0; }
+  @media (max-width: 480px) {
+    .stepper { flex-wrap: wrap; gap: 6px; }
+    .stepper__circle { width:30px; height:30px; font-size:.78rem; }
+    .stepper__label { font-size:.78rem; }
+    .stepper__line { min-width:16px; }
+  }
 `;
 
 const Check = () => (

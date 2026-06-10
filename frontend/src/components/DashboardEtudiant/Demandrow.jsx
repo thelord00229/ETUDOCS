@@ -30,6 +30,9 @@ const css = `
     transition: border-color .2s, color .2s;
   }
   .btn-details:hover { border-color: #2e7d32; color: #1e293b; }
+  @media (max-width: 480px) {
+    .demand-row__right { flex-direction: column; align-items: flex-start; gap: 6px; }
+  }
 `;
 
 const STATUS_CLASS = {

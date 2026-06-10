@@ -151,6 +151,11 @@ const css = `
     to   { opacity:1; transform:none; }
   }
   .form { animation: fadeIn .25s ease; }
+
+  @media (max-width: 480px) {
+    .page { padding: 24px 12px 40px; }
+    .card { padding: 28px 20px 24px; }
+  }
 `;
 
 const routeForUser = (user) => {
@@ -215,7 +220,7 @@ export default function Login() {
       <div className="card">
         <h1 className="card__title">Connexion</h1>
         <p className="card__sub">Accédez à votre espace personnel</p>
-        
+
 
         <form className="form" onSubmit={handleLogin}>
           <div className="field">

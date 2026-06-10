@@ -212,6 +212,13 @@ const css = `
 
   @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
   .card { animation:fadeUp .3s ease; }
+
+  @media (max-width: 480px) {
+    .page { padding: 24px 12px 40px; }
+    .card { padding: 24px 16px 20px; }
+    .btn-row { grid-template-columns: 1fr; }
+    .stepper { gap: 4px; flex-wrap: wrap; }
+  }
 `;
 
 const NIVEAUX = [

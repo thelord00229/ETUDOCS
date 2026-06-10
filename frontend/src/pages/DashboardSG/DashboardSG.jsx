@@ -19,7 +19,24 @@ const css = `
     display: flex; flex-direction: column;
     padding: 0 0 24px 0;
     position: fixed; top: 0; left: 0; bottom: 0; z-index: 50;
+    transition: width 0.25s ease, transform .25s ease;
+    overflow: hidden;
   }
+  /* ── COLLAPSE ── */
+  .sg-sidebar--collapsed { width: 62px; }
+  .sg-sidebar--collapsed .sg-sidebar__brand { justify-content: center; padding: 20px 0 28px; }
+  .sg-sidebar--collapsed .sg-sidebar__brand-text { display: none; }
+  .sg-sidebar--collapsed .sg-sidebar__link { justify-content: center; gap: 0; padding: 11px 0; }
+  .sg-sidebar--collapsed .sg-sidebar__link-label { display: none; }
+  .sg-sidebar--collapsed .sg-sidebar__logout { justify-content: center; gap: 0; padding: 11px 0; }
+  .sg-sidebar--collapsed .sg-sidebar__logout-label { display: none; }
+  .sg-sidebar__toggle {
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; cursor: pointer; width: 100%;
+    padding: 8px; color: #94a3b8; transition: color .15s;
+  }
+  .sg-sidebar__toggle:hover { color: #2e7d32; }
+  @media (max-width: 768px) { .sg-sidebar--collapsed { width: 220px; } }
   .sg-sidebar__brand {
     display: flex; align-items: center; gap: 10px;
     padding: 20px 20px 28px;
@@ -212,9 +229,31 @@ const css = `
   .sg-toast--error { background: #dc2626; }
   @keyframes sg-toast-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 
+  /* ── RESPONSIVE ── */
+  .sg-sidebar { z-index: 200; transition: transform .25s ease; }
+  .sg-sidebar--open { transform: translateX(0) !important; box-shadow: 4px 0 24px rgba(0,0,0,.12); }
+  .sg-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 150; }
+  .sg-overlay--visible { display: block; }
+  .sg-topbar__burger { display: none; background: none; border: none; cursor: pointer; color: #475569; padding: 6px; border-radius: 8px; transition: background .15s; }
+  .sg-topbar__burger:hover { background: #f1f5f9; }
+  @media (max-width: 1024px) {
+    .sg-stats-grid { grid-template-columns: 1fr 1fr !important; }
+  }
   @media (max-width: 900px) {
     .sg-stats-grid { grid-template-columns: 1fr 1fr; }
     .sg-main { margin-left: 0; }
+  }
+  @media (max-width: 768px) {
+    .sg-sidebar { transform: translateX(-220px); }
+    .sg-main { margin-left: 0 !important; }
+    .sg-topbar { padding: 0 16px; }
+    .sg-topbar__burger { display: flex; align-items: center; justify-content: center; }
+    .sg-topbar__user-info { display: none; }
+    .sg-search-input { width: 100% !important; max-width: 200px; }
+  }
+  @media (max-width: 480px) {
+    .sg-stats-grid { grid-template-columns: 1fr !important; }
+    .sg-content { padding: 16px !important; }
   }
 `;
 
@@ -578,6 +617,8 @@ export default function DashboardSG() {
   const [preview, setPreview] = useState(null);
   const [showPwd, setShowPwd] = useState(false);
   const [toast, setToast] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [statsExternes, setStatsExternes] = useState({
     transmises: 0,
     rejetees: 0,
@@ -695,8 +736,10 @@ export default function DashboardSG() {
       )}
 
       <div className="sg-layout">
+        <div className={`sg-overlay${sidebarOpen ? " sg-overlay--visible" : ""}`} onClick={() => setSidebarOpen(false)} />
+
         {/* ── SIDEBAR ── */}
-        <aside className="sg-sidebar">
+        <aside className={`sg-sidebar${sidebarOpen ? " sg-sidebar--open" : ""}${sidebarCollapsed ? " sg-sidebar--collapsed" : ""}`}>
           <a href="/" className="sg-sidebar__brand">
             <div className="sg-sidebar__brand-icon">
               <img
@@ -705,42 +748,60 @@ export default function DashboardSG() {
                 style={{ width: 52, height: 52, objectFit: "contain" }}
               />
             </div>
-            EtuDocs
+            <span className="sg-sidebar__brand-text">EtuDocs</span>
           </a>
 
           <nav className="sg-sidebar__nav">
-            <button className="sg-sidebar__link active">
+            <button className="sg-sidebar__link active" title={sidebarCollapsed ? "Tableau de bord" : undefined}>
               <GridIcon />
-              Tableau de bord
+              <span className="sg-sidebar__link-label">Tableau de bord</span>
             </button>
 
             {/* Modifier mot de passe */}
             <button
               className="sg-sidebar__link"
               onClick={() => setShowPwd(true)}
+              title={sidebarCollapsed ? "Modifier mot de passe" : undefined}
             >
               <LockIcon />
-              Modifier mot de passe
+              <span className="sg-sidebar__link-label">Modifier mot de passe</span>
             </button>
           </nav>
 
           <div className="sg-sidebar__divider" />
           <button
+            className="sg-sidebar__toggle"
+            onClick={() => setSidebarCollapsed(v => !v)}
+            type="button"
+            aria-label={sidebarCollapsed ? "Agrandir le menu" : "Réduire le menu"}
+            title={sidebarCollapsed ? "Agrandir le menu" : "Réduire le menu"}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d={sidebarCollapsed ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"} />
+            </svg>
+          </button>
+          <button
             className="sg-sidebar__logout"
             onClick={handleLogout}
             type="button"
+            title={sidebarCollapsed ? "Déconnexion" : undefined}
           >
             <LogoutIcon />
-            Déconnexion
+            <span className="sg-sidebar__logout-label">Déconnexion</span>
           </button>
         </aside>
 
         {/* ── MAIN ── */}
-        <main className="sg-main">
+        <main className="sg-main" style={{ marginLeft: sidebarCollapsed ? 62 : 220, transition: 'margin-left 0.25s ease' }}>
           {/* TOPBAR */}
           <header className="sg-topbar">
-            <div className="sg-topbar__breadcrumb">
-              Secrétaire Général — IFRI
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <button className="sg-topbar__burger" type="button" onClick={() => setSidebarOpen(v => !v)} aria-label="Menu">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+              </button>
+              <div className="sg-topbar__breadcrumb">
+                Secrétaire Général — IFRI
+              </div>
             </div>
             <div className="sg-topbar__right">
               <button className="sg-topbar__notif" title="Notifications">
