@@ -1,5 +1,5 @@
 // frontend/src/pages/DashboardEtudiant/Dashboard.jsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getMe, getDemandes } from "../../services/api";
 
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
@@ -283,12 +283,6 @@ const css = `
 /* ─────────────────────────────────────────────────────────────
    HELPERS
 ───────────────────────────────────────────────────────────── */
-const getInitials = (prenom = "", nom = "") => {
-  const a = (prenom || "").trim()[0]?.toUpperCase() || "";
-  const b = (nom || "").trim()[0]?.toUpperCase() || "";
-  return `${a}${b}` || "U";
-};
-
 const uiStatus = (s) => {
   if (s === "DISPONIBLE") return "Disponible";
   if (s === "REJETEE" || s === "REJETE") return "Rejeté";
@@ -654,77 +648,6 @@ function DetailDemande({ demande, onBack }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   NOTIFS (localStorage + diff statut)
-───────────────────────────────────────────────────────────── */
-const NOTIF_KEY = "etudocs_notifications";
-const STATUSMAP_KEY = "etudocs_status_map";
-const NOTIFIED_KEY = "etudocs_notified_ids"; // ✅ IDs déjà notifiés
-
-const safeJsonParse = (v, fallback) => {
-  try {
-    return JSON.parse(v);
-  } catch {
-    return fallback;
-  }
-};
-
-const buildNotifId = () =>
-  typeof crypto !== "undefined" && crypto.randomUUID
-    ? crypto.randomUUID()
-    : `${Date.now()}_${Math.random().toString(16).slice(2)}`;
-
-const formatDocLabel = (typeDoc) => uiTitle(typeDoc);
-
-const makeStatusMap = (list) => {
-  const map = {};
-  (Array.isArray(list) ? list : []).forEach((d) => {
-    if (d?.id) map[d.id] = d.statut || null;
-  });
-  return map;
-};
-
-const detectStatusChanges = (prevMap, nextList) => {
-  const changes = [];
-  const alreadyNotified = safeJsonParse(localStorage.getItem(NOTIFIED_KEY), []);
-
-  (Array.isArray(nextList) ? nextList : []).forEach((d) => {
-    const id = d?.id;
-    if (!id) return;
-    const next = d.statut || null;
-
-    // ✅ Notifier si DISPONIBLE et jamais notifié
-    const notifIdDispo = `${id}-DISPONIBLE`;
-    if (next === "DISPONIBLE" && !alreadyNotified.includes(notifIdDispo)) {
-      changes.push({ id, next, demande: d, notifId: notifIdDispo });
-    }
-
-    // ✅ Notifier si REJETEE/REJETE et jamais notifié
-    const notifIdRejet = `${id}-REJET`;
-    if (
-      (next === "REJETEE" || next === "REJETE") &&
-      !alreadyNotified.includes(notifIdRejet)
-    ) {
-      changes.push({ id, next, demande: d, notifId: notifIdRejet });
-    }
-  });
-  return changes;
-};
-
-const notifMessage = ({ demande, next }) => {
-  const titre = formatDocLabel(demande?.typeDocument);
-  if (next === "REJETEE" || next === "REJETE") {
-    const motif =
-      demande?.commentaireRejet ||
-      demande?.motifRejet ||
-      demande?.commentaire ||
-      "";
-    const suffix = motif ? ` — ${motif}` : "";
-    return `❌ Rejet de demande : ${titre}${suffix}`;
-  }
-  return `✅ Votre ${titre} est prêt. Rendez-vous dans "Mes documents" pour le télécharger.`;
-};
-
-/* ─────────────────────────────────────────────────────────────
    DASHBOARD PRINCIPAL
 ───────────────────────────────────────────────────────────── */
 export default function Dashboard() {
@@ -733,57 +656,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [detailDemande, setDetailDemande] = useState(null);
-
-  // ✅ Notifications
-  const [notifications, setNotifications] = useState(() => {
-    const saved = localStorage.getItem(NOTIF_KEY);
-    return Array.isArray(safeJsonParse(saved, []))
-      ? safeJsonParse(saved, [])
-      : [];
-  });
-
-  const statusMapRef = useRef(safeJsonParse(localStorage.getItem(STATUSMAP_KEY), {}));
-
-  const persistNotifs = (list) =>
-    localStorage.setItem(NOTIF_KEY, JSON.stringify(list));
-  const persistStatusMap = (map) =>
-    localStorage.setItem(STATUSMAP_KEY, JSON.stringify(map));
-
-  const addNotifications = (items) => {
-    if (!items.length) return;
-
-    const alreadyNotified = safeJsonParse(
-      localStorage.getItem(NOTIFIED_KEY),
-      []
-    );
-    const newIds = items.map((i) => i.notifId).filter(Boolean);
-    localStorage.setItem(
-      NOTIFIED_KEY,
-      JSON.stringify([...new Set([...alreadyNotified, ...newIds])])
-    );
-
-    setNotifications((prev) => {
-      const merged = [...items, ...(Array.isArray(prev) ? prev : [])].slice(
-        0,
-        50
-      );
-      persistNotifs(merged);
-      return merged;
-    });
-  };
-
-  const deleteNotif = (id) => {
-    setNotifications((prev) => {
-      const next = (Array.isArray(prev) ? prev : []).filter((n) => n.id !== id);
-      persistNotifs(next);
-      return next;
-    });
-  };
-
-  const clearAllNotifs = () => {
-    setNotifications([]);
-    persistNotifs([]);
-  };
 
   /* ✅ Compteurs */
   const nbEnCours = useMemo(
@@ -845,33 +717,10 @@ export default function Dashboard() {
     window.location.href = "/login";
   };
 
-  // ✅ fetch demandes + generate notifications on status change
-  const refreshDemandes = async (
-    { notifyChanges } = { notifyChanges: false }
-  ) => {
+  // ✅ fetch demandes (les notifications sont gérées par le backend via la cloche)
+  const refreshDemandes = async () => {
     const list = await getDemandes();
-    const nextList = Array.isArray(list) ? list : [];
-    setDemandes(nextList);
-
-    const nextMap = makeStatusMap(nextList);
-
-    if (notifyChanges) {
-      const prevMap = statusMapRef.current || {};
-      const changes = detectStatusChanges(prevMap, nextList);
-
-      if (changes.length) {
-        const items = changes.map((c) => ({
-          id: buildNotifId(),
-          notifId: c.notifId,
-          message: notifMessage(c),
-          createdAt: Date.now(),
-        }));
-        addNotifications(items);
-      }
-    }
-
-    statusMapRef.current = nextMap;
-    persistStatusMap(nextMap);
+    setDemandes(Array.isArray(list) ? list : []);
   };
 
   // ✅ Load initial + start polling
@@ -900,10 +749,10 @@ export default function Dashboard() {
           if (cached) setUser(JSON.parse(cached));
         }
 
-        await refreshDemandes({ notifyChanges: true });
+        await refreshDemandes();
 
         timer = setInterval(() => {
-          refreshDemandes({ notifyChanges: true });
+          refreshDemandes();
         }, 15000);
       } catch (err) {
         if (!alive) return;
@@ -919,36 +768,10 @@ export default function Dashboard() {
       alive = false;
       if (timer) clearInterval(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fullName = useMemo(
-    () =>
-      !user
-        ? "…"
-        : `${user.prenom ?? ""} ${user.nom ?? ""}`.trim() || "Étudiant",
-    [user]
-  );
-  const meta = useMemo(() => (!user ? "…" : user.email || "—"), [user]);
-  const initials = useMemo(
-    () => (!user ? "…" : getInitials(user.prenom, user.nom)),
-    [user]
-  );
-
-  const topbarProps = useMemo(
-    () => ({
-      name: fullName,
-      meta,
-      initials,
-      notifications,
-      onDeleteNotif: deleteNotif,
-      onClearAllNotifs: clearAllNotifs,
-    }),
-    [fullName, meta, initials, notifications, deleteNotif, clearAllNotifs]
-  );
-
   return (
-    <DashboardLayout disableAutoNotifs topbarProps={topbarProps}>
+    <DashboardLayout>
       <style>{css}</style>
 
       <div className="dash-hero">

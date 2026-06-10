@@ -6,6 +6,7 @@ const {
   getNextStatut,
 } = require("../../modules/workflow/workflow");
 const emailService = require("../../services/email.service");
+const notifService = require("../notification/notification.service");
 const { ATTESTATION_INSCRIPTION, RELEVE_NOTES } = require("../../constants/typeDocument");
 const { EXAMENS, SCOLARITE } = require("../../constants/services");
 
@@ -13,6 +14,12 @@ const normalizeField = (v) =>
   String(v || "")
     .trim()
     .toUpperCase();
+
+const labelType = (t) => {
+  if (t === "RELEVE_NOTES") return "relevé de notes";
+  if (t === "ATTESTATION_INSCRIPTION") return "attestation d'inscription";
+  return String(t || "document").toLowerCase();
+};
 
 const normalizeService = (s) => {
   const v = normalizeField(s);
@@ -108,6 +115,19 @@ async function generateUniqueReference(typeDocument, semestres, anneeAcademique,
   return finalRef;
 }
 
+// Notifie tous les super admins (activité globale du workflow)
+const notifierAdmins = async ({ type, titre, message, demandeId }) => {
+  const admins = await prisma.utilisateur.findMany({
+    where: { role: "SUPER_ADMIN", actif: true },
+    select: { id: true },
+  });
+  if (admins.length) {
+    await notifService.createMany(
+      admins.map((a) => ({ utilisateurId: a.id, type, titre, message, demandeId }))
+    );
+  }
+};
+
 exports.soumettre = async (utilisateurId, institutionId, body, files) => {
   const { typeDocument, semestres, anneeAcademique } = body;
 
@@ -200,6 +220,45 @@ exports.soumettre = async (utilisateurId, institutionId, body, files) => {
     );
   } catch (e) {
     console.log("[EMAIL SKIPPED]", e.message);
+  }
+
+  // Notifications in-app
+  try {
+    // Notifier l'étudiant
+    await notifService.createNotification({
+      utilisateurId,
+      type: "DEMANDE_SOUMISE",
+      titre: "Demande soumise",
+      message: `Votre demande de ${labelType(docKey)} (réf. ${demande.reference}) a bien été reçue et est en cours de traitement.`,
+      demandeId: demande.id,
+    });
+
+    // Notifier tous les SA de l'institution
+    const agentsSA = await prisma.utilisateur.findMany({
+      where: { role: "SECRETAIRE_ADJOINT", institutionId, actif: true },
+      select: { id: true },
+    });
+    if (agentsSA.length) {
+      await notifService.createMany(
+        agentsSA.map((a) => ({
+          utilisateurId: a.id,
+          type: "NOUVELLE_DEMANDE",
+          titre: "Nouvelle demande à traiter",
+          message: `Une nouvelle demande de ${labelType(docKey)} a été soumise.`,
+          demandeId: demande.id,
+        }))
+      );
+    }
+
+    // Notifier les super admins (activité globale)
+    await notifierAdmins({
+      type: "ACTIVITE",
+      titre: "Nouvelle demande",
+      message: `Nouvelle demande de ${labelType(docKey)} soumise (réf. ${demande.reference}).`,
+      demandeId: demande.id,
+    });
+  } catch (e) {
+    console.log("[NOTIF SKIPPED]", e.message);
   }
 
   return demande;
@@ -566,6 +625,80 @@ exports.avancer = async (
     }
   } catch (e) {
     console.log("[EMAIL SKIPPED]", e.message);
+  }
+
+  // Notifications in-app selon le nouveau statut
+  try {
+    const docLabel = labelType(demande.typeDocument);
+
+    if (prochainStatut === "REJETEE") {
+      const motif = commentaire ? ` Motif : ${commentaire}` : "";
+      await notifService.createNotification({
+        utilisateurId: demande.utilisateurId,
+        type: "REJETEE",
+        titre: "Demande rejetée",
+        message: `Votre demande de ${docLabel} a été rejetée.${motif}`,
+        demandeId: demande.id,
+      });
+    } else if (prochainStatut === "DISPONIBLE") {
+      await notifService.createNotification({
+        utilisateurId: demande.utilisateurId,
+        type: "DISPONIBLE",
+        titre: "Document disponible",
+        message: `Votre ${docLabel} est prêt. Rendez-vous dans "Mes documents" pour le télécharger.`,
+        demandeId: demande.id,
+      });
+    } else if (prochainStatut === "CORRECTION_DEMANDEE") {
+      const motif = commentaire ? ` Motif : ${commentaire}` : "";
+      await notifService.createNotification({
+        utilisateurId: demande.utilisateurId,
+        type: "CORRECTION",
+        titre: "Correction demandée",
+        message: `Une correction est demandée pour votre demande de ${docLabel}.${motif}`,
+        demandeId: demande.id,
+      });
+    } else {
+      // Notifier les agents du niveau suivant
+      const agentRoleMap = {
+        TRANSMISE_SECRETAIRE_ADJOINT: { role: "SECRETAIRE_GENERAL", titre: "Demande transmise", message: `Une demande de ${docLabel} a été transmise et est en attente de votre traitement.` },
+        TRANSMISE_SECRETAIRE_GENERAL: { role: "CHEF_DIVISION", titre: "Demande à traiter", message: `Une demande de ${docLabel} vous a été transmise pour validation des pièces.`, matchService: true },
+        DOCUMENT_GENERE: { role: "DIRECTEUR_ADJOINT", titre: "Document à approuver", message: `Un document de ${docLabel} est prêt pour votre approbation.` },
+        ATTENTE_SIGNATURE_DIRECTEUR: { role: "DIRECTEUR", titre: "Document à signer", message: `Un document de ${docLabel} est en attente de votre signature.` },
+      };
+
+      const target = agentRoleMap[prochainStatut];
+      if (target) {
+        const whereClause = { role: target.role, institutionId, actif: true };
+        if (target.matchService && demande.serviceCible) {
+          whereClause.service = demande.serviceCible;
+        }
+        const agents = await prisma.utilisateur.findMany({
+          where: whereClause,
+          select: { id: true },
+        });
+        if (agents.length) {
+          await notifService.createMany(
+            agents.map((a) => ({
+              utilisateurId: a.id,
+              type: "NOUVELLE_DEMANDE",
+              titre: target.titre,
+              message: target.message,
+              demandeId: demande.id,
+            }))
+          );
+        }
+      }
+    }
+
+    // Notifier les super admins à chaque transition (activité globale)
+    await notifierAdmins({
+      type: "ACTIVITE",
+      titre: "Mise à jour d'une demande",
+      message: `Demande de ${docLabel} (réf. ${demande.reference}) → ${prochainStatut}.`,
+      demandeId: demande.id,
+    });
+  } catch (e) {
+    console.log("[NOTIF SKIPPED]", e.message);
   }
 
   return updated;

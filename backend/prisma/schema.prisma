@@ -50,6 +50,7 @@ model Utilisateur {
   piecesValidees     PieceJustificative[] @relation("PieceValideePar")
   institution        Institution?         @relation(fields: [institutionId], references: [id])
   actionsWorkflow    WorkflowHistory[]    @relation("ActorWorkflow")
+  notifications      Notification[]
 }
 
 model Demande {
@@ -70,6 +71,7 @@ model Demande {
   documents       Document[]
   pieces          PieceJustificative[]
   historique      WorkflowHistory[]
+  notifications   Notification[]
 }
 
 model WorkflowHistory {
@@ -125,6 +127,20 @@ model PieceRequise {
   institution   Institution  @relation(fields: [institutionId], references: [id])
 
   @@unique([institutionId, typeDocument, typePiece])
+}
+
+model Notification {
+  id            String       @id @default(uuid())
+  utilisateurId String
+  utilisateur   Utilisateur  @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  type          String
+  titre         String
+  message       String
+  lien          String?
+  lue           Boolean      @default(false)
+  demandeId     String?
+  demande       Demande?     @relation(fields: [demandeId], references: [id], onDelete: SetNull)
+  createdAt     DateTime     @default(now())
 }
 
 model playing_with_neon {
