@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
+import { useNotifications } from "../../hooks/useNotifications";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
@@ -83,6 +84,27 @@ const css = `
   }
   .sa-topbar__burger:hover { background: #f1f5f9; color: #1e293b; }
   .sa-topbar__notif { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 4px; }
+  .sa-notif-panel {
+    position: absolute; top: 44px; right: 0;
+    width: min(340px, calc(100vw - 32px)); background: #fff;
+    border: 1px solid #e2e8f0; border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.08);
+    overflow: hidden; z-index: 300;
+  }
+  .sa-notif-panel__header { padding: 12px 14px 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; }
+  .sa-notif-panel__title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: .88rem; color: #1e293b; }
+  .sa-notif-clear { background: none; border: none; cursor: pointer; font-size: .75rem; font-weight: 600; color: #94a3b8; padding: 5px 7px; border-radius: 7px; transition: background .15s, color .15s; }
+  .sa-notif-clear:hover { background: #f1f8e9; color: #f5a623; }
+  .sa-notif-list { max-height: 340px; overflow-y: auto; }
+  .sa-notif-empty { padding: 16px 14px; font-size: .83rem; color: #64748b; }
+  .sa-notif-item { padding: 11px 14px; display: flex; gap: 10px; align-items: flex-start; border-bottom: 1px solid #f1f5f9; }
+  .sa-notif-item:last-child { border-bottom: none; }
+  .sa-notif-dot { width: 8px; height: 8px; border-radius: 50%; background: #f5a623; margin-top: 5px; flex-shrink: 0; }
+  .sa-notif-body { flex: 1; min-width: 0; }
+  .sa-notif-msg { font-size: .83rem; color: #1e293b; line-height: 1.35; margin-bottom: 3px; word-break: break-word; }
+  .sa-notif-meta { font-size: .73rem; color: #94a3b8; }
+  .sa-notif-del { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 3px; border-radius: 6px; transition: background .15s, color .15s; flex-shrink: 0; }
+  .sa-notif-del:hover { background: #fef2f2; color: #dc2626; }
   .sa-topbar__user  { display: flex; align-items: center; gap: 10px; }
   .sa-topbar__avatar {
     width: 38px; height: 38px; border-radius: 50%; background: #f5a623;
@@ -153,6 +175,15 @@ export default function SALayout({ children }) {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { notifications, unreadCount, markAllRead, deleteOne: deleteNotif, deleteAll: deleteAllNotifs } = useNotifications();
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef(null);
+  useEffect(() => {
+    const handler = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+  const fmtTime = (ts) => { try { return new Date(ts).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }); } catch { return ""; } };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -232,12 +263,44 @@ export default function SALayout({ children }) {
           </div>
 
           <div className="sa-topbar__right">
-            <button className="sa-topbar__notif" type="button" aria-label="Notifications">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-              </svg>
-            </button>
+            <div ref={notifRef} style={{ position: "relative" }}>
+              <button
+                className="sa-topbar__notif"
+                type="button"
+                onClick={() => { setNotifOpen(v => !v); if (!notifOpen) markAllRead(); }}
+                aria-label="Notifications"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                {unreadCount > 0 && <span style={{ position:"absolute", top:0, right:0, width:8, height:8, borderRadius:"50%", background:"#f5a623", border:"2px solid #fff" }} />}
+              </button>
+              {notifOpen && (
+                <div className="sa-notif-panel">
+                  <div className="sa-notif-panel__header">
+                    <span className="sa-notif-panel__title">Notifications</span>
+                    <button className="sa-notif-clear" type="button" onClick={deleteAllNotifs}>Tout supprimer</button>
+                  </div>
+                  <div className="sa-notif-list">
+                    {notifications.length === 0 ? (
+                      <div className="sa-notif-empty">Aucune notification.</div>
+                    ) : notifications.map(n => (
+                      <div className="sa-notif-item" key={n.id}>
+                        <span className="sa-notif-dot" />
+                        <div className="sa-notif-body">
+                          <div className="sa-notif-msg">{n.message}</div>
+                          <div className="sa-notif-meta">{fmtTime(n.createdAt)}</div>
+                        </div>
+                        <button className="sa-notif-del" type="button" onClick={() => deleteNotif(n.id)} aria-label="Supprimer">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="sa-topbar__user">
               <div>

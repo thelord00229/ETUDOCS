@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { getDemandes, avancerDemande, clearSession } from "../../services/api";
 import logo from "../../assets/logo.png";
+import { useNotifications } from "../../hooks/useNotifications";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap');
@@ -105,6 +106,27 @@ const css = `
     position: absolute; top: 0; right: 0; width: 8px; height: 8px;
     border-radius: 50%; background: #f5a623; border: 2px solid #fff;
   }
+  .agent-notif-panel {
+    position: absolute; top: 44px; right: 0;
+    width: min(340px, calc(100vw - 32px)); background: #fff;
+    border: 1px solid #e2e8f0; border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.08);
+    overflow: hidden; z-index: 300;
+  }
+  .agent-notif-panel__header { padding: 12px 14px 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; }
+  .agent-notif-panel__title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: .88rem; color: #1e293b; }
+  .agent-notif-clear { background: none; border: none; cursor: pointer; font-size: .75rem; font-weight: 600; color: #94a3b8; padding: 5px 7px; border-radius: 7px; transition: background .15s, color .15s; }
+  .agent-notif-clear:hover { background: #f1f8e9; color: #2e7d32; }
+  .agent-notif-list { max-height: 340px; overflow-y: auto; }
+  .agent-notif-empty { padding: 16px 14px; font-size: .83rem; color: #64748b; }
+  .agent-notif-item { padding: 11px 14px; display: flex; gap: 10px; align-items: flex-start; border-bottom: 1px solid #f1f5f9; }
+  .agent-notif-item:last-child { border-bottom: none; }
+  .agent-notif-dot { width: 8px; height: 8px; border-radius: 50%; background: #2e7d32; margin-top: 5px; flex-shrink: 0; }
+  .agent-notif-body { flex: 1; min-width: 0; }
+  .agent-notif-msg { font-size: .83rem; color: #1e293b; line-height: 1.35; margin-bottom: 3px; word-break: break-word; }
+  .agent-notif-meta { font-size: .73rem; color: #94a3b8; }
+  .agent-notif-del { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 3px; border-radius: 6px; transition: background .15s, color .15s; flex-shrink: 0; }
+  .agent-notif-del:hover { background: #fef2f2; color: #dc2626; }
   .agent-topbar__user { display: flex; align-items: center; gap: 10px; }
   .agent-topbar__avatar {
     width: 38px; height: 38px; border-radius: 50%; background: #2e7d32;
@@ -810,6 +832,15 @@ export default function DashboardSA() {
   const [toast, setToast] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { notifications, unreadCount, markAllRead, deleteOne: deleteNotif, deleteAll: deleteAllNotifs } = useNotifications();
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef(null);
+  useEffect(() => {
+    const handler = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+  const fmtTime = (ts) => { try { return new Date(ts).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }); } catch { return ""; } };
 
   // Compteur de transmissions persisté dans localStorage.
   // On stocke les IDs pour éviter les doublons (même demande transmise deux fois).
@@ -1047,22 +1078,44 @@ export default function DashboardSA() {
             </div>
           </div>
           <div className="agent-topbar__right">
-            <button className="agent-topbar__notif">
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            <div ref={notifRef} style={{ position: "relative" }}>
+              <button
+                className="agent-topbar__notif"
+                type="button"
+                onClick={() => { setNotifOpen(v => !v); if (!notifOpen) markAllRead(); }}
+                aria-label="Notifications"
               >
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-              </svg>
-              {stats.nouvelles > 0 && <span className="agent-topbar__badge" />}
-            </button>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                {unreadCount > 0 && <span className="agent-topbar__badge" />}
+              </button>
+              {notifOpen && (
+                <div className="agent-notif-panel">
+                  <div className="agent-notif-panel__header">
+                    <span className="agent-notif-panel__title">Notifications</span>
+                    <button className="agent-notif-clear" type="button" onClick={deleteAllNotifs}>Tout supprimer</button>
+                  </div>
+                  <div className="agent-notif-list">
+                    {notifications.length === 0 ? (
+                      <div className="agent-notif-empty">Aucune notification.</div>
+                    ) : notifications.map(n => (
+                      <div className="agent-notif-item" key={n.id}>
+                        <span className="agent-notif-dot" />
+                        <div className="agent-notif-body">
+                          <div className="agent-notif-msg">{n.message}</div>
+                          <div className="agent-notif-meta">{fmtTime(n.createdAt)}</div>
+                        </div>
+                        <button className="agent-notif-del" type="button" onClick={() => deleteNotif(n.id)} aria-label="Supprimer">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="agent-topbar__user">
               <div
                 className="agent-topbar__info"

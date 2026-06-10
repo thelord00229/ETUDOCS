@@ -304,6 +304,20 @@ export const downloadPieceBlob = async (pieceId) =>
   apiBlob(`/api/demandes/pieces/${pieceId}/download`);
 
 /* ================================
+   NOTIFICATIONS
+================================ */
+export const getNotifications = () => apiRequest("/api/notifications");
+
+export const markAllNotificationsRead = () =>
+  apiRequest("/api/notifications/read-all", { method: "PATCH" });
+
+export const deleteNotification = (id) =>
+  apiRequest(`/api/notifications/${id}`, { method: "DELETE" });
+
+export const deleteAllNotifications = () =>
+  apiRequest("/api/notifications", { method: "DELETE" });
+
+/* ================================
    EXPORT DEFAULT (axios instance)
 ================================ */
 export default api;

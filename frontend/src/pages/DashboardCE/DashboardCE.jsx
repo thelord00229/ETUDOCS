@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import {
   getDemandes,
   getDemandeById,
@@ -6,6 +6,7 @@ import {
   getChefDivisionStats,
   validerPiece,
 } from "../../services/api";
+import { useNotifications } from "../../hooks/useNotifications";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap');
@@ -96,6 +97,27 @@ const styles = `
   .topbar-right { display: flex; align-items: center; gap: 20px; }
   .notif-btn { position: relative; background: none; border: none; cursor: pointer; padding: 4px; color: var(--text-muted); display: flex; align-items: center; }
   .notif-dot { position: absolute; top: 2px; right: 2px; width: 9px; height: 9px; background: var(--uac); border-radius: 50%; border: 2px solid white; }
+  .ce-notif-panel {
+    position: absolute; top: 44px; right: 0;
+    width: min(340px, calc(100vw - 32px)); background: #fff;
+    border: 1px solid #e2e8f0; border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.08);
+    overflow: hidden; z-index: 300;
+  }
+  .ce-notif-panel__header { padding: 12px 14px 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; }
+  .ce-notif-panel__title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: .88rem; color: #1e293b; }
+  .ce-notif-clear { background: none; border: none; cursor: pointer; font-size: .75rem; font-weight: 600; color: #94a3b8; padding: 5px 7px; border-radius: 7px; transition: background .15s, color .15s; }
+  .ce-notif-clear:hover { background: #f1f8e9; color: #2e7d32; }
+  .ce-notif-list { max-height: 340px; overflow-y: auto; }
+  .ce-notif-empty { padding: 16px 14px; font-size: .83rem; color: #64748b; }
+  .ce-notif-item { padding: 11px 14px; display: flex; gap: 10px; align-items: flex-start; border-bottom: 1px solid #f1f5f9; }
+  .ce-notif-item:last-child { border-bottom: none; }
+  .ce-notif-dot { width: 8px; height: 8px; border-radius: 50%; background: #2e7d32; margin-top: 5px; flex-shrink: 0; }
+  .ce-notif-body { flex: 1; min-width: 0; }
+  .ce-notif-msg { font-size: .83rem; color: #1e293b; line-height: 1.35; margin-bottom: 3px; word-break: break-word; }
+  .ce-notif-meta { font-size: .73rem; color: #94a3b8; }
+  .ce-notif-del { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 3px; border-radius: 6px; transition: background .15s, color .15s; flex-shrink: 0; }
+  .ce-notif-del:hover { background: #fef2f2; color: #dc2626; }
   .user-info { text-align: right; }
   .user-name { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.3; }
   .user-org { font-size: 12px; color: var(--text-muted); }
@@ -1958,15 +1980,56 @@ function Sidebar({ onLogout, onChangePwd, open, onClose, collapsed, onToggleColl
 }
 
 function Topbar({ title, name, initials, onMenuToggle }) {
+  const { notifications, unreadCount, markAllRead, deleteOne: deleteNotif, deleteAll: deleteAllNotifs } = useNotifications();
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef(null);
+  useEffect(() => {
+    const handler = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+  const fmtTime = (ts) => { try { return new Date(ts).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }); } catch { return ""; } };
+
   return (
     <header className="topbar">
       <button className="topbar__burger" onClick={onMenuToggle} type="button" aria-label="Menu">☰</button>
       <div className="breadcrumb">{title}</div>
       <div className="topbar-right">
-        <button className="notif-btn" type="button" aria-label="Notifications">
-          <BellIcon />
-          <span className="notif-dot" />
-        </button>
+        <div ref={notifRef} style={{ position: "relative" }}>
+          <button
+            className="notif-btn"
+            type="button"
+            onClick={() => { setNotifOpen(v => !v); if (!notifOpen) markAllRead(); }}
+            aria-label="Notifications"
+          >
+            <BellIcon />
+            {unreadCount > 0 && <span className="notif-dot" />}
+          </button>
+          {notifOpen && (
+            <div className="ce-notif-panel">
+              <div className="ce-notif-panel__header">
+                <span className="ce-notif-panel__title">Notifications</span>
+                <button className="ce-notif-clear" type="button" onClick={deleteAllNotifs}>Tout supprimer</button>
+              </div>
+              <div className="ce-notif-list">
+                {notifications.length === 0 ? (
+                  <div className="ce-notif-empty">Aucune notification.</div>
+                ) : notifications.map(n => (
+                  <div className="ce-notif-item" key={n.id}>
+                    <span className="ce-notif-dot" />
+                    <div className="ce-notif-body">
+                      <div className="ce-notif-msg">{n.message}</div>
+                      <div className="ce-notif-meta">{fmtTime(n.createdAt)}</div>
+                    </div>
+                    <button className="ce-notif-del" type="button" onClick={() => deleteNotif(n.id)} aria-label="Supprimer">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
         <div className="user-info">
           <div className="user-name">{name}</div>
           <div className="user-org">IFRI</div>

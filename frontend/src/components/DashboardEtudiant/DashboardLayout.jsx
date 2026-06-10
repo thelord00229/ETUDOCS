@@ -1,8 +1,8 @@
 // frontend/src/components/DashboardEtudiant/DashboardLayout.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Sidebar from "./Sidebar.jsx";
 import TopBar from "./Topbar.jsx";
-import { getDemandes } from "../../services/api";
+import { useNotifications } from "../../hooks/useNotifications";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
@@ -34,12 +34,6 @@ const css = `
   }
 `;
 
-const labelType = (t) => {
-  if (t === "RELEVE_NOTES") return "Relevé de notes";
-  if (t === "ATTESTATION_INSCRIPTION") return "Attestation d'inscription";
-  return t || "Document";
-};
-
 function getUser() {
   try {
     const raw =
@@ -49,20 +43,6 @@ function getUser() {
   } catch {
     return {};
   }
-}
-
-const NOTIF_KEY = "etudocs_notifs_dismissed";
-
-function getDismissed() {
-  try {
-    return JSON.parse(localStorage.getItem(NOTIF_KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-
-function saveDismissed(ids) {
-  localStorage.setItem(NOTIF_KEY, JSON.stringify(ids));
 }
 
 const normalizeInst = (v) =>
@@ -97,69 +77,9 @@ export default function DashboardLayout({ children }) {
 
   const instCode = useMemo(() => getInstitutionCodeFromUser(user), [user]);
 
-  const [notifications, setNotifications] = useState([]);
+  const { notifications, deleteOne: handleDelete, deleteAll: handleClearAll } = useNotifications();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const demandes = await getDemandes();
-        if (!Array.isArray(demandes)) return;
-
-        const dismissed = getDismissed();
-        const notifs = [];
-
-        for (const d of demandes) {
-          if (d.statut === "DISPONIBLE") {
-            const id = `${d.id}-DISPONIBLE`;
-            if (!dismissed.includes(id)) {
-              notifs.push({
-                id,
-                message: `✅ Votre ${labelType(
-                  d.typeDocument
-                )} est prêt. Rendez-vous dans "Mes documents" pour le télécharger.`,
-                createdAt: d.updatedAt || d.createdAt,
-              });
-            }
-          }
-
-          if (d.statut === "REJETEE" || d.statut === "REJETE") {
-            const id = `${d.id}-REJET`;
-            if (!dismissed.includes(id)) {
-              const motif = d.motifRejet || "";
-              const suffix = motif ? ` — ${motif}` : "";
-              notifs.push({
-                id,
-                message: `❌ Rejet de demande : ${labelType(
-                  d.typeDocument
-                )}${suffix}`,
-                createdAt: d.updatedAt || d.createdAt,
-              });
-            }
-          }
-        }
-
-        notifs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        setNotifications(notifs);
-      } catch {
-        /* silencieux */
-      }
-    };
-    load();
-  }, []);
-
-  const handleDelete = (id) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-    const dismissed = getDismissed();
-    if (!dismissed.includes(id)) saveDismissed([...dismissed, id]);
-  };
-
-  const handleClearAll = () => {
-    const ids = notifications.map((n) => n.id);
-    saveDismissed([...new Set([...getDismissed(), ...ids])]);
-    setNotifications([]);
-  };
 
   return (
     <div className="dash-layout">
