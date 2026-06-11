@@ -5,9 +5,9 @@
     "semantic_hash": ""
   },
   ".claude/settings.local.json": {
-    "mtime": 1781135363.003034,
-    "ast_hash": "8d1deeaa215f97fe9f649920f9714544",
-    "semantic_hash": ""
+    "mtime": 1781017286.6603715,
+    "ast_hash": "c2fda1738e79c5e2d4a7e53a76218adb",
+    "semantic_hash": "c2fda1738e79c5e2d4a7e53a76218adb"
   },
   "backend/package.json": {
     "mtime": 1781020827.519153,
@@ -105,9 +105,9 @@
     "semantic_hash": "68b2d682ccc7fffdd9395027f26f6168"
   },
   "backend/src/modules/agent/agent.service.js": {
-    "mtime": 1781135319.4265509,
-    "ast_hash": "82c7235e400034c850d78e351e50dbfa",
-    "semantic_hash": ""
+    "mtime": 1775082773.211761,
+    "ast_hash": "de4b2ac0303d94c5d989a2cd8a82ef9b",
+    "semantic_hash": "de4b2ac0303d94c5d989a2cd8a82ef9b"
   },
   "backend/src/modules/auth/auth.controller.js": {
     "mtime": 1777809208.7130792,
@@ -215,9 +215,9 @@
     "semantic_hash": ""
   },
   "backend/src/services/email.service.js": {
-    "mtime": 1781134200.577322,
-    "ast_hash": "353e24871645c58b76dd81aa2c69d84a",
-    "semantic_hash": ""
+    "mtime": 1777809208.7130792,
+    "ast_hash": "102097f0ba6fa2c540ccb3763a0fcda5",
+    "semantic_hash": "102097f0ba6fa2c540ccb3763a0fcda5"
   },
   "backend/src/services/pdf.service.js": {
     "mtime": 1781020827.5249898,
@@ -254,6 +254,11 @@
     "ast_hash": "d3794358998106fd8c91d768a08afd76",
     "semantic_hash": "d3794358998106fd8c91d768a08afd76"
   },
+  "backend/src/services/templates/emails/statut-change.ejs": {
+    "mtime": 1777809208.7230604,
+    "ast_hash": "eec2d06d7f6575eab85a133773ef1558",
+    "semantic_hash": "eec2d06d7f6575eab85a133773ef1558"
+  },
   "backend/src/services/templates/emails/verification.ejs": {
     "mtime": 1777809208.7240598,
     "ast_hash": "4caea706bcddcfd24ac5b61810e66f2d",
@@ -280,8 +285,8 @@
     "semantic_hash": "c3ec52a974a7a547a793a67924beb7ec"
   },
   "backend/tests/unit/email.service.test.js": {
-    "mtime": 1781135390.5799758,
-    "ast_hash": "78066495a49cb55098aab44360737a6d",
+    "mtime": 1781020827.529482,
+    "ast_hash": "c9b0f720c44d447df89ab130f7f92bb2",
     "semantic_hash": ""
   },
   "bulletin-preview/bulletin.template.js": {
@@ -1267,41 +1272,6 @@
   "backend/prisma/migrations/0_init/migration.sql": {
     "mtime": 1781104876.8883874,
     "ast_hash": "9e76d5c2a63ad8e86185ca6691b61e04",
-    "semantic_hash": ""
-  },
-  "backend/src/services/templates/emails/custom-message.ejs": {
-    "mtime": 1781134230.9213004,
-    "ast_hash": "c3505ff94b85b41217880fe6454f9410",
-    "semantic_hash": ""
-  },
-  "backend/src/services/templates/emails/welcome-agent.ejs": {
-    "mtime": 1781134224.7647653,
-    "ast_hash": "79d46515ab1d15c3b1c77a5568ad0fee",
-    "semantic_hash": ""
-  },
-  "backend/tests/unit/agent.service.test.js": {
-    "mtime": 1781135456.4561982,
-    "ast_hash": "7b760096683373e3c0f3e45dfb8fa3b5",
-    "semantic_hash": ""
-  },
-  "backend/uploads/705c6f51-d1d9-4fee-8850-8087c53ee140.png": {
-    "mtime": 1781133015.4551392,
-    "ast_hash": "0d6576ed08f7335b0f81508cda9f973d",
-    "semantic_hash": ""
-  },
-  "backend/uploads/8f5f3012-0cac-44cb-bb4c-02213d709ffe.jpg": {
-    "mtime": 1781133015.4626067,
-    "ast_hash": "5f24f89d3db71f563a4a999467361571",
-    "semantic_hash": ""
-  },
-  "backend/uploads/b91563f9-43f2-49c8-8f5e-ba71b51150b3.jpg": {
-    "mtime": 1781133015.461599,
-    "ast_hash": "5f24f89d3db71f563a4a999467361571",
-    "semantic_hash": ""
-  },
-  "backend/uploads/ebbc4641-20d7-489d-ba45-855b3ac8fc0b.png": {
-    "mtime": 1781133015.4583635,
-    "ast_hash": "b6b94770d14b20db32e5eff699507755",
     "semantic_hash": ""
   }
 }

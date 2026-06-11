@@ -42,7 +42,6 @@
   "40": "Routes Agents",
   "41": "Template Bulletin Notes",
   "42": "Client Prisma ORM",
-  "43": "Community 43",
   "44": "Super Admin Dashboard",
   "45": "Routes Documents",
   "46": "Page Accueil et Routing",
@@ -69,8 +68,5 @@
   "67": "Scripts Python Fix v3",
   "68": "Configuration ESLint",
   "69": "Config App React Vite",
-  "70": "Config Vite",
-  "71": "Community 71",
-  "72": "Community 72",
-  "73": "Community 73"
+  "70": "Config Vite"
 }
