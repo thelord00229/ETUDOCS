@@ -3,21 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mise à jour de demande - EtuDocs</title>
+  <title><%= subject %></title>
   <style>
     body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
     .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    .header { text-align: center; color: #333; }
-    .button { display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+    .header { text-align: center; color: #007bff; }
     .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1 class="header">Mise à jour de votre demande</h1>
-    <p>Bonjour <%= prenom %>,</p>
-    <p><%= message %></p>
-    <a href="<%= dashboardUrl %>" class="button">Accéder à mon espace</a>
+    <h1 class="header"><%= subject %></h1>
+    <p><%- body.replace(/\n/g, "<br/>") %></p>
     <p>Cordialement,<br>L'équipe EtuDocs</p>
     <div class="footer">
       <p>Ne répondez pas à cet email automatique.</p>

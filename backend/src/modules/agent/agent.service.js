@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
-const nodemailer = require("nodemailer");
 const prisma = require("../../config/prisma");
+const emailService = require("../../services/email.service");
 
 const DEFAULT_PASSWORD = "Password123!";
 
@@ -105,49 +105,13 @@ exports.sendMailToAgent = async (id, subject, body) => {
     throw new Error("AGENT_NOT_FOUND");
   }
 
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || "587"),
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
-
-  await transporter.sendMail({
-    from: `"EtuDocs" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
-    to: agent.email,
-    subject,
-    html: `<p>${body.replace(/\n/g, "<br/>")}</p>`,
-  });
+  await emailService.sendCustomMessage(agent.email, subject, body);
 };
 
 async function sendWelcomeMail(agent, password) {
+  // Non bloquant : un échec d'envoi (ex. template) ne doit pas faire échouer la création de l'agent.
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || "587"),
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
-
-    await transporter.sendMail({
-      from: `"EtuDocs" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
-      to: agent.email,
-      subject: "Bienvenue sur EtuDocs — Vos identifiants de connexion",
-      html: `
-        <h2>Bienvenue sur EtuDocs, ${agent.prenom} ${agent.nom} !</h2>
-        <p>Un compte a été créé pour vous sur la plateforme EtuDocs.</p>
-        <p><strong>Email :</strong> ${agent.email}</p>
-        <p><strong>Mot de passe temporaire :</strong> <code>${password}</code></p>
-        <p>Connectez-vous et modifiez votre mot de passe depuis votre tableau de bord.</p>
-        <p>— L'équipe EtuDocs</p>
-      `,
-    });
+    await emailService.sendWelcomeAgent(agent.email, agent.prenom, agent.nom, password);
   } catch (err) {
     console.error("Envoi email de bienvenue échoué :", err.message);
   }

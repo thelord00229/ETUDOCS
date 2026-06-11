@@ -3,17 +3,7 @@ const nodemailer = require("nodemailer");
 const ejs = require("ejs");
 const path = require("path");
 
-const FROM = '"EtuDocs" <noreply@etudocs.uac.bj>';
-
-const MESSAGES_STATUT = {
-  TRANSMISE_SECRETAIRE_GENERAL:        "Votre demande a été reçue et transmise à la scolarité.",
-  TRANSMISE_CHEF_DIVISION:             "Votre demande est en cours de vérification.",
-  ATTENTE_SIGNATURE_DIRECTEUR_ADJOINT: "Votre document a été généré, en attente de signature.",
-  ATTENTE_SIGNATURE_DIRECTEUR:         "Votre document est en attente de la signature finale.",
-  DISPONIBLE:                          "Votre document est prêt à télécharger.",
-  REJETEE:                             "Votre demande a été rejetée.",
-  CORRECTION_DEMANDEE:                 "Des corrections sont demandées sur votre dossier."
-};
+const FROM = process.env.MAIL_FROM || '"EtuDocs" <noreply@etudocs.uac.bj>';
 
 const isDev = (process.env.NODE_ENV || "development") !== "production";
 
@@ -78,14 +68,6 @@ exports.sendVerificationEmail = async (email, token) => {
   await sendEmail(email, "Vérifiez votre email — EtuDocs", html);
 };
 
-exports.sendStatutChange = async (email, prenom, statut) => {
-  const message = MESSAGES_STATUT[statut];
-  if (!message) return;
-  const dashboardUrl = process.env.FRONTEND_URL + "/dashboard";
-  const html = await renderTemplate("statut-change", { prenom, message, dashboardUrl });
-  await sendEmail(email, "Mise à jour de votre demande — EtuDocs", html);
-};
-
 exports.sendPasswordResetEmail = async (email, token) => {
   const link = `${process.env.FRONTEND_URL}/auth/reset-password/${token}?email=${encodeURIComponent(email)}`;
   const html = await renderTemplate("password-reset", { link });
@@ -124,4 +106,28 @@ exports.sendAgentNotification = async (email, prenom, role, nbDossiers) => {
   const dashboardUrl = process.env.FRONTEND_URL + "/dashboard";
   const html = await renderTemplate("agent-notification", { prenom, sujet, message, nbDossiers, dashboardUrl });
   await sendEmail(email, sujet, html);
+};
+
+/**
+ * Mail de bienvenue à un agent nouvellement créé, avec ses identifiants.
+ * @param {string} email
+ * @param {string} prenom
+ * @param {string} nom
+ * @param {string} password - mot de passe temporaire
+ */
+exports.sendWelcomeAgent = async (email, prenom, nom, password) => {
+  const loginUrl = process.env.FRONTEND_URL + "/login";
+  const html = await renderTemplate("welcome-agent", { prenom, nom, email, password, loginUrl });
+  await sendEmail(email, "Bienvenue sur EtuDocs — Vos identifiants de connexion", html);
+};
+
+/**
+ * Mail libre envoyé manuellement à un agent par un administrateur.
+ * @param {string} email
+ * @param {string} subject
+ * @param {string} body - texte brut (les sauts de ligne sont convertis en <br/>)
+ */
+exports.sendCustomMessage = async (email, subject, body) => {
+  const html = await renderTemplate("custom-message", { subject, body });
+  await sendEmail(email, subject, html);
 };

@@ -116,6 +116,132 @@ describe("Email Service", () => {
     });
   });
 
+  describe("sendPasswordResetEmail", () => {
+    it("should send reset email with correct link and subject", async () => {
+      const mockRender = require("ejs").renderFile;
+      mockRender.mockResolvedValue("<html>Reset</html>");
+
+      const mockSendMail = require("nodemailer").createTransport().sendMail;
+      mockSendMail.mockResolvedValue(true);
+
+      await emailService.sendPasswordResetEmail("test@example.com", "rtok");
+
+      expect(mockRender).toHaveBeenCalledWith(
+        expect.stringContaining("password-reset.ejs"),
+        { link: "http://localhost:3000/auth/reset-password/rtok?email=test%40example.com" }
+      );
+      expect(mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: "test@example.com",
+          subject: "Réinitialisation de mot de passe — EtuDocs",
+          html: "<html>Reset</html>",
+        })
+      );
+    });
+  });
+
+  describe("sendDemandeRejetee", () => {
+    it("should send rejection email with motif", async () => {
+      const mockRender = require("ejs").renderFile;
+      mockRender.mockResolvedValue("<html>Rejet</html>");
+
+      const mockSendMail = require("nodemailer").createTransport().sendMail;
+      mockSendMail.mockResolvedValue(true);
+
+      await emailService.sendDemandeRejetee("student@example.com", "Jean", "ATTESTATION_INSCRIPTION", "Dossier incomplet");
+
+      expect(mockRender).toHaveBeenCalledWith(
+        expect.stringContaining("demande-rejetee.ejs"),
+        {
+          prenom: "Jean",
+          typeDocument: "ATTESTATION_INSCRIPTION",
+          motif: "Dossier incomplet",
+          dashboardUrl: "http://localhost:3000/dashboard",
+        }
+      );
+      expect(mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({ subject: "Demande refusée — EtuDocs" })
+      );
+    });
+  });
+
+  describe("sendDocumentDisponible", () => {
+    it("should send document-ready email", async () => {
+      const mockRender = require("ejs").renderFile;
+      mockRender.mockResolvedValue("<html>Dispo</html>");
+
+      const mockSendMail = require("nodemailer").createTransport().sendMail;
+      mockSendMail.mockResolvedValue(true);
+
+      await emailService.sendDocumentDisponible("student@example.com", "Jean", "ATTESTATION_INSCRIPTION");
+
+      expect(mockRender).toHaveBeenCalledWith(
+        expect.stringContaining("document-disponible.ejs"),
+        {
+          prenom: "Jean",
+          typeDocument: "ATTESTATION_INSCRIPTION",
+          dashboardUrl: "http://localhost:3000/dashboard",
+        }
+      );
+      expect(mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({ subject: "Votre document est prêt — EtuDocs" })
+      );
+    });
+  });
+
+  describe("sendWelcomeAgent", () => {
+    it("should send welcome email with agent credentials", async () => {
+      const mockRender = require("ejs").renderFile;
+      mockRender.mockResolvedValue("<html>Welcome</html>");
+
+      const mockSendMail = require("nodemailer").createTransport().sendMail;
+      mockSendMail.mockResolvedValue(true);
+
+      await emailService.sendWelcomeAgent("agent@example.com", "Marie", "Doe", "Temp123!");
+
+      expect(mockRender).toHaveBeenCalledWith(
+        expect.stringContaining("welcome-agent.ejs"),
+        {
+          prenom: "Marie",
+          nom: "Doe",
+          email: "agent@example.com",
+          password: "Temp123!",
+          loginUrl: "http://localhost:3000/login",
+        }
+      );
+      expect(mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: "agent@example.com",
+          subject: "Bienvenue sur EtuDocs — Vos identifiants de connexion",
+        })
+      );
+    });
+  });
+
+  describe("sendCustomMessage", () => {
+    it("should send a custom message with given subject", async () => {
+      const mockRender = require("ejs").renderFile;
+      mockRender.mockResolvedValue("<html>Custom</html>");
+
+      const mockSendMail = require("nodemailer").createTransport().sendMail;
+      mockSendMail.mockResolvedValue(true);
+
+      await emailService.sendCustomMessage("agent@example.com", "Rappel", "Ligne 1\nLigne 2");
+
+      expect(mockRender).toHaveBeenCalledWith(
+        expect.stringContaining("custom-message.ejs"),
+        { subject: "Rappel", body: "Ligne 1\nLigne 2" }
+      );
+      expect(mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: "agent@example.com",
+          subject: "Rappel",
+          html: "<html>Custom</html>",
+        })
+      );
+    });
+  });
+
   describe("Error handling", () => {
     it("should log error but not throw on send failure", async () => {
       const consoleSpy = jest.spyOn(console, "error").mockImplementation();
