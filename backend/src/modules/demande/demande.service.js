@@ -78,7 +78,11 @@ async function generateUniqueReference(typeDocument, semestres, anneeAcademique,
     const n = String(nom || "").trim();
     const p = String(prenom || "").trim();
     // Keep letters (including accented), remove spaces and non-letter chars
-    const cleanNom = n.replace(/\s+/g, "").replace(/[^A-Za-zÀ-ž]/g, "");
+    const cleanNom = n
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, "")
+      .replace(/[^A-Za-z]/g, "");
     const initial = p ? String(p[0]).toUpperCase() : "";
     // Example: Kouliho + P => KoulihoP
     return `${cleanNom}${initial}`;
@@ -108,6 +112,36 @@ async function generateUniqueReference(typeDocument, semestres, anneeAcademique,
     (await prisma.demande.findUnique({ where: { reference: finalRef } })) ||
     (await prisma.document.findUnique({ where: { reference: finalRef } }))
   ) {
+    counter++;
+    finalRef = `${baseRef}_${counter}`;
+  }
+
+  return finalRef;
+}
+
+async function generateUniqueDocumentReference(typeDocument, semestre, anneeAcademique, etudiant) {
+  const formatNomPrenom = (nom, prenom) => {
+    const n = String(nom || "").trim();
+    const p = String(prenom || "").trim();
+    const cleanNom = n
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, "")
+      .replace(/[^A-Za-z]/g, "");
+    const initial = p ? String(p[0]).toUpperCase() : "";
+    return `${cleanNom}${initial}`;
+  };
+
+  const nomPrenom = formatNomPrenom(etudiant.nom, etudiant.prenom);
+  const annee = anneeAcademique
+    ? String(anneeAcademique).substring(0, 4)
+    : new Date().getFullYear();
+  const prefix = typeDocument === "RELEVE_NOTES" ? "REL-NOTES" : "DOC";
+  const baseRef = `${prefix}_${nomPrenom}_S${semestre}_${annee}`;
+  let finalRef = baseRef;
+  let counter = 1;
+
+  while (await prisma.document.findUnique({ where: { reference: finalRef } })) {
     counter++;
     finalRef = `${baseRef}_${counter}`;
   }
@@ -291,14 +325,14 @@ exports.getDemandes = async (user) => {
     // (On filtre sur Demande.statut, PAS sur Document.statut)
     where = {
       institutionId,
-      statut: "DOCUMENT_GENERE",
+      documents: { some: { statut: "DOCUMENT_GENERE" } },
     };
   } else if (role === "DIRECTEUR") {
     // ✅ Directeur : les demandes au stade "ATTENTE_SIGNATURE_DIRECTEUR"
     // (On filtre sur Demande.statut, PAS sur Document.statut)
     where = {
       institutionId,
-      statut: "ATTENTE_SIGNATURE_DIRECTEUR",
+      documents: { some: { statut: "ATTENTE_SIGNATURE_DIRECTEUR" } },
     };
   } else if (role === "SUPER_ADMIN") {
     where = institutionId ? { institutionId } : {};
@@ -307,10 +341,20 @@ exports.getDemandes = async (user) => {
   }
 
   // documents retournés (pas de "statut", car Document.statut n'existe pas)
+  const documentWhere =
+    role === "DIRECTEUR_ADJOINT"
+      ? { statut: "DOCUMENT_GENERE" }
+      : role === "DIRECTEUR"
+        ? { statut: "ATTENTE_SIGNATURE_DIRECTEUR" }
+        : undefined;
+
   const documentsInclude = {
+    ...(documentWhere ? { where: documentWhere } : {}),
     select: {
+      id: true,
       reference: true,
       urlPdf: true,
+      statut: true,
       downloadCount: true,
       qrPayload: true,
       createdAt: true,
@@ -439,20 +483,28 @@ async function generateDocumentsOutsideTransaction({ demande, institutionId }) {
   if (demande.typeDocument === "RELEVE_NOTES") {
     const semestres = demande.semestres?.length ? demande.semestres : [1];
 
-    // Note: since the unique reference is tied to the Demande, we generate ONE document.
-    // If the template needs semestres we pass the whole array, or just run the template.
-    // Assuming pdfService.generateDocument handles the `demande` object natively.
-    const pdfPath = await pdfService.generateDocument(
-      demande,
-      etudiant,
-      null,
-      reference,
-      institution,
-      qrData
-    );
+    for (const semestre of semestres) {
+      const docReference = await generateUniqueDocumentReference(
+        demande.typeDocument,
+        semestre,
+        demande.anneeAcademique,
+        etudiant
+      );
+      const docQrData = `${baseUrl}/verify/${docReference}`;
+      const demandeSemestre = { ...demande, semestre, semestres: [semestre] };
 
-    await qrcodeService.generate(qrData, reference);
-    results.push({ reference, qrPayload: qrData, urlPdf: pdfPath });
+      const pdfPath = await pdfService.generateDocument(
+        demandeSemestre,
+        etudiant,
+        null,
+        docReference,
+        institution,
+        docQrData
+      );
+
+      await qrcodeService.generate(docQrData, docReference);
+      results.push({ reference: docReference, qrPayload: docQrData, urlPdf: pdfPath });
+    }
     return results;
   }
 
@@ -815,19 +867,19 @@ exports.getStatsDA = async (user) => {
   const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
   const [aSigner, signesCeMois, refuses] = await Promise.all([
-    prisma.demande.count({
-      where: { institutionId, statut: "DOCUMENT_GENERE" },
+    prisma.document.count({
+      where: { demande: { institutionId }, statut: "DOCUMENT_GENERE" },
     }),
-    prisma.demande.count({
+    prisma.document.count({
       where: {
-        institutionId,
+        demande: { institutionId },
         statut: "ATTENTE_SIGNATURE_DIRECTEUR",
         updatedAt: { gte: startMonth, lt: nextMonth },
       },
     }),
-    prisma.demande.count({
+    prisma.document.count({
       where: {
-        institutionId,
+        demande: { institutionId },
         statut: "REJETEE",
         updatedAt: { gte: startMonth, lt: nextMonth },
       },
@@ -857,19 +909,19 @@ exports.getStatsDI = async (user) => {
   const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
   const [aSigner, signesCeMois, refuses] = await Promise.all([
-    prisma.demande.count({
-      where: { institutionId, statut: "ATTENTE_SIGNATURE_DIRECTEUR" },
+    prisma.document.count({
+      where: { demande: { institutionId }, statut: "ATTENTE_SIGNATURE_DIRECTEUR" },
     }),
-    prisma.demande.count({
+    prisma.document.count({
       where: {
-        institutionId,
+        demande: { institutionId },
         statut: "DISPONIBLE",
         updatedAt: { gte: startMonth, lt: nextMonth },
       },
     }),
-    prisma.demande.count({
+    prisma.document.count({
       where: {
-        institutionId,
+        demande: { institutionId },
         statut: "REJETEE",
         updatedAt: { gte: startMonth, lt: nextMonth },
       },

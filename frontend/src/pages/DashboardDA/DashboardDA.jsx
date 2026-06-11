@@ -458,7 +458,7 @@ function ModalMotDePasse({ onClose, onSuccess }) {
 }
 
 // ── Sidebar ───────────────────────────────────────────────
-function Sidebar({ onLogout, onChangePwd, open, onClose, collapsed, onToggleCollapse }) {
+function Sidebar({ onLogout, onChangePwd, open, onClose: _onClose, collapsed, onToggleCollapse }) {
   return (
     <aside className={`agent-sidebar${open ? " agent-sidebar--open" : ""}${collapsed ? " agent-sidebar--collapsed" : ""}`}>
       <div className="agent-sidebar__brand">
@@ -681,7 +681,6 @@ export default function DashboardDA() {
       if (raw) setUser(JSON.parse(raw));
     } catch {}
     charger();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const showToast = (msg, isError = false) => {
@@ -732,7 +731,7 @@ export default function DashboardDA() {
               typeDocument: d.typeDocument,
               semestre: sMatch ? `S${sMatch[1]}` : null,
               createdAt: d.createdAt,
-              statut: d.statut,
+              statut: doc.statut || d.statut,
               demandeId: d.id,
             });
           }

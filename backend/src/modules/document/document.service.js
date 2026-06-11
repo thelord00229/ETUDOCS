@@ -13,6 +13,52 @@ async function getDocumentByReference(reference) {
   });
 }
 
+function parseSemestresFromReference(reference) {
+  const match = String(reference || "").match(/_S([0-9-]+)(?=_)/);
+  if (!match) return [];
+  return match[1]
+    .split("-")
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+}
+
+async function listerPourUtilisateur(userId) {
+  const documents = await prisma.document.findMany({
+    where: { demande: { utilisateurId: userId } },
+    include: {
+      demande: {
+        include: {
+          utilisateur: {
+            select: {
+              niveau: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return documents.map((doc) => ({
+    id: doc.id,
+    reference: doc.reference,
+    typeDocument: doc.demande.typeDocument,
+    semestres: parseSemestresFromReference(doc.reference).length
+      ? parseSemestresFromReference(doc.reference)
+      : doc.demande.semestres,
+    anneeAcademique: doc.demande.anneeAcademique,
+    niveau: doc.demande.utilisateur?.niveau || null,
+    statut: doc.demande.statut || doc.statut,
+    urlPdf: doc.urlPdf,
+    downloadCount: doc.downloadCount,
+    maxDownloads: doc.maxDownloads,
+    qrPayload: doc.qrPayload,
+    createdAt: doc.createdAt,
+    deliveredAt: doc.deliveredAt || doc.demande.deliveredAt,
+    serviceCible: doc.demande.serviceCible,
+  }));
+}
+
 /**
  * Téléchargement — vérifie le quota et incrémente le compteur.
  */
@@ -62,6 +108,21 @@ async function telecharger(reference, userId) {
  */
 async function preview(reference) {
   return getDocumentByReference(reference);
+}
+
+function getAggregateDemandeStatus(documents) {
+  const statuses = documents.map((doc) => doc.statut);
+
+  if (statuses.includes("DOCUMENT_GENERE")) return "DOCUMENT_GENERE";
+  if (statuses.includes("ATTENTE_SIGNATURE_DIRECTEUR")) {
+    return "ATTENTE_SIGNATURE_DIRECTEUR";
+  }
+  if (statuses.includes("DISPONIBLE")) return "DISPONIBLE";
+  if (statuses.length > 0 && statuses.every((status) => status === "REJETEE")) {
+    return "REJETEE";
+  }
+
+  return null;
 }
 
 /**
@@ -115,7 +176,7 @@ async function avancerStatut(reference, action, userRole, userInstitutionId) {
     return { error: { code: 403, message: "Accès refusé" } };
   }
 
-  const currentStatut = doc.demande.statut;
+  const currentStatut = doc.statut || doc.demande.statut;
 
   try {
     assertPermission({ role: userRole, statutActuel: currentStatut, action });
@@ -126,22 +187,34 @@ async function avancerStatut(reference, action, userRole, userInstitutionId) {
   const nextStatut = getNextStatut({ role: userRole, statutActuel: currentStatut, action });
 
   const updated = await prisma.$transaction(async (tx) => {
-    const demandeUpd = await tx.demande.update({
-      where: { id: doc.demandeId },
+    const now = new Date();
+
+    const documentUpd = await tx.document.update({
+      where: { id: doc.id },
       data: {
         statut: nextStatut,
-        deliveredAt: nextStatut === "DISPONIBLE" ? new Date() : doc.demande.deliveredAt,
+        deliveredAt: nextStatut === "DISPONIBLE" ? now : doc.deliveredAt,
       },
     });
 
-    if (nextStatut === "DISPONIBLE") {
-      await tx.document.updateMany({
-        where: { demandeId: doc.demandeId },
-        data: { deliveredAt: new Date() },
+    const siblingDocs = await tx.document.findMany({
+      where: { demandeId: doc.demandeId },
+      select: { statut: true },
+    });
+    const demandeStatut = getAggregateDemandeStatus(siblingDocs);
+
+    if (demandeStatut) {
+      await tx.demande.update({
+        where: { id: doc.demandeId },
+        data: {
+          statut: demandeStatut,
+          deliveredAt:
+            demandeStatut === "DISPONIBLE" ? now : doc.demande.deliveredAt,
+        },
       });
     }
 
-    return demandeUpd;
+    return documentUpd;
   });
 
   return {
@@ -156,6 +229,7 @@ async function avancerStatut(reference, action, userRole, userInstitutionId) {
 
 module.exports = {
   getDocumentByReference,
+  listerPourUtilisateur,
   telecharger,
   preview,
   supprimer,

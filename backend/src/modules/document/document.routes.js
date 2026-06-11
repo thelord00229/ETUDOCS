@@ -3,6 +3,8 @@ const ctrl = require("./document.controller");
 const auth = require("../../middlewares/auth.middleware");
 const role = require("../../middlewares/role.middleware");
 
+router.get("/", auth, ctrl.lister);
+
 // Download: propriétaire uniquement, incrémente le compteur
 router.get("/download/:reference", auth, ctrl.telecharger);
 

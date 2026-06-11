@@ -3,6 +3,10 @@ const asyncHandler = require("../../utils/asyncHandler");
 const documentService = require("./document.service");
 const { toSafeAbsolutePath } = require("../../utils/fileUtils");
 
+exports.lister = asyncHandler(async (req, res) => {
+  const documents = await documentService.listerPourUtilisateur(req.user.id);
+  res.json(documents);
+});
 
 exports.telecharger = asyncHandler(async (req, res) => {
   const { reference } = req.params;

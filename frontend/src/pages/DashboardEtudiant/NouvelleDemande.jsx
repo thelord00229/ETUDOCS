@@ -462,7 +462,7 @@ export default function NouvelleDemande() {
               </div>
 
               <a
-                href="https://equittancetresor.finances.bj:9051/paiement/"
+                href="https://paiement.tresorbenin.bj/#/compte-epargne"
                 target="_blank"
                 rel="noreferrer"
                 className="paiement-online-link"
