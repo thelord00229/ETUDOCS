@@ -39,6 +39,7 @@ app.use("/api/utilisateurs", require("./modules/utilisateur/utilisateur.routes")
 app.use("/api/agents", require("./modules/agent/agent.routes"));
 app.use("/api/institutions", require("./modules/institution/institution.routes"));
 app.use("/api/notifications", require("./modules/notification/notification.routes"));
+app.use("/api/reclamations", require("./modules/reclamation/reclamation.routes"));
 
 // Public verify (QR)
 app.use("/verify", require("./modules/verify/verify.routes"));

@@ -942,7 +942,7 @@ export default function SAAnalytics() {
             Pourcentage de demandes livrées &lt; 48h (période sélectionnée)
           </p>
 
-          <div style={{ height: 260, marginTop: 10 }}>
+          <div style={{ height: 260, minHeight: 260, minWidth: 0, marginTop: 10 }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={slaSeries} margin={{ top: 10, right: 60, left: 0, bottom: 10 }}>
                 <defs>

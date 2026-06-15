@@ -5,8 +5,7 @@ import TopBar from "./Topbar.jsx";
 import { useNotifications } from "../../hooks/useNotifications";
 
 const css = `
-  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
-  .dash-layout {
+.dash-layout {
     display:flex; min-height:100vh;
     background:#f4f6f9;
     font-family:'DM Sans',sans-serif;

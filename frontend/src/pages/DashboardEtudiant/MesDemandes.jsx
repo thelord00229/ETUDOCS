@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
-import { getDemandes } from "../../services/api";
+import { getCachedDemandes, getDemandes } from "../../services/api";
 
 /* ─────────────────────────────────────────────────────────────
    STYLES
 ───────────────────────────────────────────────────────────── */
 const css = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
-
-  .md-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.md-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
   .md-title { font-family:'Sora',sans-serif; font-weight:800; font-size:1.5rem; color:#1e293b; margin-bottom:4px; }
   .md-sub   { color:#475569; font-size:.9rem; }
   .btn-new-orange {
@@ -225,13 +223,6 @@ const labelType = (t) => {
 
 const computeUiStatus = (demande) => {
   const raw = demande?.statut || null;
-  const doc0 = Array.isArray(demande?.documents) ? demande.documents[0] : null;
-  const downloadCount =
-    typeof doc0?.downloadCount === "number" ? doc0.downloadCount : null;
-
-  const isExpired =
-    raw === "DISPONIBLE" && downloadCount !== null && downloadCount >= 3;
-  if (isExpired) return "Expirée";
 
   if (raw === "DISPONIBLE") return "Disponible";
   if (raw === "REJETEE" || raw === "REJETE") return "Rejetée";
@@ -453,7 +444,7 @@ const groupLabel = (k) => {
 /* ─────────────────────────────────────────────────────────────
    DETAIL
 ───────────────────────────────────────────────────────────── */
-function DetailDemande({ demande, onBack, onGoDocuments }) {
+function DetailDemande({ demande, onBack, onNewReclamation }) {
   const title = labelType(demande.typeDocument);
   const uiStatus = computeUiStatus(demande);
 
@@ -584,11 +575,9 @@ function DetailDemande({ demande, onBack, onGoDocuments }) {
         </div>
 
         <div className="detail-right">
-          {/* ✅ téléchargement uniquement depuis Mes documents
-              On affiche le bouton seulement si c'est "Disponible" OU "Expirée" (pour comprendre pourquoi c'est bloqué) */}
-          {(uiStatus === "Disponible" || uiStatus === "Expirée") && (
-            <button className="btn-dl" type="button" onClick={onGoDocuments}>
-              Télécharger
+          {uiStatus === "Disponible" && (
+            <button className="btn-dl" type="button" onClick={onNewReclamation}>
+              Signaler une anomalie
             </button>
           )}
 
@@ -631,19 +620,22 @@ export default function MesDemandes() {
 
   const [filter, setFilter] = useState("Toutes");
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
+  const cachedDemandes = useMemo(() => getCachedDemandes(), []);
+  const [loading, setLoading] = useState(() => !Array.isArray(cachedDemandes));
   const [error, setError] = useState("");
-  const [demandes, setDemandes] = useState([]);
+  const [demandes, setDemandes] = useState(() =>
+    Array.isArray(cachedDemandes) ? cachedDemandes : []
+  );
   const [detailItem, setDetailItem] = useState(null);
 
   const location = useLocation();
 
   useEffect(() => {
     const load = async () => {
-      setLoading(true);
+      setLoading(!Array.isArray(cachedDemandes));
       setError("");
       try {
-        const list = await getDemandes();
+        const list = await getDemandes({ force: Array.isArray(cachedDemandes) });
         setDemandes(Array.isArray(list) ? list : []);
       } catch (e) {
         setError(e?.message || "Échec du chargement des demandes.");
@@ -652,7 +644,7 @@ export default function MesDemandes() {
       }
     };
     load();
-  }, []);
+  }, [cachedDemandes]);
 
   // Auto-ouvre le détail si on arrive depuis le Dashboard
   useEffect(() => {
@@ -743,7 +735,11 @@ export default function MesDemandes() {
         <DetailDemande
           demande={detailItem}
           onBack={() => setDetailItem(null)}
-          onGoDocuments={() => navigate("/dashboardEtu/documents")}
+          onNewReclamation={() =>
+            navigate(
+              `/dashboardEtu/nouvelle-reclamation?documentId=${detailItem.documents?.[0]?.id || ""}`
+            )
+          }
         />
       </DashboardLayout>
     );

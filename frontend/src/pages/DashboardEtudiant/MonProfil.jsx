@@ -430,7 +430,6 @@ export default function MonProfil() {
         <Toggle title="Notifications par email" sub="Recevez des emails pour les mises à jour importantes" defaultOn />
         <Toggle title="Demande validée" sub="Notification quand un document est disponible" defaultOn />
         <Toggle title="Demande rejetée" sub="Notification en cas de rejet avec la raison" defaultOn />
-        <Toggle title="Rappels de paiement" sub="Rappels pour les paiements en attente" defaultOn />
         <Toggle title="Newsletter EtuDocs" sub="Actualités et nouvelles fonctionnalités" defaultOn={false} />
       </div>
 

@@ -1,5 +1,12 @@
 // src/services/api.js
 import axios from "axios";
+import {
+  clearQueryCache,
+  fetchCachedQuery,
+  getCachedQuery,
+  invalidateQuery,
+  setCachedQuery,
+} from "./queryCache";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -44,6 +51,10 @@ export const getInstitutionCode = () => {
 };
 
 export const setSession = ({ token, user }) => {
+  const previousToken = getToken();
+  if (token && previousToken && previousToken !== token) {
+    clearQueryCache();
+  }
   if (token) {
     localStorage.setItem("etudocs_token", token);
     sessionStorage.setItem("etudocs_token", token);
@@ -63,6 +74,7 @@ export const setSession = ({ token, user }) => {
       localStorage.setItem("etudocs_institution", code);
       sessionStorage.setItem("etudocs_institution", code);
     }
+    setCachedQuery("auth:me", user);
   }
 };
 
@@ -77,6 +89,7 @@ export const avancerDocument = async (reference, action, commentaire = "") => {
 };
 
 export const clearSession = () => {
+  clearQueryCache();
   localStorage.removeItem("etudocs_token");
   localStorage.removeItem("token");
   localStorage.removeItem("etudocs_user");
@@ -192,23 +205,43 @@ export const login = async ({ email, password }) => {
 export const register = async (payload) =>
   apiRequest("/api/auth/register", { method: "POST", body: payload });
 
-export const getMe = async () => {
+export const getCachedMe = () => getCachedQuery("auth:me") || getStoredUser();
+
+export const getMe = async ({ force = false } = {}) => {
   const token = getToken();
   if (!token) throw new Error("UNAUTHORIZED");
-  const res = await fetch(`${API_URL}/api/auth/me`, {
-    headers: buildHeaders({ json: false }),
-  });
-  if (res.status === 401) return handleUnauthorized();
-  if (!res.ok) throw new Error("SERVER_ERROR");
-  const me = await res.json();
-  if (me) setSession({ token, user: me });
-  return me;
+  return fetchCachedQuery(
+    "auth:me",
+    async () => {
+      const res = await fetch(`${API_URL}/api/auth/me`, {
+        headers: buildHeaders({ json: false }),
+      });
+      if (res.status === 401) return handleUnauthorized();
+      if (!res.ok) throw new Error("SERVER_ERROR");
+      const me = await res.json();
+      if (me) setSession({ token, user: me });
+      return me;
+    },
+    { ttl: 120000, force }
+  );
 };
 
 /* ================================
    DEMANDES
 ================================ */
-export const getDemandes = async () => apiRequest("/api/demandes");
+export const getCachedDemandes = () => getCachedQuery("student:demandes");
+
+export const invalidateStudentData = () => {
+  invalidateQuery("student:demandes");
+  invalidateQuery("student:documents");
+  invalidateQuery("student:mes-reclamations");
+};
+
+export const getDemandes = async ({ force = false } = {}) =>
+  fetchCachedQuery("student:demandes", () => apiRequest("/api/demandes"), {
+    ttl: 45000,
+    force,
+  });
 
 export const getDemandeById = async (id) => apiRequest(`/api/demandes/${id}`);
 
@@ -259,7 +292,9 @@ export const submitDemande = async ({
   if (JUSTIFICATIF_INSCRIPTION)
     form.append("JUSTIFICATIF_INSCRIPTION", JUSTIFICATIF_INSCRIPTION);
 
-  return apiForm("/api/demandes", form, { method: "POST" });
+  const data = await apiForm("/api/demandes", form, { method: "POST" });
+  invalidateStudentData();
+  return data;
 };
 
 /* ================================

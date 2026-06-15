@@ -1,13 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import logo from "../assets/logo.png";
 import logoIfri from "../assets/IFRI.png";
 import logoEpac from "../assets/EPAC.png";
 import logoFss  from "../assets/FSS.png";
 
 const css = `
-  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;1,400&display=swap');
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
     --navy:      #1e293b;
@@ -603,7 +601,7 @@ export default function Home() {
   const [exitSlide, setExitSlide] = useState(null);
   const [enterSlide, setEnterSlide] = useState(null);
 
-  const goToNextSlide = () => {
+  const goToNextSlide = useCallback(() => {
     if (isAnimating) return;
 
     const next = (active + 1) % slides.length;
@@ -617,7 +615,7 @@ export default function Home() {
       setEnterSlide(null);
       setIsAnimating(false);
     }, 800);
-  };
+  }, [active, isAnimating, slides.length]);
 
   const goToSlide = (index) => {
     if (isAnimating || index === active) return;
@@ -639,7 +637,7 @@ export default function Home() {
       goToNextSlide();
     }, 6000);
     return () => clearInterval(id);
-  }, [active, isAnimating]);
+  }, [goToNextSlide]);
 
   const steps = [
     { n:1, icon:"👤", title:"Créer un compte",         desc:"Inscrivez-vous avec votre numéro étudiant et votre email institutionnel." },
@@ -717,11 +715,13 @@ export default function Home() {
             <div className="hero__img-panel">
               <div className="hero__img-container">
                 {/* Image statique qui change avec l'index actif */}
-                <img
-                    src={slides[active].img || ""}
-                    alt={`Slide ${active + 1}`}
-                    className="hero__img"
-                />
+                {slides[active].img && (
+                  <img
+                      src={slides[active].img}
+                      alt={`Slide ${active + 1}`}
+                      className="hero__img"
+                  />
+                )}
               </div>
             </div>
           </div>

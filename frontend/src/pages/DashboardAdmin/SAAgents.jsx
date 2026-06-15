@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import SALayout from "../../components/DashboardAdmin/SALayout.jsx";
 import SAToggle from "../../components/DashboardAdmin/SAToggle.jsx";
 import api from "../../services/api"; // ✅ AJOUT : axios instance avec token
@@ -479,13 +479,13 @@ export default function SAAgents() {
 
   // ── Toast ──
   const [toast, setToast] = useState(null); // { message, type: 'success'|'error' }
-  const showToast = (message, type = "success") => {
+  const showToast = useCallback((message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
-  };
+  }, []);
 
   /* ── Chargement agents ── */
-  const loadAgents = async () => {
+  const loadAgents = useCallback(async () => {
     setLoading(true);
     try {
       const res = await getAgents();
@@ -501,10 +501,10 @@ export default function SAAgents() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
   /* ── Chargement institutions ── */
-  const loadInstitutions = async () => {
+  const loadInstitutions = useCallback(async () => {
     try {
       const res = await api.get("/api/institutions"); // ✅ IMPORTANT
       setInstitutions(Array.isArray(res.data) ? res.data : []);
@@ -512,12 +512,12 @@ export default function SAAgents() {
       console.error("Erreur chargement institutions", e);
       setInstitutions([]);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadInstitutions();
     loadAgents();
-  }, []);
+  }, [loadAgents, loadInstitutions]);
 
   /* ── Toggle actif/inactif ── */
   const handleToggle = async (agent) => {

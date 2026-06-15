@@ -4,8 +4,7 @@ import logo from "../../assets/logo.png";
 import { useNotifications } from "../../hooks/useNotifications";
 
 const css = `
-  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   .sa-layout { display: flex; min-height: 100vh; background: #f8fafc; font-family: 'DM Sans', sans-serif; }
   .sa-sidebar {
     width: 220px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0;

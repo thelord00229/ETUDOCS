@@ -9,6 +9,7 @@ const emailService = require("../../services/email.service");
 const notifService = require("../notification/notification.service");
 const { ATTESTATION_INSCRIPTION, RELEVE_NOTES } = require("../../constants/typeDocument");
 const { EXAMENS, SCOLARITE } = require("../../constants/services");
+const { toSafeAbsolutePath } = require("../../utils/fileUtils");
 
 const normalizeField = (v) =>
   String(v || "")
@@ -19,6 +20,21 @@ const labelType = (t) => {
   if (t === "RELEVE_NOTES") return "relevé de notes";
   if (t === "ATTESTATION_INSCRIPTION") return "attestation d'inscription";
   return String(t || "document").toLowerCase();
+};
+
+const documentLabel = (t) => {
+  if (t === "RELEVE_NOTES") return "Releve de notes";
+  if (t === "ATTESTATION_INSCRIPTION") return "Attestation d'inscription";
+  return "Document";
+};
+
+const toMailDocument = (doc, typeDocument) => {
+  const absPath = toSafeAbsolutePath(doc.urlPdf);
+  return {
+    reference: doc.reference,
+    filename: `${documentLabel(typeDocument)} - ${doc.reference}.pdf`,
+    absPath,
+  };
 };
 
 const normalizeService = (s) => {
@@ -353,14 +369,9 @@ exports.getDemandes = async (user) => {
     select: {
       id: true,
       reference: true,
-      urlPdf: true,
       statut: true,
-      downloadCount: true,
-      qrPayload: true,
       createdAt: true,
       deliveredAt: true,
-      maxDownloads: true,
-      blockedAt: true,
     },
   };
 
@@ -644,10 +655,16 @@ exports.avancer = async (
         commentaire || "Demande rejetée"
       );
     } else if (prochainStatut === "DISPONIBLE") {
+      const documents = await prisma.document.findMany({
+        where: { demandeId: demande.id },
+        select: { reference: true, urlPdf: true },
+        orderBy: { createdAt: "asc" },
+      });
       await emailService.sendDocumentDisponible(
         demande.utilisateur.email,
         demande.utilisateur.prenom,
-        demande.typeDocument
+        demande.typeDocument,
+        documents.map((doc) => toMailDocument(doc, demande.typeDocument))
       );
     } else {
       // Pour les autres statuts, notifier l'agent suivant
@@ -697,7 +714,7 @@ exports.avancer = async (
         utilisateurId: demande.utilisateurId,
         type: "DISPONIBLE",
         titre: "Document disponible",
-        message: `Votre ${docLabel} est prêt. Rendez-vous dans "Mes documents" pour le télécharger.`,
+        message: `Votre ${docLabel} est pret et a ete envoye par email.`,
         demandeId: demande.id,
       });
     } else if (prochainStatut === "CORRECTION_DEMANDEE") {

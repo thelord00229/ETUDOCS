@@ -3,6 +3,7 @@ process.env.BREVO_SMTP_HOST = "smtp.example";
 process.env.BREVO_SMTP_PORT = "587";
 process.env.BREVO_SMTP_USER = "user";
 process.env.BREVO_SMTP_PASS = "pass";
+process.env.MAIL_FROM = '"EtuDocs" <noreply@etudocs.uac.bj>';
 
 // Mock nodemailer
 jest.mock("nodemailer", () => {
@@ -180,7 +181,8 @@ describe("Email Service", () => {
         {
           prenom: "Jean",
           typeDocument: "ATTESTATION_INSCRIPTION",
-          dashboardUrl: "http://localhost:3000/dashboard",
+          documents: [],
+          reclamationUrl: "http://localhost:3000/dashboardEtu/reclamations",
         }
       );
       expect(mockSendMail).toHaveBeenCalledWith(

@@ -1,6 +1,11 @@
 // frontend/src/pages/DashboardEtudiant/Dashboard.jsx
 import { useEffect, useMemo, useState } from "react";
-import { getMe, getDemandes } from "../../services/api";
+import {
+  getCachedDemandes,
+  getCachedMe,
+  getMe,
+  getDemandes,
+} from "../../services/api";
 
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
 import StatCard from "../../components/DashboardEtudiant/Statcard.jsx";
@@ -10,9 +15,7 @@ import DemandRow from "../../components/DashboardEtudiant/Demandrow.jsx";
    STYLES GLOBAUX
 ───────────────────────────────────────────────────────────── */
 const css = `
-  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap');
-
-  /* HERO BANNER */
+/* HERO BANNER */
   .dash-hero {
     background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 60%, #388e3c 100%);
     border-radius: 16px; padding: 32px 36px;
@@ -598,8 +601,7 @@ function DetailDemande({ demande, onBack }) {
           {status === "Disponible" && (
             <button className="btn-download">
               <SvgDlBtn />
-              Télécharger mon document
-              <span className="btn-download-count">(1/3)</span>
+              Document envoye par email
             </button>
           )}
 
@@ -651,9 +653,12 @@ function DetailDemande({ demande, onBack }) {
    DASHBOARD PRINCIPAL
 ───────────────────────────────────────────────────────────── */
 export default function Dashboard() {
-  const [user, setUser] = useState(null);
-  const [demandes, setDemandes] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const cachedDemandes = useMemo(() => getCachedDemandes(), []);
+  const [user, setUser] = useState(() => getCachedMe() || null);
+  const [demandes, setDemandes] = useState(() =>
+    Array.isArray(cachedDemandes) ? cachedDemandes : []
+  );
+  const [loading, setLoading] = useState(() => !Array.isArray(cachedDemandes));
   const [errorMsg, setErrorMsg] = useState("");
   const [detailDemande, setDetailDemande] = useState(null);
 
@@ -718,8 +723,8 @@ export default function Dashboard() {
   };
 
   // ✅ fetch demandes (les notifications sont gérées par le backend via la cloche)
-  const refreshDemandes = async () => {
-    const list = await getDemandes();
+  const refreshDemandes = async ({ force = false } = {}) => {
+    const list = await getDemandes({ force });
     setDemandes(Array.isArray(list) ? list : []);
   };
 
@@ -736,7 +741,7 @@ export default function Dashboard() {
     let alive = true;
 
     const init = async () => {
-      setLoading(true);
+      setLoading(!Array.isArray(cachedDemandes));
       setErrorMsg("");
       try {
         const me = await getMe().catch(() => null);
@@ -749,10 +754,10 @@ export default function Dashboard() {
           if (cached) setUser(JSON.parse(cached));
         }
 
-        await refreshDemandes();
+        await refreshDemandes({ force: Array.isArray(cachedDemandes) });
 
         timer = setInterval(() => {
-          refreshDemandes();
+          refreshDemandes({ force: true });
         }, 15000);
       } catch (err) {
         if (!alive) return;
@@ -768,7 +773,7 @@ export default function Dashboard() {
       alive = false;
       if (timer) clearInterval(timer);
     };
-  }, []);
+  }, [cachedDemandes]);
 
   return (
     <DashboardLayout>
@@ -819,9 +824,9 @@ export default function Dashboard() {
           iconBg="#fffbeb"
         />
         <StatCard
-          label="Documents disponibles"
+          label="Documents envoyes"
           value={loading ? "…" : String(docsCount)}
-          sub="Prêts à être téléchargés"
+          sub="Transmis par email"
           icon={<SvgDownload />}
           accentColor="#22c55e"
           iconBg="#f0fdf4"
@@ -913,15 +918,15 @@ export default function Dashboard() {
             </svg>
           </div>
           <div className="promo-card__title" style={{ color: "#2e7d32" }}>
-            Documents prêts
+            Documents envoyes
           </div>
           <div className="promo-card__sub">
             {loading
               ? "Chargement..."
-              : `${docsCount} document(s) disponible(s)`}
+              : `${docsCount} document(s) transmis par email`}
           </div>
-          <a href="/dashboardEtu/documents" className="btn-outline-sm">
-            Télécharger
+          <a href="/dashboardEtu/reclamations" className="btn-outline-sm">
+            Signaler une anomalie
           </a>
         </div>
       </div>

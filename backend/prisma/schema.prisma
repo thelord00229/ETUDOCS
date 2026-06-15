@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Institution {
@@ -28,29 +29,31 @@ model Institution {
 }
 
 model Utilisateur {
-  id                 String               @id @default(uuid())
-  nom                String
-  prenom             String
-  email              String               @unique
-  password           String
-  role               Role                 @default(ETUDIANT)
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  institutionId      String?
-  numeroEtudiant     String?              @unique
-  service            Service?
-  actif              Boolean              @default(true)
-  emailVerifie       Boolean              @default(false)
-  tokenVerification  String?
-  tokenResetPassword String?
-  tokenResetExpiry   DateTime?
-  filiere            String?
-  niveau             String?
-  demandes           Demande[]
-  piecesValidees     PieceJustificative[] @relation("PieceValideePar")
-  institution        Institution?         @relation(fields: [institutionId], references: [id])
-  actionsWorkflow    WorkflowHistory[]    @relation("ActorWorkflow")
-  notifications      Notification[]
+  id                   String                   @id @default(uuid())
+  nom                  String
+  prenom               String
+  email                String                   @unique
+  password             String
+  role                 Role                     @default(ETUDIANT)
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+  institutionId        String?
+  numeroEtudiant       String?                  @unique
+  service              Service?
+  actif                Boolean                  @default(true)
+  emailVerifie         Boolean                  @default(false)
+  tokenVerification    String?
+  tokenResetPassword   String?
+  tokenResetExpiry     DateTime?
+  filiere              String?
+  niveau               String?
+  demandes             Demande[]
+  piecesValidees       PieceJustificative[]     @relation("PieceValideePar")
+  institution          Institution?             @relation(fields: [institutionId], references: [id])
+  actionsWorkflow      WorkflowHistory[]        @relation("ActorWorkflow")
+  notifications        Notification[]
+  reclamationsEtudiant Reclamation[]            @relation("ReclamationsEtudiant")
+  reclamationsTraitees Reclamation[]            @relation("ReclamationsTraitees")
 }
 
 model Demande {
@@ -86,21 +89,49 @@ model WorkflowHistory {
 }
 
 model Document {
-  id            String         @id @default(uuid())
-  reference     String         @unique
-  qrPayload     String         @unique
-  urlPdf        String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  deliveredAt   DateTime?
-  statut        StatutDocument @default(DOCUMENT_GENERE)
-  signedByDAAt  DateTime?
-  signedByDIRAt DateTime?
-  downloadCount Int            @default(0)
-  maxDownloads  Int            @default(3)
-  blockedAt     DateTime?
-  demandeId     String
-  demande       Demande        @relation(fields: [demandeId], references: [id])
+  id               String                   @id @default(uuid())
+  reference        String                   @unique
+  qrPayload        String                   @unique
+  urlPdf           String
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  deliveredAt      DateTime?
+  statut           StatutDocument           @default(DOCUMENT_GENERE)
+  signedByDAAt     DateTime?
+  signedByDIRAt    DateTime?
+  generationSource GenerationSource         @default(DEMANDE_INITIALE)
+  remplaceParId    String?                  @unique
+  remplacePar      Document?                @relation("Remplacement", fields: [remplaceParId], references: [id], onDelete: SetNull)
+  remplace         Document?                @relation("Remplacement")
+  demandeId        String
+  demande          Demande                  @relation(fields: [demandeId], references: [id])
+  reclamations     Reclamation[]            @relation("ReclamationDocument")
+  corrections      Reclamation[]            @relation("DocumentCorrigeReclamation")
+}
+
+model Reclamation {
+  id                String            @id @default(uuid())
+  documentId        String
+  document          Document          @relation("ReclamationDocument", fields: [documentId], references: [id])
+  etudiantId        String
+  etudiant          Utilisateur       @relation("ReclamationsEtudiant", fields: [etudiantId], references: [id])
+  type              ReclamationType
+  description       String            @db.Text
+  piecesJointes     String[]
+  statut            ReclamationStatut @default(EN_ATTENTE)
+  traiteParId       String?
+  traitePar         Utilisateur?      @relation("ReclamationsTraitees", fields: [traiteParId], references: [id])
+  reponseAgent      String?           @db.Text
+  documentCorrigeId String?
+  documentCorrige   Document?         @relation("DocumentCorrigeReclamation", fields: [documentCorrigeId], references: [id])
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  resolvedAt        DateTime?
+
+  @@index([documentId])
+  @@index([etudiantId])
+  @@index([traiteParId])
+  @@index([statut])
 }
 
 model PieceJustificative {
@@ -130,23 +161,17 @@ model PieceRequise {
 }
 
 model Notification {
-  id            String       @id @default(uuid())
+  id            String      @id @default(uuid())
   utilisateurId String
-  utilisateur   Utilisateur  @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
   type          String
   titre         String
   message       String
   lien          String?
-  lue           Boolean      @default(false)
+  lue           Boolean     @default(false)
   demandeId     String?
-  demande       Demande?     @relation(fields: [demandeId], references: [id], onDelete: SetNull)
-  createdAt     DateTime     @default(now())
-}
-
-model playing_with_neon {
-  id    Int    @id @default(autoincrement())
-  name  String
-  value Float? @db.Real
+  demande       Demande?    @relation(fields: [demandeId], references: [id], onDelete: SetNull)
+  createdAt     DateTime    @default(now())
 }
 
 enum Service {
@@ -186,6 +211,7 @@ enum StatutDocument {
   DOCUMENT_GENERE
   ATTENTE_SIGNATURE_DIRECTEUR
   DISPONIBLE
+  REMPLACE
   REJETEE
 }
 
@@ -200,4 +226,27 @@ enum StatutPiece {
   SOUMISE
   VALIDEE
   REJETEE
+}
+
+enum ReclamationType {
+  ERREUR_IDENTITE
+  ERREUR_NOTES
+  ERREUR_SEMESTRE
+  ERREUR_NIVEAU
+  ERREUR_INSTITUTION
+  DOCUMENT_ILLISIBLE
+  AUTRE
+}
+
+enum ReclamationStatut {
+  EN_ATTENTE
+  EN_COURS
+  RESOLUE_DOC_REGENERE
+  RESOLUE_SANS_DOC
+  REJETEE
+}
+
+enum GenerationSource {
+  DEMANDE_INITIALE
+  RECLAMATION
 }

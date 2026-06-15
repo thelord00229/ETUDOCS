@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import logoDefault from "../../assets/logo.png";
 import { clearSession } from "../../services/api";
+import { preloadRoute } from "../../routes/routeModules";
 
 const css = `
   .sidebar {
@@ -110,9 +111,9 @@ const NAV = [
     d: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
   },
   {
-    to: "/dashboardEtu/documents",
-    label: "Mes documents",
-    d: "M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4",
+    to: "/dashboardEtu/reclamations",
+    label: "Mes reclamations",
+    d: "M8 10h8M8 14h5M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.83L3 20l.9-4.2A7.55 7.55 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z",
   },
   {
     to: "/dashboardEtu/profil",
@@ -164,6 +165,8 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }) 
                 "sidebar__link" + (isActive ? " active" : "")
               }
               onClick={onClose}
+              onMouseEnter={() => preloadRoute(n.to)}
+              onFocus={() => preloadRoute(n.to)}
               title={collapsed ? n.label : undefined}
             >
               <Icon d={n.d} />

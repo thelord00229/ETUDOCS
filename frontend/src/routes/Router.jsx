@@ -1,60 +1,77 @@
-import React from "react";
-import { Routes, Route } from "react-router-dom";
+import React, { Suspense, lazy } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { routeModules } from "./routeModules";
 
-import Home from "../pages/Home.jsx";
-import Login from "../pages/Login.jsx";
-import Register from "../pages/Register.jsx";
-import Landingpage from "../pages/Landingpage.jsx";
+const Login = lazy(routeModules["/login"]);
+const Register = lazy(routeModules["/register"]);
+const Landingpage = lazy(routeModules["/"]);
 
-import Dashboard from "../pages/DashboardEtudiant/Dashboard.jsx";
-import NouvelleDemande from "../pages/DashboardEtudiant/NouvelleDemande.jsx";
-import MesDemandes from "../pages/DashboardEtudiant/MesDemandes.jsx";
-import MesDocuments from "../pages/DashboardEtudiant/MesDocuments.jsx";
-import MonProfil from "../pages/DashboardEtudiant/MonProfil.jsx";
+const Dashboard = lazy(routeModules["/dashboardEtu"]);
+const NouvelleDemande = lazy(routeModules["/dashboardEtu/nouvelle"]);
+const MesDemandes = lazy(routeModules["/dashboardEtu/demandes"]);
+const MonProfil = lazy(routeModules["/dashboardEtu/profil"]);
+const MesReclamations = lazy(routeModules["/dashboardEtu/reclamations"]);
+const NouvelleReclamation = lazy(routeModules["/dashboardEtu/nouvelle-reclamation"]);
 
-import DashboardSA from "../pages/DashboardSA/DashboardSA.jsx";
-import DashboardCS from "../pages/DashboardCS/DashboardCS.jsx";
-import DashboardDA from "../pages/DashboardDA/DashboardDA.jsx";
-import DashboardDI from "../pages/DashboardDI/DashboardDI.jsx";
-import DashboardSG from "../pages/DashboardSG/DashboardSG.jsx";
-import DashboardCE from "../pages/DashboardCE/DashboardCE.jsx";
+const DashboardSA = lazy(routeModules["/dashboardsa"]);
+const DashboardCS = lazy(routeModules["/dashboardsc"]);
+const DashboardDA = lazy(routeModules["/dashboardda"]);
+const DashboardDI = lazy(routeModules["/dashboarddi"]);
+const DashboardSG = lazy(routeModules["/dashboardsg"]);
+const DashboardCE = lazy(routeModules["/dashboardce"]);
+const GestionReclamations = lazy(routeModules["/dashboardsg/reclamations"]);
 
-// Super Admin (DashboardAdmin)
-import SADashboard from "../pages/DashboardAdmin/SADashboard.jsx";
-import SAInstitutions from "../pages/DashboardAdmin/SAInstitutions.jsx";
-import SAAgents from "../pages/DashboardAdmin/SAAgents.jsx";
-import SAAcademique from "../pages/DashboardAdmin/SAAcadémique.jsx";
-import SAAnalytics from "../pages/DashboardAdmin/SAAnalytics.jsx";
+const SADashboard = lazy(routeModules["/superadmin"]);
+const SAInstitutions = lazy(routeModules["/superadmin/institutions"]);
+const SAAgents = lazy(routeModules["/superadmin/agents"]);
+const SAAcademique = lazy(routeModules["/superadmin/academique"]);
+const SAAnalytics = lazy(routeModules["/superadmin/analytics"]);
+
+const routeFallback = (
+  <div
+    style={{
+      minHeight: "100vh",
+      display: "grid",
+      placeItems: "center",
+      color: "#64748b",
+      fontFamily: "DM Sans, sans-serif",
+    }}
+  >
+    Chargement...
+  </div>
+);
 
 const Router = () => {
   return (
-    <Routes>
-      <Route path="/" element={<Landingpage />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+    <Suspense fallback={routeFallback}>
+      <Routes>
+        <Route path="/" element={<Landingpage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-      {/* Etudiant */}
-      <Route path="/dashboardEtu" element={<Dashboard />} />
-      <Route path="/dashboardEtu/nouvelle" element={<NouvelleDemande />} />
-      <Route path="/dashboardEtu/demandes" element={<MesDemandes />} />
-      <Route path="/dashboardEtu/documents" element={<MesDocuments />} />
-      <Route path="/dashboardEtu/profil" element={<MonProfil />} />
+        <Route path="/dashboardEtu" element={<Dashboard />} />
+        <Route path="/dashboardEtu/nouvelle" element={<NouvelleDemande />} />
+        <Route path="/dashboardEtu/demandes" element={<MesDemandes />} />
+        <Route path="/dashboardEtu/documents" element={<Navigate to="/dashboardEtu/reclamations" replace />} />
+        <Route path="/dashboardEtu/profil" element={<MonProfil />} />
+        <Route path="/dashboardEtu/reclamations" element={<MesReclamations />} />
+        <Route path="/dashboardEtu/nouvelle-reclamation" element={<NouvelleReclamation />} />
 
-      {/* Dashboards rôles */}
-      <Route path="/dashboardsa" element={<DashboardSA />} />
-      <Route path="/dashboardsc" element={<DashboardCS />} />
-      <Route path="/dashboardda" element={<DashboardDA />} />
-      <Route path="/dashboarddi" element={<DashboardDI />} />
-      <Route path="/dashboardsg" element={<DashboardSG />} />
-      <Route path="/dashboardce" element={<DashboardCE />} />
+        <Route path="/dashboardsa" element={<DashboardSA />} />
+        <Route path="/dashboardsc" element={<DashboardCS />} />
+        <Route path="/dashboardda" element={<DashboardDA />} />
+        <Route path="/dashboarddi" element={<DashboardDI />} />
+        <Route path="/dashboardsg" element={<DashboardSG />} />
+        <Route path="/dashboardsg/reclamations" element={<GestionReclamations />} />
+        <Route path="/dashboardce" element={<DashboardCE />} />
 
-      {/* Super Admin */}
-      <Route path="/superadmin" element={<SADashboard />} />
-      <Route path="/superadmin/institutions" element={<SAInstitutions />} />
-      <Route path="/superadmin/agents" element={<SAAgents />} />
-      <Route path="/superadmin/academique" element={<SAAcademique />} />
-      <Route path="/superadmin/analytics" element={<SAAnalytics />} />
-    </Routes>
+        <Route path="/superadmin" element={<SADashboard />} />
+        <Route path="/superadmin/institutions" element={<SAInstitutions />} />
+        <Route path="/superadmin/agents" element={<SAAgents />} />
+        <Route path="/superadmin/academique" element={<SAAcademique />} />
+        <Route path="/superadmin/analytics" element={<SAAnalytics />} />
+      </Routes>
+    </Suspense>
   );
 };
 

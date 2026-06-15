@@ -1,11 +1,8 @@
 const prisma = require("../../config/prisma");
 const { toSafeAbsolutePath } = require("../../utils/fileUtils");
 const { assertPermission, getNextStatut } = require("../../modules/workflow/workflow");
+const emailService = require("../../services/email.service");
 
-/**
- * Requête partagée — récupère un document avec sa demande.
- * Utilisée dans plusieurs fonctions pour éviter la répétition.
- */
 async function getDocumentByReference(reference) {
   return prisma.document.findUnique({
     where: { reference },
@@ -20,6 +17,20 @@ function parseSemestresFromReference(reference) {
     .split("-")
     .map((value) => Number(value))
     .filter((value) => Number.isFinite(value));
+}
+
+function documentLabel(typeDocument) {
+  if (typeDocument === "RELEVE_NOTES") return "Releve de notes";
+  if (typeDocument === "ATTESTATION_INSCRIPTION") return "Attestation d'inscription";
+  return "Document";
+}
+
+function toMailDocument(doc, typeDocument) {
+  return {
+    reference: doc.reference,
+    filename: `${documentLabel(typeDocument)} - ${doc.reference}.pdf`,
+    absPath: toSafeAbsolutePath(doc.urlPdf),
+  };
 }
 
 async function listerPourUtilisateur(userId) {
@@ -49,63 +60,27 @@ async function listerPourUtilisateur(userId) {
     anneeAcademique: doc.demande.anneeAcademique,
     niveau: doc.demande.utilisateur?.niveau || null,
     statut: doc.demande.statut || doc.statut,
-    urlPdf: doc.urlPdf,
-    downloadCount: doc.downloadCount,
-    maxDownloads: doc.maxDownloads,
-    qrPayload: doc.qrPayload,
     createdAt: doc.createdAt,
     deliveredAt: doc.deliveredAt || doc.demande.deliveredAt,
     serviceCible: doc.demande.serviceCible,
   }));
 }
 
-/**
- * Téléchargement — vérifie le quota et incrémente le compteur.
- */
 async function telecharger(reference, userId) {
-  const DEFAULT_MAX_DOWNLOADS = 3;
-
-  return prisma.$transaction(async (tx) => {
-    const doc = await tx.document.findUnique({
-      where: { reference },
-      include: { demande: true },
-    });
-
-    if (!doc) return { error: { code: 404, message: "Document introuvable" } };
-
-    if (doc.demande.utilisateurId !== userId) {
-      return { error: { code: 403, message: "Accès refusé" } };
-    }
-
-    const maxDownloads = doc.maxDownloads ?? DEFAULT_MAX_DOWNLOADS;
-    const current = doc.downloadCount ?? 0;
-
-    if (current >= maxDownloads) {
-      return {
-        error: {
-          code: 403,
-          message: "Limite de téléchargement atteinte. Faites une nouvelle demande.",
-        },
-      };
-    }
-
-    const nextCount = current + 1;
-
-    await tx.document.update({
-      where: { id: doc.id },
-      data: {
-        downloadCount: { increment: 1 },
-        blockedAt: nextCount >= maxDownloads ? new Date() : doc.blockedAt,
-      },
-    });
-
-    return { urlPdf: doc.urlPdf };
+  const doc = await prisma.document.findUnique({
+    where: { reference },
+    include: { demande: true },
   });
+
+  if (!doc) return { error: { code: 404, message: "Document introuvable" } };
+
+  if (doc.demande.utilisateurId !== userId) {
+    return { error: { code: 403, message: "Acces refuse" } };
+  }
+
+  return { urlPdf: doc.urlPdf };
 }
 
-/**
- * Prévisualisation — retourne le chemin PDF sans toucher au quota.
- */
 async function preview(reference) {
   return getDocumentByReference(reference);
 }
@@ -125,15 +100,12 @@ function getAggregateDemandeStatus(documents) {
   return null;
 }
 
-/**
- * Suppression — efface le document en base (le fichier est supprimé dans le controller).
- */
 async function supprimer(reference, userId, userRole) {
   const doc = await getDocumentByReference(reference);
   if (!doc) return { error: { code: 404, message: "Document introuvable" } };
 
   if (doc.demande.utilisateurId !== userId && userRole !== "SUPER_ADMIN") {
-    return { error: { code: 403, message: "Accès refusé" } };
+    return { error: { code: 403, message: "Acces refuse" } };
   }
 
   const absPath = toSafeAbsolutePath(doc.urlPdf);
@@ -142,9 +114,6 @@ async function supprimer(reference, userId, userRole) {
   return { absPath };
 }
 
-/**
- * Vérification publique via QR code.
- */
 async function verifier(reference) {
   return prisma.document.findUnique({
     where: { reference },
@@ -159,21 +128,39 @@ async function verifier(reference) {
   });
 }
 
-/**
- * Avancer le statut d'une demande via un document (DA / Directeur).
- */
+async function envoyerDocumentDisponible(documentId) {
+  const deliveredDoc = await prisma.document.findUnique({
+    where: { id: documentId },
+    include: {
+      demande: {
+        include: {
+          utilisateur: { select: { email: true, prenom: true } },
+        },
+      },
+    },
+  });
+
+  if (!deliveredDoc?.demande?.utilisateur?.email) return;
+
+  await emailService.sendDocumentDisponible(
+    deliveredDoc.demande.utilisateur.email,
+    deliveredDoc.demande.utilisateur.prenom,
+    deliveredDoc.demande.typeDocument,
+    [toMailDocument(deliveredDoc, deliveredDoc.demande.typeDocument)]
+  );
+}
+
 async function avancerStatut(reference, action, userRole, userInstitutionId) {
   const doc = await getDocumentByReference(reference);
   if (!doc) return { error: { code: 404, message: "Document introuvable" } };
 
-  // Sécurité institution (sauf SUPER_ADMIN)
   if (
     userRole !== "SUPER_ADMIN" &&
     doc.demande.institutionId &&
     userInstitutionId &&
     doc.demande.institutionId !== userInstitutionId
   ) {
-    return { error: { code: 403, message: "Accès refusé" } };
+    return { error: { code: 403, message: "Acces refuse" } };
   }
 
   const currentStatut = doc.statut || doc.demande.statut;
@@ -216,6 +203,14 @@ async function avancerStatut(reference, action, userRole, userInstitutionId) {
 
     return documentUpd;
   });
+
+  if (updated.statut === "DISPONIBLE") {
+    try {
+      await envoyerDocumentDisponible(updated.id);
+    } catch (e) {
+      console.log("[EMAIL SKIPPED]", e.message);
+    }
+  }
 
   return {
     success: true,

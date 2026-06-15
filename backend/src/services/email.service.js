@@ -2,6 +2,7 @@ require("dotenv").config();
 const nodemailer = require("nodemailer");
 const ejs = require("ejs");
 const path = require("path");
+const fs = require("fs");
 
 const FROM = process.env.MAIL_FROM || '"EtuDocs" <noreply@etudocs.uac.bj>';
 
@@ -47,14 +48,20 @@ const renderTemplate = async (templateName, data) => {
 };
 
 // Send email asynchronously
-const sendEmail = async (to, subject, html) => {
+const sendEmail = async (to, subject, html, options = {}) => {
   try {
-    await transporter.sendMail({
+    const message = {
       from: FROM,
       to,
       subject,
       html,
-    });
+    };
+
+    if (options.attachments?.length) {
+      message.attachments = options.attachments;
+    }
+
+    await transporter.sendMail(message);
     console.log(`[EMAIL SENT] To: ${to} | Subject: ${subject}`);
   } catch (error) {
     console.error(`[EMAIL ERROR] To: ${to} | Subject: ${subject} | Error: ${error.message}`);
@@ -86,10 +93,26 @@ exports.sendDemandeRejetee = async (email, prenom, typeDocument, motif) => {
   await sendEmail(email, "Demande refusée — EtuDocs", html);
 };
 
-exports.sendDocumentDisponible = async (email, prenom, typeDocument) => {
-  const dashboardUrl = process.env.FRONTEND_URL + "/dashboard";
-  const html = await renderTemplate("document-disponible", { prenom, typeDocument, dashboardUrl });
-  await sendEmail(email, "Votre document est prêt — EtuDocs", html);
+exports.sendDocumentDisponible = async (email, prenom, typeDocument, documents = []) => {
+  const reclamationUrl = `${process.env.FRONTEND_URL || ""}/dashboardEtu/reclamations`;
+  const attachments = documents
+    .filter((doc) => doc?.absPath && fs.existsSync(doc.absPath))
+    .map((doc) => ({
+      filename: doc.filename || `${doc.reference || "document"}.pdf`,
+      path: doc.absPath,
+      contentType: "application/pdf",
+    }));
+
+  const html = await renderTemplate("document-disponible", {
+    prenom,
+    typeDocument,
+    documents,
+    reclamationUrl,
+  });
+
+  await sendEmail(email, "Votre document est prêt — EtuDocs", html, {
+    attachments,
+  });
 };
 
 exports.sendAgentNotification = async (email, prenom, role, nbDossiers) => {
@@ -130,4 +153,38 @@ exports.sendWelcomeAgent = async (email, prenom, nom, password) => {
 exports.sendCustomMessage = async (email, subject, body) => {
   const html = await renderTemplate("custom-message", { subject, body });
   await sendEmail(email, subject, html);
+};
+
+exports.sendReclamationCreee = async (etudiantEmail, reclamationId) => {
+  const html = await renderTemplate("reclamation-creee", { reclamationId });
+  await sendEmail(etudiantEmail, "Reclamation recue - EtuDocs", html);
+};
+
+exports.sendReclamationPriseEnCharge = async (etudiantEmail, reclamationId, agentNom) => {
+  const html = await renderTemplate("reclamation-prise-en-charge", {
+    reclamationId,
+    agentNom,
+  });
+  await sendEmail(etudiantEmail, "Reclamation prise en charge - EtuDocs", html);
+};
+
+exports.sendReclamationResolueDocRegenere = async (etudiantEmail, reclamationId, nouveauDocumentUrl) => {
+  const html = await renderTemplate("reclamation-resolue-doc", {
+    reclamationId,
+    nouveauDocumentUrl,
+  });
+  await sendEmail(etudiantEmail, "Document corrige disponible - EtuDocs", html);
+};
+
+exports.sendReclamationResolueSansDoc = async (etudiantEmail, reclamationId, reponseAgent) => {
+  const html = await renderTemplate("reclamation-resolue-sans-doc", {
+    reclamationId,
+    reponseAgent,
+  });
+  await sendEmail(etudiantEmail, "Reponse a votre reclamation - EtuDocs", html);
+};
+
+exports.sendReclamationRejetee = async (etudiantEmail, reclamationId, raison) => {
+  const html = `<p>Votre reclamation ${reclamationId} a ete rejetee.</p><p>${raison || ""}</p>`;
+  await sendEmail(etudiantEmail, "Reclamation rejetee - EtuDocs", html);
 };

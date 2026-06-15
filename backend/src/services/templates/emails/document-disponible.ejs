@@ -3,25 +3,64 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document disponible - EtuDocs</title>
+  <title>Document transmis - EtuDocs</title>
   <style>
-    body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
-    .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    .header { text-align: center; color: #28a745; }
-    .button { display: inline-block; padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-    .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+    body { margin: 0; padding: 0; background: #f4f6f8; color: #1f2937; font-family: Arial, Helvetica, sans-serif; }
+    .wrapper { width: 100%; padding: 28px 12px; }
+    .card { max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+    .header { background: #166534; color: #ffffff; padding: 24px 28px; }
+    .header h1 { margin: 0; font-size: 22px; line-height: 1.25; }
+    .content { padding: 26px 28px; font-size: 15px; line-height: 1.65; }
+    .notice { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px 16px; margin: 18px 0; color: #14532d; }
+    .docs { margin: 18px 0; padding: 0; list-style: none; }
+    .docs li { padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; background: #f9fafb; }
+    .button { display: inline-block; background: #166534; color: #ffffff !important; text-decoration: none; border-radius: 8px; padding: 11px 16px; font-weight: 700; margin-top: 8px; }
+    .footer { padding: 18px 28px; background: #f9fafb; color: #6b7280; font-size: 12px; line-height: 1.5; border-top: 1px solid #e5e7eb; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1 class="header">Votre document est prêt</h1>
-    <p>Bonjour <%= prenom %>,</p>
-    <p>Votre <%= typeDocument %> est maintenant disponible.</p>
-    <p>Vous pouvez le télécharger depuis votre espace personnel.</p>
-    <a href="<%= dashboardUrl %>" class="button">Télécharger mon document</a>
-    <p>Cordialement,<br>L'équipe EtuDocs</p>
-    <div class="footer">
-      <p>Ne répondez pas à cet email automatique.</p>
+  <div class="wrapper">
+    <div class="card">
+      <div class="header">
+        <h1>Votre document EtuDocs est disponible</h1>
+      </div>
+
+      <div class="content">
+        <p>Bonjour <strong><%= prenom || "cher etudiant" %></strong>,</p>
+
+        <p>
+          Votre demande de <strong><%= typeDocument %></strong> a ete traitee avec succes.
+          Le ou les documents officiels sont joints a cet email au format PDF.
+        </p>
+
+        <div class="notice">
+          Vous pouvez conserver cet email et telecharger les pieces jointes autant de fois que necessaire depuis votre messagerie.
+        </div>
+
+        <% if (documents && documents.length) { %>
+          <p>Document(s) transmis :</p>
+          <ul class="docs">
+            <% documents.forEach(function(doc) { %>
+              <li>
+                <strong><%= doc.reference || "Document" %></strong><br>
+                <span><%= doc.filename || "Fichier PDF joint" %></span>
+              </li>
+            <% }) %>
+          </ul>
+        <% } %>
+
+        <p>
+          Si vous constatez une erreur sur un document, ouvrez une reclamation depuis votre espace EtuDocs.
+        </p>
+
+        <a class="button" href="<%= reclamationUrl %>">Ouvrir mes reclamations</a>
+
+        <p>Cordialement,<br>L'equipe EtuDocs</p>
+      </div>
+
+      <div class="footer">
+        Cet email est envoye automatiquement. Ne repondez pas directement a ce message.
+      </div>
     </div>
   </div>
 </body>

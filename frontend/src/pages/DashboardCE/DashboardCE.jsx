@@ -9,9 +9,7 @@ import {
 import { useNotifications } from "../../hooks/useNotifications";
 
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap');
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
     --uac: #2e7d32; --uac-dk: #1b5e20; --uac-lt: #43a047;

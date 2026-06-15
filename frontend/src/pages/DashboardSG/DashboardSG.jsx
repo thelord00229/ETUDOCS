@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getDemandes,
@@ -10,9 +10,7 @@ import logo from "../../assets/logo.png";
 import { useNotifications } from "../../hooks/useNotifications";
 
 const css = `
-  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700&family=DM+Mono:wght@400;500&display=swap');
-
-  .sg-layout { display: flex; min-height: 100vh; background: #f4f6f9; font-family: 'DM Sans', sans-serif; }
+.sg-layout { display: flex; min-height: 100vh; background: #f4f6f9; font-family: 'DM Sans', sans-serif; }
 
   .sg-sidebar {
     width: 220px; min-height: 100vh; flex-shrink: 0;
@@ -655,12 +653,12 @@ export default function DashboardSG() {
     rejetees: 0,
   });
 
-  const showToast = (msg, isError = false) => {
+  const showToast = useCallback((msg, isError = false) => {
     setToast({ msg, isError });
     setTimeout(() => setToast(null), 3500);
-  };
+  }, []);
 
-  const charger = async () => {
+  const charger = useCallback(async () => {
     setLoading(true);
     try {
       const [data, statsData] = await Promise.all([
@@ -680,11 +678,11 @@ export default function DashboardSG() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     charger();
-  }, []);
+  }, [charger]);
 
   const filtered = useMemo(() => {
     const q = (searchQuery || "").trim().toLowerCase();
