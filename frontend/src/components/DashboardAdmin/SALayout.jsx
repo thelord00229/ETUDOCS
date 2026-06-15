@@ -4,6 +4,8 @@ import logo from "../../assets/logo.png";
 import { useNotifications } from "../../hooks/useNotifications";
 
 const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   .sa-layout { display: flex; min-height: 100vh; background: #f8fafc; font-family: 'DM Sans', sans-serif; }
   .sa-sidebar {
@@ -67,7 +69,7 @@ const css = `
     transition: background .15s, color .15s;
   }
   .sa-sidebar__close:hover { background: #f1f5f9; color: #1e293b; }
-  .sa-main { margin-left: 220px; flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .sa-main { margin-left: var(--sidebar-w, 220px); flex: 1; min-width: 0; display: flex; flex-direction: column; transition: margin-left 0.25s ease; }
   .sa-topbar {
     height: 64px; background: #fff; border-bottom: 1px solid #e2e8f0;
     display: flex; align-items: center; justify-content: space-between; padding: 0 32px; gap: 16px;
@@ -251,7 +253,7 @@ export default function SALayout({ children }) {
         </button>
       </aside>
 
-      <div className="sa-main" style={{ marginLeft: sidebarCollapsed ? 62 : 220, transition: 'margin-left 0.25s ease' }}>
+      <div className="sa-main" style={{ "--sidebar-w": sidebarCollapsed ? "62px" : "220px" }}>
         <header className="sa-topbar">
           <div className="sa-topbar__left">
             <button className="sa-topbar__burger" type="button" onClick={() => setSidebarOpen((v) => !v)} aria-label="Menu">

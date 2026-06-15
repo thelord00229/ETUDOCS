@@ -9,6 +9,12 @@ import { createReclamation } from "../../services/reclamation.service";
 
 const css = `
 .nr-page{display:flex;flex-direction:column;gap:18px}.nr-title{font-family:Sora,sans-serif;font-size:1.5rem;font-weight:800;color:#1e293b}.nr-panel{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px}.nr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.nr-card{border:1.5px solid #e2e8f0;border-radius:12px;padding:14px;cursor:pointer;background:#fff}.nr-card.active{border-color:#2e7d32;background:#f0fdf4}.nr-field{display:flex;flex-direction:column;gap:8px}.nr-field select,.nr-field textarea,.nr-field input{border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 12px;font:inherit}.nr-actions{display:flex;justify-content:space-between;gap:12px}.nr-btn{border:0;border-radius:10px;background:#2e7d32;color:#fff;font-weight:800;padding:11px 16px;cursor:pointer}.nr-btn.secondary{background:#fff;color:#475569;border:1px solid #e2e8f0}.nr-btn:disabled{opacity:.45;cursor:not-allowed}
+
+@media (max-width:600px){
+  .nr-panel{padding:16px}
+  .nr-actions{gap:10px}
+  .nr-actions .nr-btn{flex:1;text-align:center}
+}
 `;
 
 const TYPES = [

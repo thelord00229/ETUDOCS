@@ -5,6 +5,8 @@ import logoEpac from "../assets/EPAC.png";
 import logoFss  from "../assets/FSS.png";
 
 const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;1,400&display=swap');
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {

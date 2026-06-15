@@ -15,6 +15,8 @@ import DemandRow from "../../components/DashboardEtudiant/Demandrow.jsx";
    STYLES GLOBAUX
 ───────────────────────────────────────────────────────────── */
 const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap');
+
 /* HERO BANNER */
   .dash-hero {
     background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 60%, #388e3c 100%);
@@ -277,6 +279,17 @@ const css = `
     .detail-body { grid-template-columns: 1fr; }
     .stepper { flex-wrap: wrap; gap: 16px; }
     .stepper::before { display: none; }
+  }
+  @media (max-width: 600px) {
+    .dash-hero { flex-direction: column; align-items: flex-start; gap: 14px; padding: 24px 22px; }
+    .dash-hero p { margin-bottom: 4px; }
+    .btn-new-demand { width: 100%; justify-content: center; }
+    .card-section, .promo-card { padding: 20px 18px; }
+    .support-card { padding: 24px 20px; }
+    .support-card__links { flex-direction: column; gap: 8px; }
+    .support-card__sep { display: none; }
+    .detail-header { flex-wrap: wrap; gap: 12px; }
+    .stepper-card, .pieces-card, .detail-meta-card, .detail-help-card { padding: 20px 18px; }
   }
   @media (max-width: 480px) {
     .stats-grid { grid-template-columns: 1fr; }

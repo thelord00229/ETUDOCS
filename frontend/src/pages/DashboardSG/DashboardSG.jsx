@@ -10,6 +10,8 @@ import logo from "../../assets/logo.png";
 import { useNotifications } from "../../hooks/useNotifications";
 
 const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700&family=DM+Mono:wght@400;500&display=swap');
+
 .sg-layout { display: flex; min-height: 100vh; background: #f4f6f9; font-family: 'DM Sans', sans-serif; }
 
   .sg-sidebar {
@@ -270,6 +272,25 @@ const css = `
     .sg-topbar__burger { display: flex; align-items: center; justify-content: center; }
     .sg-topbar__user-info { display: none; }
     .sg-search-input { width: 100% !important; max-width: 200px; }
+  }
+  @media (max-width: 600px) {
+    .sg-table-card { background: transparent; border: none; overflow: visible; }
+    .sg-table-header { flex-direction: column; align-items: stretch; gap: 12px; padding: 4px 0 14px; }
+    .sg-table-divider { display: none; }
+    .sg-table-wrapper { overflow: visible; }
+    .sg-table, .sg-table tbody, .sg-table tr, .sg-table td { display: block; width: 100%; }
+    .sg-table thead { display: none; }
+    .sg-table tbody tr { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 4px 14px; margin-bottom: 12px; }
+    .sg-table tbody tr:hover { background: #fff; }
+    .sg-table tbody td { border-top: none; border-bottom: 1px solid #f1f5f9; padding: 10px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: right; }
+    .sg-table tbody tr td:last-child { border-bottom: none; }
+    .sg-table tbody td::before {
+      content: attr(data-label); font-family: 'Sora', sans-serif; font-weight: 700;
+      font-size: .7rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .04em;
+      text-align: left; flex-shrink: 0;
+    }
+    .sg-table tbody td:last-child { flex-wrap: wrap; }
+    .sg-table .sg-btn { flex: 1; justify-content: center; }
   }
   @media (max-width: 480px) {
     .sg-stats-grid { grid-template-columns: 1fr !important; }
@@ -986,10 +1007,10 @@ export default function DashboardSG() {
                   <tbody>
                     {filtered.map((d) => (
                       <tr key={d.id || getReferenceDoc(d)}>
-                        <td>
+                        <td data-label="Référence">
                           <span className="sg-mono">{getReferenceDoc(d)}</span>
                         </td>
-                        <td>
+                        <td data-label="Étudiant">
                           <div style={{ fontWeight: 700 }}>
                             {getEtudiantLabel(d)}
                           </div>
@@ -997,12 +1018,13 @@ export default function DashboardSG() {
                             N° {getNumeroEtudiant(d)}
                           </div>
                         </td>
-                        <td>{d?.typeDocument || "—"}</td>
-                        <td className="sg-muted">{formatDate(d?.createdAt)}</td>
-                        <td>
+                        <td data-label="Document">{d?.typeDocument || "—"}</td>
+                        <td className="sg-muted" data-label="Soumission">{formatDate(d?.createdAt)}</td>
+                        <td data-label="Statut">
                           <span className="sg-chip">{d?.statut || "—"}</span>
                         </td>
                         <td
+                          data-label=""
                           style={{
                             display: "flex",
                             gap: 10,

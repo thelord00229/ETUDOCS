@@ -4,6 +4,23 @@ import { getAllReclamations, prendreEnCharge, resoudreReclamation } from "../../
 
 const css = `
 .agent-page{min-height:100vh;background:#f8fafc;padding:28px;font-family:'DM Sans',sans-serif}.head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.title{font-family:Sora,sans-serif;font-size:1.6rem;font-weight:800;color:#1e293b}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px}.card strong{font-size:1.4rem}.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.filters input,.filters select{border:1px solid #e2e8f0;border-radius:10px;padding:10px}.wrap{overflow:auto;background:#fff;border:1px solid #e2e8f0;border-radius:14px}.table{width:100%;border-collapse:collapse;min-width:1050px}.table th,.table td{padding:13px 14px;border-bottom:1px solid #eef2f7;text-align:left;font-size:.88rem}.badge{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:.72rem;font-weight:800;background:#e2e8f0;color:#334155}.btn{border:1px solid #e2e8f0;background:#fff;border-radius:8px;padding:8px 10px;cursor:pointer;font-weight:800;margin-right:6px}.green{background:#16a34a;color:#fff;border:0}.blue{background:#2563eb;color:#fff;border:0}.modal{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;z-index:600}.modal-card{background:#fff;border-radius:14px;padding:18px;width:min(680px,calc(100vw - 24px));display:flex;flex-direction:column;gap:12px}.tabs{display:flex;gap:8px}.tab{border:1px solid #e2e8f0;background:#fff;border-radius:999px;padding:8px 12px;cursor:pointer}.tab.active{background:#2e7d32;color:#fff}.textarea{width:100%;min-height:130px;border:1px solid #e2e8f0;border-radius:10px;padding:10px}
+
+@media (max-width:600px){
+  .agent-page{padding:16px}
+  .head{flex-direction:column}
+  .filters{flex-direction:column}
+  .filters input,.filters select,.filters .btn{width:100%}
+  .wrap{overflow:visible;border:none;background:transparent}
+  .table{min-width:0}
+  .table,.table tbody,.table tr,.table td{display:block;width:100%}
+  .table thead{display:none}
+  .table tbody tr{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:4px 14px;margin-bottom:12px}
+  .table td{border-bottom:1px solid #eef2f7;padding:9px 0;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:right}
+  .table tbody tr td:last-child{border-bottom:none;flex-wrap:wrap}
+  .table td::before{content:attr(data-label);font-weight:700;font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.04em;text-align:left;flex-shrink:0}
+  .table td .btn{flex:1;margin-right:0}
+  .modal-card{padding:16px}
+}
 `;
 
 const STATUTS = ["", "EN_ATTENTE", "EN_COURS", "RESOLUE_DOC_REGENERE", "RESOLUE_SANS_DOC", "REJETEE"];
@@ -62,14 +79,14 @@ export default function GestionReclamations() {
           <tbody>
             {items.map((item) => (
               <tr key={item.id}>
-                <td>{item.id.slice(0, 8)}</td>
-                <td>{item.etudiant?.prenom} {item.etudiant?.nom}<br />{item.etudiant?.email}</td>
-                <td>{item.document?.typeDocument}<br />{item.document?.reference}</td>
-                <td><span className="badge">{item.type}</span></td>
-                <td>{new Date(item.createdAt).toLocaleDateString("fr-FR")}</td>
-                <td><span className="badge">{item.statut}</span></td>
-                <td>{item.traitePar ? `${item.traitePar.prenom} ${item.traitePar.nom}` : "Non assigne"}</td>
-                <td>
+                <td data-label="ID">{item.id.slice(0, 8)}</td>
+                <td data-label="Étudiant">{item.etudiant?.prenom} {item.etudiant?.nom}<br />{item.etudiant?.email}</td>
+                <td data-label="Document">{item.document?.typeDocument}<br />{item.document?.reference}</td>
+                <td data-label="Type"><span className="badge">{item.type}</span></td>
+                <td data-label="Date">{new Date(item.createdAt).toLocaleDateString("fr-FR")}</td>
+                <td data-label="Statut"><span className="badge">{item.statut}</span></td>
+                <td data-label="Assigné à">{item.traitePar ? `${item.traitePar.prenom} ${item.traitePar.nom}` : "Non assigne"}</td>
+                <td data-label="">
                   <button className="btn" onClick={() => setDetail(item)} type="button">Voir</button>
                   {item.statut === "EN_ATTENTE" && <button className="btn green" onClick={() => handlePrendreEnCharge(item.id)} type="button">Prendre</button>}
                   {item.statut === "EN_COURS" && <button className="btn blue" onClick={() => setResolveItem(item)} type="button">Resoudre</button>}

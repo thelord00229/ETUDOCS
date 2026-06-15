@@ -10,6 +10,19 @@ import {
 
 const css = `
 .edt-page{display:flex;flex-direction:column;gap:18px}.edt-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.edt-title{font-family:Sora,sans-serif;font-size:1.5rem;font-weight:800;color:#1e293b}.edt-btn{border:0;border-radius:10px;background:#2e7d32;color:#fff;font-weight:800;padding:11px 16px;cursor:pointer}.edt-table-wrap{overflow:auto;background:#fff;border:1px solid #e2e8f0;border-radius:14px}.edt-table{width:100%;border-collapse:collapse;min-width:840px}.edt-table th,.edt-table td{padding:14px 16px;text-align:left;border-bottom:1px solid #eef2f7;font-size:.9rem}.edt-table th{color:#64748b;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}.badge{display:inline-flex;border-radius:999px;padding:5px 10px;font-size:.75rem;font-weight:800}.b-EN_ATTENTE{background:#ffedd5;color:#9a3412}.b-EN_COURS{background:#dbeafe;color:#1d4ed8}.b-RESOLUE_DOC_REGENERE{background:#dcfce7;color:#166534}.b-RESOLUE_SANS_DOC{background:#f1f5f9;color:#475569}.b-REJETEE{background:#fee2e2;color:#991b1b}.link-btn{border:1px solid #e2e8f0;background:#fff;border-radius:8px;padding:8px 10px;cursor:pointer;color:#1e293b;font-weight:700}
+
+@media (max-width:600px){
+  .edt-head{flex-direction:column;align-items:stretch}
+  .edt-btn{width:100%}
+  .edt-table-wrap{border:none;background:transparent;overflow:visible}
+  .edt-table{min-width:0}
+  .edt-table,.edt-table tbody,.edt-table tr,.edt-table td{display:block;width:100%}
+  .edt-table thead{display:none}
+  .edt-table tbody tr{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:6px 14px;margin-bottom:12px}
+  .edt-table td{border:none;padding:9px 0;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:right}
+  .edt-table td+td{border-top:1px solid #eef2f7}
+  .edt-table td::before{content:attr(data-label);font-weight:700;font-size:.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;text-align:left;flex-shrink:0}
+}
 `;
 
 const typeLabels = {
@@ -62,11 +75,11 @@ export default function MesReclamations() {
               {!loading && items.length === 0 && <tr><td colSpan="5">Aucune reclamation.</td></tr>}
               {items.map((item) => (
                 <tr key={item.id}>
-                  <td><strong>{item.document?.typeDocument}</strong><br />{item.document?.reference}</td>
-                  <td>{typeLabels[item.type] || item.type}</td>
-                  <td>{new Date(item.createdAt).toLocaleDateString("fr-FR")}</td>
-                  <td><span className={`badge b-${item.statut}`}>{item.statut}</span></td>
-                  <td><button className="link-btn" type="button" onClick={() => showToast(item.description, "info")}>Voir detail</button></td>
+                  <td data-label="Document"><strong>{item.document?.typeDocument}</strong><br />{item.document?.reference}</td>
+                  <td data-label="Type">{typeLabels[item.type] || item.type}</td>
+                  <td data-label="Date">{new Date(item.createdAt).toLocaleDateString("fr-FR")}</td>
+                  <td data-label="Statut"><span className={`badge b-${item.statut}`}>{item.statut}</span></td>
+                  <td data-label=""><button className="link-btn" type="button" onClick={() => showToast(item.description, "info")}>Voir detail</button></td>
                 </tr>
               ))}
             </tbody>

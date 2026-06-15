@@ -3,6 +3,8 @@ import logo from "../assets/logo.png";
 import { login as apiLogin, setSession, clearSession } from "../services/api";
 
 const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   html, body, #root {

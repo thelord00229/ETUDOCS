@@ -159,6 +159,17 @@ const css = `
   @media (max-width: 768px) {
     .step2-grid { grid-template-columns: 1fr; }
   }
+  @media (max-width: 600px) {
+    .nd-sub { margin-bottom: 18px; }
+    .doc-card { padding: 16px; }
+    .upload-card, .paiement-card, .recap-section { padding: 18px 16px; }
+    .step-nav { gap: 10px; }
+    .step-nav .btn-back, .step-nav .btn-next, .step-nav .btn-submit-green {
+      flex: 1; justify-content: center; padding: 12px 16px;
+    }
+    .paiement-account-row { flex-wrap: wrap; }
+    .paiement-account-num { font-size: .78rem; word-break: break-all; }
+  }
   @media (max-width: 480px) {
     .doc-grid { grid-template-columns: 1fr; }
   }

@@ -11,6 +11,8 @@ import { useNotifications } from "../../hooks/useNotifications";
 
 // ── Styles ────────────────────────────────────────────────
 const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap');
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
@@ -257,6 +259,23 @@ const css = `
     .agent-topbar__burger { display:flex; align-items:center; justify-content:center; }
     .agent-topbar__info { display:none; }
     .agent-sidebar__close { display:flex; align-items:center; justify-content:center; }
+  }
+  @media (max-width: 600px) {
+    .agent-table-card { background: transparent; border: none; overflow: visible; }
+    .agent-table-header { flex-direction: column; align-items: stretch; gap: 12px; }
+    .agent-table, .agent-table tbody, .agent-table tr, .agent-table td { display: block; width: 100%; }
+    .agent-table thead { display: none; }
+    .agent-table tbody tr { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 4px 14px; margin-bottom: 12px; }
+    .agent-table tbody tr:hover { background: #fff; }
+    .agent-table tbody td { border-bottom: 1px solid #f1f5f9; padding: 10px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: right; }
+    .agent-table tbody tr td:last-child { border-bottom: none; }
+    .agent-table tbody td::before {
+      content: attr(data-label); font-family: 'Sora', sans-serif; font-weight: 700;
+      font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em;
+      text-align: left; flex-shrink: 0;
+    }
+    .agent-table tbody td[style] > div { display: flex !important; flex-wrap: wrap; gap: 8px; width: 100%; }
+    .agent-table tbody td[style] .btn-traiter, .agent-table tbody td[style] .btn-outline { flex: 1; justify-content: center; }
   }
   @media (max-width: 480px) {
     .agent-stats { grid-template-columns:1fr !important; }
@@ -1242,16 +1261,16 @@ export default function DashboardCS() {
                     const { label, urgent } = delaiLabel(d.createdAt);
                     return (
                       <tr key={d.id}>
-                        <td className="td-ref">
+                        <td className="td-ref" data-label="Référence">
                           {getReferenceDoc(d)}
                         </td>
-                        <td>
+                        <td data-label="Étudiant">
                           <div className="td-etudiant-name">{nom}</div>
                           <div className="td-etudiant-num">{num}</div>
                         </td>
-                        <td className="td-doc">Attestation d'inscription</td>
-                        <td className="td-date">{formatDate(d.createdAt)}</td>
-                        <td>
+                        <td className="td-doc" data-label="Document">Attestation d'inscription</td>
+                        <td className="td-date" data-label="Date">{formatDate(d.createdAt)}</td>
+                        <td data-label="Délai">
                           <span
                             className={
                               urgent ? "td-delai-urgent" : "td-delai-ok"
@@ -1261,7 +1280,7 @@ export default function DashboardCS() {
                             {urgent ? " ⚠" : ""}
                           </span>
                         </td>
-                        <td style={{ textAlign: "right" }}>
+                        <td data-label="" style={{ textAlign: "right" }}>
                           <button
                             className="btn-traiter"
                             onClick={() => openTraitement(d)}

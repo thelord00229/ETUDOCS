@@ -166,6 +166,20 @@ const css = `
     .modal-box { max-width: 95vw !important; }
     .modal-sm  { max-width: 95vw !important; }
   }
+  @media (max-width: 600px) {
+    .agents-table-wrap { background: transparent; border: none; overflow: visible; }
+    .agents-tbl, .agents-tbl tbody, .agents-tbl tr, .agents-tbl td { display: block; width: 100%; }
+    .agents-tbl thead { display: none; }
+    .agents-tbl tbody tr { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 4px 14px; margin-bottom: 12px; }
+    .agents-tbl td { border: none; padding: 9px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: right; }
+    .agents-tbl td + td { border-top: 1px solid #f1f5f9; }
+    .agents-tbl td::before {
+      content: attr(data-label); font-weight: 700; font-size: .7rem; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .04em; text-align: left; flex-shrink: 0;
+    }
+    .agents-tbl .ag-actions { justify-content: flex-end; }
+    .agents-tbl .ag-email { word-break: break-all; }
+  }
   @media (max-width: 480px) {
     .sa-agents-header { padding: 16px; }
     .sa-toast { right: 12px; left: 12px; min-width: unset; }
@@ -665,23 +679,23 @@ export default function SAAgents() {
             <tbody>
               {filtered.map((a) => (
                 <tr key={a.id}>
-                  <td className="ag-name">
+                  <td className="ag-name" data-label="Nom">
                     {a.prenom} {a.nom}
                   </td>
-                  <td>
+                  <td data-label="Institution">
                     <InstLogo sigle={a.institution?.sigle || a.institutionId} />
                   </td>
-                  <td className="ag-email">{a.email}</td>
-                  <td style={{ fontSize: ".85rem", color: "#475569" }}>{a.role}</td>
-                  <td>
+                  <td className="ag-email" data-label="Email">{a.email}</td>
+                  <td data-label="Rôle" style={{ fontSize: ".85rem", color: "#475569" }}>{a.role}</td>
+                  <td data-label="Statut">
                     <span className={a.actif ? "badge-actif" : "badge-inactif"}>
                       {a.actif ? "Actif" : "Inactif"}
                     </span>
                   </td>
-                  <td className="ag-date">
+                  <td className="ag-date" data-label="Créé le">
                     {a.createdAt ? new Date(a.createdAt).toLocaleDateString("fr-FR") : "—"}
                   </td>
-                  <td>
+                  <td data-label="">
                     <div className="ag-actions">
                       <SAToggle defaultOn={a.actif} onChange={() => handleToggle(a)} />
 

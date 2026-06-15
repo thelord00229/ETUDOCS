@@ -390,6 +390,8 @@ const css = `
     .sa-ana-kpis { grid-template-columns: 1fr; }
     .sa-ana-bottom { grid-template-columns: 1fr; }
     .sa-ana-select { min-width: 100%; }
+    .radar-content { overflow-x: auto; }
+    .hm { min-width: 520px; }
   }
 
   @keyframes spin { to { transform:rotate(360deg); } }

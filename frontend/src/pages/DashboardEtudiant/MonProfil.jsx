@@ -135,6 +135,14 @@ const css = `
   @media (max-width: 768px) {
     .form-grid-3 { grid-template-columns: 1fr 1fr; }
   }
+  @media (max-width: 600px) {
+    .profil-section { padding: 22px 18px; }
+    .avatar-row { gap: 14px; padding: 14px 16px; margin-bottom: 22px; }
+    .avatar-big { width: 54px; height: 54px; font-size: 1.05rem; }
+    .form-actions { flex-direction: column-reverse; gap: 10px; }
+    .btn-cancel, .btn-save, .btn-pwd { width: 100%; text-align: center; }
+    .identity-banner { align-items: flex-start; }
+  }
   @media (max-width: 480px) {
     .form-grid-2 { grid-template-columns: 1fr; }
     .form-grid-3 { grid-template-columns: 1fr; }
