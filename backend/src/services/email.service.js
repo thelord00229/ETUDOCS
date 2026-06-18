@@ -8,22 +8,23 @@ const FROM = process.env.MAIL_FROM || '"EtuDocs" <noreply@etudocs.uac.bj>';
 
 const isDev = (process.env.NODE_ENV || "development") !== "production";
 
-const hasBrevoConfig =
-  !!process.env.BREVO_SMTP_HOST &&
-  !!process.env.BREVO_SMTP_PORT &&
-  !!process.env.BREVO_SMTP_USER &&
-  !!process.env.BREVO_SMTP_PASS;
+const hasSmtpConfig =
+  !!process.env.SMTP_HOST &&
+  !!process.env.SMTP_PORT &&
+  !!process.env.SMTP_USER &&
+  !!process.env.SMTP_PASS;
 
 let transporter = null;
 
-if (hasBrevoConfig) {
+if (hasSmtpConfig) {
+  const port = parseInt(process.env.SMTP_PORT, 10);
   transporter = nodemailer.createTransport({
-    host: process.env.BREVO_SMTP_HOST,
-    port: parseInt(process.env.BREVO_SMTP_PORT, 10),
-    secure: false, // Brevo SMTP: généralement false sur 587
+    host: process.env.SMTP_HOST,
+    port,
+    secure: port === 465, // Resend: true sur 465, false sur 587
     auth: {
-      user: process.env.BREVO_SMTP_USER,
-      pass: process.env.BREVO_SMTP_PASS,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
     },
   });
 } else {
@@ -37,7 +38,7 @@ if (hasBrevoConfig) {
   };
 
   if (!isDev) {
-    console.warn("[WARN] SMTP non configuré en production. Configure BREVO_SMTP_*.");
+    console.warn("[WARN] SMTP non configuré en production. Configure SMTP_HOST/PORT/USER/PASS.");
   }
 }
 
@@ -75,10 +76,9 @@ exports.sendVerificationEmail = async (email, token) => {
   await sendEmail(email, "Vérifiez votre email — EtuDocs", html);
 };
 
-exports.sendPasswordResetEmail = async (email, token) => {
-  const link = `${process.env.FRONTEND_URL}/auth/reset-password/${token}?email=${encodeURIComponent(email)}`;
-  const html = await renderTemplate("password-reset", { link });
-  await sendEmail(email, "Réinitialisation de mot de passe — EtuDocs", html);
+exports.sendPasswordResetEmail = async (email, code) => {
+  const html = await renderTemplate("password-reset", { code });
+  await sendEmail(email, "Code de réinitialisation — EtuDocs", html);
 };
 
 exports.sendDemandeConfirmee = async (email, prenom, reference, typeDocument) => {

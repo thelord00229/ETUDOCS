@@ -205,6 +205,22 @@ export const login = async ({ email, password }) => {
 export const register = async (payload) =>
   apiRequest("/api/auth/register", { method: "POST", body: payload });
 
+// ── Réinitialisation de mot de passe ──
+export const requestPasswordReset = (email) =>
+  apiRequest("/api/auth/reset-password", { method: "POST", body: { email } });
+
+export const resetPassword = ({ email, code, newPassword }) =>
+  apiRequest("/api/auth/reset-password/confirm", {
+    method: "POST",
+    body: { email, code, newPassword },
+  });
+
+// ── Vérification de l'email (lien reçu à l'inscription) ──
+export const verifyEmail = ({ token, email }) =>
+  apiRequest(
+    `/api/auth/verify/${token}?email=${encodeURIComponent(email)}`
+  );
+
 export const getCachedMe = () => getCachedQuery("auth:me") || getStoredUser();
 
 export const getMe = async ({ force = false } = {}) => {

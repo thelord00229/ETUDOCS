@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  getDemandes,
-  avancerDemande,
-  downloadDocumentBlob,
-  getStatsSG,
-} from "../../services/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { avancerDemande, downloadDocumentBlob } from "../../services/api";
+import { useDemandes, useStatsSG } from "../../hooks/queries";
 import logo from "../../assets/logo.png";
 import { useNotifications } from "../../hooks/useNotifications";
 
@@ -651,10 +648,9 @@ function ModalMotDePasse({ onClose, onSuccess }) {
 /* ── COMPOSANT PRINCIPAL ── */
 export default function DashboardSG() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState(null);
-  const [demandes, setDemandes] = useState([]);
   const [preview, setPreview] = useState(null);
   const [showPwd, setShowPwd] = useState(false);
   const [toast, setToast] = useState(null);
@@ -669,41 +665,26 @@ export default function DashboardSG() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
   const fmtTime = (ts) => { try { return new Date(ts).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }); } catch { return ""; } };
-  const [statsExternes, setStatsExternes] = useState({
-    transmises: 0,
-    rejetees: 0,
-  });
+  const { data: rawDemandes, isLoading: loading, error } = useDemandes();
+  const { data: statsExternes = { transmises: 0, rejetees: 0 } } = useStatsSG();
+
+  const demandes = useMemo(() => {
+    const list = Array.isArray(rawDemandes)
+      ? rawDemandes
+      : rawDemandes?.demandes ?? [];
+    return list
+      .filter((d) => d.statut === "TRANSMISE_SECRETAIRE_ADJOINT")
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  }, [rawDemandes]);
 
   const showToast = useCallback((msg, isError = false) => {
     setToast({ msg, isError });
     setTimeout(() => setToast(null), 3500);
   }, []);
 
-  const charger = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [data, statsData] = await Promise.all([
-        getDemandes(),
-        getStatsSG().catch(() => ({ transmises: 0, rejetees: 0 })),
-      ]);
-      const list = Array.isArray(data) ? data : data?.demandes ?? [];
-      const demandesATransmettre = list
-        .filter((d) => d.statut === "TRANSMISE_SECRETAIRE_ADJOINT")
-        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-      setDemandes(demandesATransmettre);
-      setStatsExternes(statsData);
-    } catch (e) {
-      console.error(e);
-      setDemandes([]);
-      showToast(e?.message || "Erreur chargement demandes", true);
-    } finally {
-      setLoading(false);
-    }
-  }, [showToast]);
-
   useEffect(() => {
-    charger();
-  }, [charger]);
+    if (error) showToast(error?.message || "Erreur chargement demandes", true);
+  }, [error, showToast]);
 
   const filtered = useMemo(() => {
     const q = (searchQuery || "").trim().toLowerCase();
@@ -727,7 +708,8 @@ export default function DashboardSG() {
     setBusyId(demande.id);
     try {
       await avancerDemande(demande.id, "TRANSMETTRE");
-      await charger();
+      await queryClient.invalidateQueries({ queryKey: ["demandes"] });
+      queryClient.invalidateQueries({ queryKey: ["statsSG"] });
     } catch (e) {
       console.error(e);
       showToast(e?.message || "Erreur transmission", true);
@@ -906,7 +888,10 @@ export default function DashboardSG() {
                 <p>Transmission des demandes au Chef de Division</p>
                 <button
                   className="sg-hero__btn"
-                  onClick={charger}
+                  onClick={() => {
+                    queryClient.invalidateQueries({ queryKey: ["demandes"] });
+                    queryClient.invalidateQueries({ queryKey: ["statsSG"] });
+                  }}
                   disabled={loading}
                 >
                   <svg

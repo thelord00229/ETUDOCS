@@ -13,14 +13,16 @@ function validatePassword(password) {
     throw err;
   }
 
-  if (password.length < 8) {
-    const err = new Error('Mot de passe trop court (minimum 8 caractères).');
+  const manquants = [];
+  if (password.length < 8) manquants.push('au moins 8 caractères');
+  if (!/[A-Z]/.test(password)) manquants.push('une lettre majuscule');
+  if (!/[^A-Za-z0-9]/.test(password)) manquants.push('un caractère spécial');
+
+  if (manquants.length > 0) {
+    const err = new Error(`Le mot de passe doit contenir ${manquants.join(', ')}.`);
     err.statusCode = 400;
     throw err;
   }
-
-  // Extensible : ajouter d'autres règles ici si nécessaire
-  // Ex: au moins une majuscule, un chiffre, etc.
 
   return true;
 }

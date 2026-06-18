@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
-import { getCachedDemandes, getDemandes } from "../../services/api";
+import { useDemandes } from "../../hooks/queries";
 
 /* ─────────────────────────────────────────────────────────────
    STYLES
@@ -663,31 +663,14 @@ export default function MesDemandes() {
 
   const [filter, setFilter] = useState("Toutes");
   const [search, setSearch] = useState("");
-  const cachedDemandes = useMemo(() => getCachedDemandes(), []);
-  const [loading, setLoading] = useState(() => !Array.isArray(cachedDemandes));
-  const [error, setError] = useState("");
-  const [demandes, setDemandes] = useState(() =>
-    Array.isArray(cachedDemandes) ? cachedDemandes : []
-  );
+  const { data, isLoading: loading, error: queryError } = useDemandes();
+  const demandes = useMemo(() => (Array.isArray(data) ? data : []), [data]);
+  const error = queryError
+    ? queryError.message || "Échec du chargement des demandes."
+    : "";
   const [detailItem, setDetailItem] = useState(null);
 
   const location = useLocation();
-
-  useEffect(() => {
-    const load = async () => {
-      setLoading(!Array.isArray(cachedDemandes));
-      setError("");
-      try {
-        const list = await getDemandes({ force: Array.isArray(cachedDemandes) });
-        setDemandes(Array.isArray(list) ? list : []);
-      } catch (e) {
-        setError(e?.message || "Échec du chargement des demandes.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [cachedDemandes]);
 
   // Auto-ouvre le détail si on arrive depuis le Dashboard
   useEffect(() => {

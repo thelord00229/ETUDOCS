@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import SALayout from "../../components/DashboardAdmin/SALayout.jsx";
 import SAToggle from "../../components/DashboardAdmin/SAToggle.jsx";
-import api from "../../services/api"; // ✅ AJOUT : axios instance avec token
+import { useAgents, useInstitutions } from "../../hooks/queries";
 import {
-  getAgents,
   toggleAgentActif,
   createAgent,
   deleteAgent,
@@ -476,9 +476,20 @@ function ModalAddAgent({ onClose, onSubmit, loading, institutions }) {
 
 /* ─── Page principale ─── */
 export default function SAAgents() {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [agents, setAgents] = useState([]);
-  const [loading, setLoading] = useState(true);
+
+  // ── Agents (React Query) ──
+  const { data: agentsData, isLoading: loading } = useAgents();
+  // ✅ On exclut SUPER_ADMIN et ETUDIANT de l'affichage
+  const agentsRaw = Array.isArray(agentsData) ? agentsData : agentsData ?? [];
+  const agents = agentsRaw.filter(
+    (a) => a.role !== "SUPER_ADMIN" && a.role !== "ETUDIANT"
+  );
+
+  // ── Institutions (React Query, pour le select) ──
+  const { data: institutionsData } = useInstitutions();
+  const institutions = Array.isArray(institutionsData) ? institutionsData : [];
 
   // Modals
   const [toDelete, setToDelete] = useState(null);
@@ -488,9 +499,6 @@ export default function SAAgents() {
   // Chargement en cours dans une modal
   const [modalLoading, setModalLoading] = useState(false);
 
-  // ✅ Institutions (pour le select)
-  const [institutions, setInstitutions] = useState([]);
-
   // ── Toast ──
   const [toast, setToast] = useState(null); // { message, type: 'success'|'error' }
   const showToast = useCallback((message, type = "success") => {
@@ -498,48 +506,11 @@ export default function SAAgents() {
     setTimeout(() => setToast(null), 3500);
   }, []);
 
-  /* ── Chargement agents ── */
-  const loadAgents = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await getAgents();
-      // ✅ CORRECTION : On exclut SUPER_ADMIN et ETUDIANT de l'affichage
-      setAgents(
-        res.data.filter(
-          (a) => a.role !== "SUPER_ADMIN" && a.role !== "ETUDIANT"
-        )
-      );
-    } catch (err) {
-      console.error(err);
-      showToast("Erreur lors du chargement des agents", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [showToast]);
-
-  /* ── Chargement institutions ── */
-  const loadInstitutions = useCallback(async () => {
-    try {
-      const res = await api.get("/api/institutions"); // ✅ IMPORTANT
-      setInstitutions(Array.isArray(res.data) ? res.data : []);
-    } catch (e) {
-      console.error("Erreur chargement institutions", e);
-      setInstitutions([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadInstitutions();
-    loadAgents();
-  }, [loadAgents, loadInstitutions]);
-
   /* ── Toggle actif/inactif ── */
   const handleToggle = async (agent) => {
     try {
       await toggleAgentActif(agent.id);
-      setAgents((prev) =>
-        prev.map((a) => (a.id === agent.id ? { ...a, actif: !a.actif } : a))
-      );
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
     } catch (err) {
       console.error(err);
       showToast("Erreur lors du changement de statut", "error");
@@ -551,7 +522,7 @@ export default function SAAgents() {
     setModalLoading(true);
     try {
       await deleteAgent(toDelete.id);
-      setAgents((prev) => prev.filter((a) => a.id !== toDelete.id));
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
       setToDelete(null);
       showToast("Agent supprimé avec succès", "success");
     } catch (err) {
@@ -581,8 +552,8 @@ export default function SAAgents() {
   const handleCreateAgent = async (form) => {
     setModalLoading(true);
     try {
-      const res = await createAgent(form);
-      setAgents((prev) => [...prev, res.data]);
+      await createAgent(form);
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
       setShowAddModal(false);
     } catch (err) {
       console.error(err);

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { NavLink } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  getDemandes,
   getDemandeById,
   avancerDemande,
-  getChefDivisionStats,
   validerPiece,
 } from "../../services/api";
+import { useDemandes, useChefDivisionStats } from "../../hooks/queries";
 import { useNotifications } from "../../hooks/useNotifications";
 
 // ── Styles ────────────────────────────────────────────────
@@ -840,20 +840,32 @@ const getReferenceDoc = (d) => {
   return doc?.reference || d?.reference || d?.ref || "—";
 };
 
+const normalizeStats = (st) => {
+  // API retourne : { aTraiter, documentGenere, attenteDirecteur, disponibles, rejetees }
+  const base = st ?? {};
+  return {
+    aTraiter: Number(base.aTraiter ?? 0),
+    documentGenere: Number(base.documentGenere ?? 0),
+    attenteDirecteur: Number(base.attenteDirecteur ?? 0),
+    disponibles: Number(base.disponibles ?? 0),
+    rejetees: Number(base.rejetees ?? 0),
+  };
+};
+
 export default function DashboardCS() {
+  const queryClient = useQueryClient();
   const [view, setView] = useState("dashboard"); // dashboard | traitement | success
   const [user, setUser] = useState(null);
 
   const [search, setSearch] = useState("");
-  const [demandes, setDemandes] = useState([]);
 
-  const [stats, setStats] = useState({
-    aTraiter: 0,
-    documentGenere: 0,
-    attenteDirecteur: 0,
-    disponibles: 0,
-    rejetees: 0,
-  });
+  const { data: rawDemandes, isLoading: loading } = useDemandes();
+  const { data: rawStats } = useChefDivisionStats();
+  const demandes = useMemo(
+    () => (Array.isArray(rawDemandes) ? rawDemandes : rawDemandes?.demandes ?? []),
+    [rawDemandes]
+  );
+  const stats = useMemo(() => normalizeStats(rawStats), [rawStats]);
 
   const [selected, setSelected] = useState(null);
   const [pieces, setPieces] = useState([]);
@@ -867,7 +879,6 @@ export default function DashboardCS() {
   // État pour le modal mot de passe et le toast
   const [showPwd, setShowPwd] = useState(false);
   const [toast, setToast] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -876,8 +887,6 @@ export default function DashboardCS() {
       const raw = localStorage.getItem("etudocs_user");
       if (raw) setUser(JSON.parse(raw));
     } catch {}
-    charger();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const showToast = (msg, isError = false) => {
@@ -892,37 +901,6 @@ export default function DashboardCS() {
       localStorage.removeItem("etudocs_user");
     } catch {}
     window.location.href = "/login";
-  };
-
-  const normalizeStats = (st) => {
-    // API retourne : { aTraiter, documentGenere, attenteDirecteur, disponibles, rejetees }
-    const base = st ?? {};
-    return {
-      aTraiter: Number(base.aTraiter ?? 0),
-      documentGenere: Number(base.documentGenere ?? 0),
-      attenteDirecteur: Number(base.attenteDirecteur ?? 0),
-      disponibles: Number(base.disponibles ?? 0),
-      rejetees: Number(base.rejetees ?? 0),
-    };
-  };
-
-  const charger = async () => {
-    setLoading(true);
-    try {
-      const [data, st] = await Promise.all([
-        getDemandes(),
-        getChefDivisionStats(),
-      ]);
-      const list = Array.isArray(data) ? data : data?.demandes ?? [];
-      setDemandes(list);
-      setStats(normalizeStats(st));
-    } catch (e) {
-      console.error(e);
-      setDemandes([]);
-      setStats(normalizeStats(null));
-    } finally {
-      setLoading(false);
-    }
   };
 
   const openTraitement = async (d) => {
@@ -1010,7 +988,8 @@ export default function DashboardCS() {
     try {
       await avancerDemande(selected.id, "GENERER_DOCUMENT");
       setGeneratedRef(getReferenceDoc(selected));
-      await charger();
+      await queryClient.invalidateQueries({ queryKey: ["demandes"] });
+      queryClient.invalidateQueries({ queryKey: ["statsChefDivision"] });
       setModal(null);
       setView("success");
     } catch (e) {
@@ -1030,7 +1009,8 @@ export default function DashboardCS() {
     try {
       const notificationMessage = `Rejet de demande: ${globalComment.trim()}`;
       await avancerDemande(selected.id, "REJETER", notificationMessage);
-      await charger();
+      await queryClient.invalidateQueries({ queryKey: ["demandes"] });
+      queryClient.invalidateQueries({ queryKey: ["statsChefDivision"] });
       setModal(null);
       setView("dashboard");
     } catch (e) {
@@ -1089,7 +1069,10 @@ export default function DashboardCS() {
               </div>
               <button
                 className="btn-actualiser"
-                onClick={charger}
+                onClick={() => {
+                  queryClient.invalidateQueries({ queryKey: ["demandes"] });
+                  queryClient.invalidateQueries({ queryKey: ["statsChefDivision"] });
+                }}
                 type="button"
               >
                 <svg

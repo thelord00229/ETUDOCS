@@ -4,6 +4,9 @@ import { routeModules } from "./routeModules";
 
 const Login = lazy(routeModules["/login"]);
 const Register = lazy(routeModules["/register"]);
+const ForgotPassword = lazy(routeModules["/forgot-password"]);
+const ResetPassword = lazy(routeModules["/reset-password"]);
+const VerifyEmail = lazy(routeModules["/auth/verify/:token"]);
 const Landingpage = lazy(routeModules["/"]);
 
 const Dashboard = lazy(routeModules["/dashboardEtu"]);
@@ -48,6 +51,9 @@ const Router = () => {
         <Route path="/" element={<Landingpage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/auth/verify/:token" element={<VerifyEmail />} />
 
         <Route path="/dashboardEtu" element={<Dashboard />} />
         <Route path="/dashboardEtu/nouvelle" element={<NouvelleDemande />} />

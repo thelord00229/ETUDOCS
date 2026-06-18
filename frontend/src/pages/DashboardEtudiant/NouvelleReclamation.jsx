@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
 import Toast from "../../components/Toast.jsx";
 import { useToast } from "../../hooks/useToast";
-import api from "../../services/api";
-import { fetchCachedQuery, getCachedQuery } from "../../services/queryCache";
+import { useDocuments } from "../../hooks/queries";
 import { createReclamation } from "../../services/reclamation.service";
 
 const css = `
@@ -27,16 +26,13 @@ const TYPES = [
   ["AUTRE", "Autre", "Autre anomalie"],
 ];
 
-const DOCUMENTS_CACHE_KEY = "student:documents";
-
 export default function NouvelleReclamation() {
   const [params] = useSearchParams();
   const [step, setStep] = useState(0);
-  const cachedDocuments = useMemo(() => getCachedQuery(DOCUMENTS_CACHE_KEY), []);
-  const [documents, setDocuments] = useState(() =>
-    Array.isArray(cachedDocuments)
-      ? cachedDocuments.filter((doc) => doc.statut === "DISPONIBLE")
-      : []
+  const { data: allDocuments = [] } = useDocuments();
+  const documents = useMemo(
+    () => allDocuments.filter((doc) => doc.statut === "DISPONIBLE"),
+    [allDocuments]
   );
   const [documentId, setDocumentId] = useState(params.get("documentId") || "");
   const [type, setType] = useState("");
@@ -45,16 +41,6 @@ export default function NouvelleReclamation() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast, showToast, hideToast } = useToast();
-
-  useEffect(() => {
-    fetchCachedQuery(
-      DOCUMENTS_CACHE_KEY,
-      () => api.get("/api/documents").then((res) => res.data || []),
-      { ttl: 45000, force: Array.isArray(cachedDocuments) }
-    )
-      .then((data) => setDocuments((data || []).filter((doc) => doc.statut === "DISPONIBLE")))
-      .catch(() => showToast("Impossible de charger vos documents", "error"));
-  }, [cachedDocuments, showToast]);
 
   const canNext = useMemo(() => {
     if (step === 0) return !!documentId;

@@ -320,9 +320,9 @@
     "semantic_hash": ""
   },
   "frontend/package.json": {
-    "mtime": 1781627930.2502167,
-    "ast_hash": "58d02cae69c75d4c7d076bc9664af329",
-    "semantic_hash": ""
+    "mtime": 1775047388.2718601,
+    "ast_hash": "f7e842aff75fac8dc345cb4b9e9521b7",
+    "semantic_hash": "f7e842aff75fac8dc345cb4b9e9521b7"
   },
   "frontend/src/App.jsx": {
     "mtime": 1777806261.3156834,
@@ -390,9 +390,9 @@
     "semantic_hash": ""
   },
   "frontend/src/main.jsx": {
-    "mtime": 1781627945.9371302,
-    "ast_hash": "53ab9bb8e054818058efc6937d8b1dde",
-    "semantic_hash": ""
+    "mtime": 1775047388.2876272,
+    "ast_hash": "46e33e17cb11ed4bd71b5d00ea0dd182",
+    "semantic_hash": "46e33e17cb11ed4bd71b5d00ea0dd182"
   },
   "frontend/src/pages/DashboardAdmin/SAAcad\u00e9mique.jsx": {
     "mtime": 1781045844.538362,
@@ -400,18 +400,18 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardAdmin/SAAgents.jsx": {
-    "mtime": 1781633503.9651625,
-    "ast_hash": "b324fca552836fab5947920d59b3a152",
+    "mtime": 1781549282.8889682,
+    "ast_hash": "009931c619d3201b19cfa08562b2c283",
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardAdmin/SAAnalytics.jsx": {
-    "mtime": 1781633652.401888,
-    "ast_hash": "95f50559be8346e13e2fcb490db9e38f",
+    "mtime": 1781549317.4046829,
+    "ast_hash": "e62aafd0ad6f04d9510b15e0a0ef5772",
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardAdmin/SADashboard.jsx": {
-    "mtime": 1781633466.708013,
-    "ast_hash": "417710aa3a3d34c1cf14550ea2c5e577",
+    "mtime": 1781549244.9251356,
+    "ast_hash": "90132a0512532dc0f98c6e52b516a008",
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardAdmin/SAInstitutions.jsx": {
@@ -420,33 +420,33 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardCE/DashboardCE.jsx": {
-    "mtime": 1781633304.0588923,
-    "ast_hash": "93da42abf0a54fb6f2bdc8539c56f244",
+    "mtime": 1781549162.4967878,
+    "ast_hash": "2f9b2b76cba3ea6058c5be46ada33150",
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardCS/DashboardCS.jsx": {
-    "mtime": 1781633328.3594184,
-    "ast_hash": "dd97b48b0ec3e7628ccc1b2be05fd822",
+    "mtime": 1781549108.6512134,
+    "ast_hash": "75ecfe951735153175e88b7bc6ea1f71",
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardDA/DashboardDA.jsx": {
-    "mtime": 1781633306.3692753,
-    "ast_hash": "fd3abb36b91f80cd827c20088cd0c423",
+    "mtime": 1781549062.8747432,
+    "ast_hash": "5d96bf1327f63c21722decc08aa8f8b8",
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardDI/DashboardDI.jsx": {
-    "mtime": 1781633305.5817535,
-    "ast_hash": "0a7f1ff666ea1342968909d49a8db024",
+    "mtime": 1781549077.6414678,
+    "ast_hash": "90cd68b89047474a3b694ff69725570c",
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardEtudiant/Dashboard.jsx": {
-    "mtime": 1781628392.2901819,
-    "ast_hash": "96593dd89a4ba253d84d896deb7d263b",
+    "mtime": 1781548750.7068782,
+    "ast_hash": "cfcbc4d5e75b1c3f1d0af5c32f7b1c03",
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardEtudiant/MesDemandes.jsx": {
-    "mtime": 1781628392.7965472,
-    "ast_hash": "775f68f785540097530eb0fb04e2c7e9",
+    "mtime": 1781548697.6934996,
+    "ast_hash": "8b63f4f4fdf1baa042c0ea2a46577217",
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardEtudiant/MonProfil.jsx": {
@@ -460,13 +460,13 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardSA/DashboardSA.jsx": {
-    "mtime": 1781633325.527179,
-    "ast_hash": "e2b2a981cf1c9881daca083b6389ab6c",
+    "mtime": 1781543600.2295423,
+    "ast_hash": "95b710a4e1f3dab12bd704dc04b04b3d",
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardSG/DashboardSG.jsx": {
-    "mtime": 1781633067.6014886,
-    "ast_hash": "99d0ec73a686065403c894fc7e001072",
+    "mtime": 1781548980.8348455,
+    "ast_hash": "6dc3d080ebf9f17bc460734566c180c5",
     "semantic_hash": ""
   },
   "frontend/src/pages/Home.jsx": {
@@ -1370,13 +1370,13 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardEtudiant/MesReclamations.jsx": {
-    "mtime": 1781628236.925525,
-    "ast_hash": "637f281ff507113956a9fd8e7784f31a",
+    "mtime": 1781548842.759605,
+    "ast_hash": "79741f4efa9c976b8d096020a6459dd6",
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardEtudiant/NouvelleReclamation.jsx": {
-    "mtime": 1781633509.4088006,
-    "ast_hash": "69ad71fa596494ee684d932b81d18c9e",
+    "mtime": 1781548845.293792,
+    "ast_hash": "de557828ac5f46c15e79e95f18a3ba99",
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardSG/GestionReclamations.jsx": {
@@ -1452,11 +1452,6 @@
   "frontend/src/utils/passwordValidator.js": {
     "mtime": 1781625447.446552,
     "ast_hash": "85cdb1efa2b6452efb38aa3e9487a96e",
-    "semantic_hash": ""
-  },
-  "frontend/src/hooks/queries.js": {
-    "mtime": 1781633710.9869661,
-    "ast_hash": "a268bceac362d1247d70f69eef7e8239",
     "semantic_hash": ""
   }
 }

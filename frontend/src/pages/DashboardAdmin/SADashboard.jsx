@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
 import SALayout from "../../components/DashboardAdmin/SALayout.jsx";
 import SAStatCard from "../../components/DashboardAdmin/SAStatCard.jsx";
 import SAInstBadge from "../../components/DashboardAdmin/SAInstBadge.jsx";
-import { getDashboard } from "../../services/admin.service";
+import { useAdminDashboard } from "../../hooks/queries";
 
 const css = `
   .sa-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
@@ -59,24 +58,8 @@ const css = `
 `;
 
 export default function SADashboard() {
-  const [stats, setStats] = useState(null); // {kpis, parInstitution}
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchAll = async () => {
-      setLoading(true);
-      try {
-        const res = await getDashboard();
-        setStats(res.data);
-      } catch (err) {
-        console.error(err);
-        setStats(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAll();
-  }, []);
+  const { data, isLoading: loading, error } = useAdminDashboard();
+  const stats = error ? null : data; // {kpis, parInstitution}
 
   const statCards = stats
     ? [

@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { getDemandes, avancerDemande, clearSession } from "../../services/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { avancerDemande, clearSession } from "../../services/api";
+import { useDemandes } from "../../hooks/queries";
 import logo from "../../assets/logo.png";
 import { useNotifications } from "../../hooks/useNotifications";
 
@@ -823,9 +825,15 @@ function ModalVerifier({ demande, onClose, onSuccess }) {
 /* ─── Component principal ─────────────────────────────── */
 export default function DashboardSA() {
   const navigate = useNavigate();
-  const [demandes, setDemandes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const queryClient = useQueryClient();
+  const { data: rawDemandes, isLoading: loading, error } = useDemandes();
+  const demandes = useMemo(() => {
+    const list = Array.isArray(rawDemandes)
+      ? rawDemandes
+      : rawDemandes?.demandes ?? [];
+    // Filtre d'origine : seules les demandes au statut traitable par le SA
+    return list.filter((d) => SA_STATUTS.includes(d.statut));
+  }, [rawDemandes]);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
   const [showPwd, setShowPwd] = useState(false);
@@ -885,29 +893,16 @@ export default function DashboardSA() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const data = await getDemandes();
-      const list = Array.isArray(data) ? data : data?.demandes || [];
-      const filtered = list.filter((d) => SA_STATUTS.includes(d.statut));
-      setDemandes(filtered);
-    } catch (e) {
-      if (e?.message === "UNAUTHORIZED") {
-        clearSession();
-        navigate("/login");
-      } else {
-        setError("Impossible de charger les demandes.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [navigate]);
-
+  // Déconnexion automatique si la session est expirée (erreur remontée par React Query)
   useEffect(() => {
-    load();
-  }, [load]);
+    if (error?.message === "UNAUTHORIZED") {
+      clearSession();
+      navigate("/login");
+    }
+  }, [error, navigate]);
+
+  const refresh = () =>
+    queryClient.invalidateQueries({ queryKey: ["demandes"] });
 
   const stats = {
     nouvelles: demandes.filter((d) => d.statut === "SOUMISE").length,
@@ -963,7 +958,7 @@ export default function DashboardSA() {
             showToast(msg, isErr);
             if (!isErr) {
               if (demandeId) addTransmise(demandeId);
-              load();
+              refresh();
             }
             setSelected(null);
           }}
@@ -1139,7 +1134,7 @@ export default function DashboardSA() {
             </div>
             <button
               className="btn-actualiser"
-              onClick={load}
+              onClick={refresh}
               disabled={loading}
             >
               <svg
@@ -1261,7 +1256,11 @@ export default function DashboardSA() {
             ))}
           </div>
 
-          {error && <div className="state-box state-error">{error}</div>}
+          {error && error.message !== "UNAUTHORIZED" && (
+            <div className="state-box state-error">
+              Impossible de charger les demandes.
+            </div>
+          )}
 
           <div className="agent-table-card">
             <div className="agent-table-header">

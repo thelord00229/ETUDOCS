@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import SALayout from "../../components/DashboardAdmin/SALayout.jsx";
 import api from "../../services/api";
 import {
@@ -454,36 +455,90 @@ function miniIcon(kind) {
   );
 }
 
+const KPIS_DEFAULT = {
+  avgTimeH: 0,
+  sla: 0,
+  slaTarget: 80,
+  overdue: 0,
+  active: 0,
+  deltaAvg: 0,
+  deltaSla: 0,
+  deltaOverdue: 0,
+  deltaActive: 0,
+};
+
 export default function SAAnalytics() {
   const [period, setPeriod] = useState("30");
   const [inst, setInst] = useState("ALL");
   const [doc, setDoc] = useState("ALL");
 
-  const [slaSeries, setSlaSeries] = useState([]);
-  const [slaKpis, setSlaKpis] = useState({ sla: 0, slaTarget: 80, deltaSla: 0 });
-  const [loadingSla, setLoadingSla] = useState(false);
-  const [errorSla, setErrorSla] = useState("");
-
-  const [radar, setRadar] = useState({ institutions: [], steps: [], heatmap: {} });
-  const [radarLoading, setRadarLoading] = useState(false);
-  const [radarError, setRadarError] = useState("");
-
-  const [instMeta, setInstMeta] = useState({});
   const [logoFailed, setLogoFailed] = useState({});
 
-  const [kpis, setKpis] = useState({
-    avgTimeH: 0,
-    sla: 0,
-    slaTarget: 80,
-    overdue: 0,
-    active: 0,
-    deltaAvg: 0,
-    deltaSla: 0,
-    deltaOverdue: 0,
-    deltaActive: 0,
+  const {
+    data: radar = { institutions: [], steps: [], heatmap: {} },
+    isLoading: radarLoading,
+    isError: radarIsError,
+  } = useQuery({
+    queryKey: ["analytics", "radar", inst, doc],
+    queryFn: () =>
+      api
+        .get("/api/admin/analytics/radar", { params: { institution: inst, docType: doc } })
+        .then((r) => r.data || { institutions: [], steps: [], heatmap: {} }),
+    refetchInterval: 15000,
   });
-  const [loadingKpis, setLoadingKpis] = useState(false);
-  const [errorKpis, setErrorKpis] = useState("");
+  const radarError = radarIsError ? "Impossible de charger le radar" : "";
+
+  const {
+    data: kpis = KPIS_DEFAULT,
+    isLoading: loadingKpis,
+    isError: kpisIsError,
+  } = useQuery({
+    queryKey: ["analytics", "kpis", period, inst, doc],
+    queryFn: () =>
+      api
+        .get("/api/admin/analytics/kpis", { params: { days: Number(period), institution: inst, docType: doc } })
+        .then((r) => r.data?.kpis || {}),
+    refetchInterval: 15000,
+  });
+  const errorKpis = kpisIsError ? "Impossible de charger les KPIs" : "";
+
+  const {
+    data: sla,
+    isLoading: loadingSla,
+    isError: slaIsError,
+  } = useQuery({
+    queryKey: ["analytics", "sla", inst, doc],
+    queryFn: () =>
+      api
+        .get("/api/admin/analytics/sla", { params: { days: 20, institution: inst, docType: doc } })
+        .then((r) => r.data),
+    select: (d) => ({
+      series: (d?.series || []).map((x) => ({
+        date: new Date(x.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
+        value: x.value,
+      })),
+      kpis: d?.kpis || { sla: 0, slaTarget: 80, deltaSla: 0 },
+    }),
+  });
+  const slaSeries = sla?.series ?? [];
+  const slaKpis = sla?.kpis ?? { sla: 0, slaTarget: 80, deltaSla: 0 };
+  const errorSla = slaIsError ? "Impossible de charger l'évolution SLA" : "";
+
+  const { data: instMeta = {} } = useQuery({
+    queryKey: ["analytics", "instMeta"],
+    queryFn: () =>
+      api.get("/api/institutions").then((r) => {
+        const list = Array.isArray(r.data) ? r.data : [];
+        const m = {};
+        for (const it of list) {
+          const sigle = normalize(it.sigle);
+          if (!sigle) continue;
+          m[sigle] = { sigle, nom: it.nom, logoUrl: it.logoUrl || null };
+        }
+        return m;
+      }),
+    staleTime: 5 * 60_000,
+  });
 
   const BASE_URL =
     (api?.defaults?.baseURL && String(api.defaults.baseURL)) ||
@@ -536,88 +591,6 @@ export default function SAAnalytics() {
     return { institutions, steps, kpis, insights };
   }, []);
 
-  useEffect(() => {
-    let alive = true;
-
-    const loadRadar = async () => {
-      setRadarLoading(true);
-      setRadarError("");
-      try {
-        const res = await api.get("/api/admin/analytics/radar", {
-          params: { institution: inst, docType: doc },
-        });
-        if (!alive) return;
-        setRadar(res.data || { institutions: [], steps: [], heatmap: {} });
-      } catch (e) {
-        if (!alive) return;
-        setRadarError("Impossible de charger le radar");
-      } finally {
-        if (alive) setRadarLoading(false);
-      }
-    };
-
-    loadRadar();
-    const t = setInterval(loadRadar, 15000);
-    return () => {
-      alive = false;
-      clearInterval(t);
-    };
-  }, [inst, doc]);
-
-  useEffect(() => {
-    let alive = true;
-
-    (async () => {
-      try {
-        const res = await api.get("/api/institutions");
-        const list = Array.isArray(res.data) ? res.data : [];
-        const m = {};
-        for (const it of list) {
-          const sigle = normalize(it.sigle);
-          if (!sigle) continue;
-          m[sigle] = { sigle, nom: it.nom, logoUrl: it.logoUrl || null };
-        }
-        if (!alive) return;
-        setInstMeta(m);
-      } catch {
-        if (!alive) return;
-        setInstMeta({});
-      }
-    })();
-
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let alive = true;
-
-    const loadKpis = async () => {
-      setLoadingKpis(true);
-      setErrorKpis("");
-      try {
-        const { data } = await api.get("/api/admin/analytics/kpis", {
-          params: { days: Number(period), institution: inst, docType: doc },
-        });
-        if (!alive) return;
-        setKpis(data?.kpis || {});
-      } catch (e) {
-        if (!alive) return;
-        setErrorKpis("Impossible de charger les KPIs");
-      } finally {
-        if (alive) setLoadingKpis(false);
-      }
-    };
-
-    loadKpis();
-    const t = setInterval(loadKpis, 15000); // ✅ 15s
-    return () => {
-      alive = false;
-      clearInterval(t);
-  };
-}, [period, inst, doc]);
-
   const getLogoSrc = (sigle) => {
     const s = normalize(sigle);
     const meta = instMeta[s];
@@ -647,44 +620,6 @@ export default function SAAnalytics() {
     }
     return n;
   }, [radar, data]);
-
-  useEffect(() => {
-    let alive = true;
-
-    const run = async () => {
-      setLoadingSla(true);
-      setErrorSla("");
-      try {
-        const days = 20;
-        const institution = inst;
-        const docType = doc;
-
-        const { data } = await api.get("/api/admin/analytics/sla", {
-          params: { days, institution, docType },
-        });
-
-        if (!alive) return;
-
-        const series = (data.series || []).map((x) => ({
-          date: new Date(x.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
-          value: x.value,
-        }));
-
-        setSlaSeries(series);
-        setSlaKpis(data.kpis || { sla: 0, slaTarget: 80, deltaSla: 0 });
-      } catch {
-        if (!alive) return;
-        setErrorSla("Impossible de charger l'évolution SLA");
-      } finally {
-        if (alive) setLoadingSla(false);
-      }
-    };
-
-    run();
-    return () => {
-      alive = false;
-    };
-  }, [inst, doc]);
 
   return (
     <SALayout>

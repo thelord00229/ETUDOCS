@@ -1,12 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
 import Toast from "../../components/Toast.jsx";
 import { useToast } from "../../hooks/useToast";
-import {
-  getCachedMesReclamations,
-  getMesReclamations,
-} from "../../services/reclamation.service";
+import { useMesReclamations } from "../../hooks/queries";
 
 const css = `
 .edt-page{display:flex;flex-direction:column;gap:18px}.edt-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.edt-title{font-family:Sora,sans-serif;font-size:1.5rem;font-weight:800;color:#1e293b}.edt-btn{border:0;border-radius:10px;background:#2e7d32;color:#fff;font-weight:800;padding:11px 16px;cursor:pointer}.edt-table-wrap{overflow:auto;background:#fff;border:1px solid #e2e8f0;border-radius:14px}.edt-table{width:100%;border-collapse:collapse;min-width:840px}.edt-table th,.edt-table td{padding:14px 16px;text-align:left;border-bottom:1px solid #eef2f7;font-size:.9rem}.edt-table th{color:#64748b;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}.badge{display:inline-flex;border-radius:999px;padding:5px 10px;font-size:.75rem;font-weight:800}.b-EN_ATTENTE{background:#ffedd5;color:#9a3412}.b-EN_COURS{background:#dbeafe;color:#1d4ed8}.b-RESOLUE_DOC_REGENERE{background:#dcfce7;color:#166534}.b-RESOLUE_SANS_DOC{background:#f1f5f9;color:#475569}.b-REJETEE{background:#fee2e2;color:#991b1b}.link-btn{border:1px solid #e2e8f0;background:#fff;border-radius:8px;padding:8px 10px;cursor:pointer;color:#1e293b;font-weight:700}
@@ -36,23 +33,21 @@ const typeLabels = {
 };
 
 export default function MesReclamations() {
-  const cachedItems = useMemo(() => getCachedMesReclamations(), []);
-  const [items, setItems] = useState(() =>
-    Array.isArray(cachedItems) ? cachedItems : []
-  );
-  const [loading, setLoading] = useState(() => !Array.isArray(cachedItems));
   const navigate = useNavigate();
   const { toast, showToast, hideToast } = useToast();
 
+  const { data, isLoading, isError, error } = useMesReclamations();
+  const items = Array.isArray(data) ? data : [];
+  const loading = isLoading;
+
   useEffect(() => {
-    let alive = true;
-    setLoading(!Array.isArray(cachedItems));
-    getMesReclamations({ force: Array.isArray(cachedItems) })
-      .then((data) => alive && setItems(Array.isArray(data) ? data : []))
-      .catch((err) => showToast(err?.response?.data?.message || "Chargement impossible", "error"))
-      .finally(() => alive && setLoading(false));
-    return () => { alive = false; };
-  }, [cachedItems, showToast]);
+    if (isError) {
+      showToast(
+        error?.response?.data?.message || error?.message || "Chargement impossible",
+        "error"
+      );
+    }
+  }, [isError, error, showToast]);
 
   return (
     <DashboardLayout>

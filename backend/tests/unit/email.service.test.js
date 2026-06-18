@@ -1,8 +1,8 @@
 // Ensure env vars before module load so email.service picks nodemailer transport
-process.env.BREVO_SMTP_HOST = "smtp.example";
-process.env.BREVO_SMTP_PORT = "587";
-process.env.BREVO_SMTP_USER = "user";
-process.env.BREVO_SMTP_PASS = "pass";
+process.env.SMTP_HOST = "smtp.example";
+process.env.SMTP_PORT = "587";
+process.env.SMTP_USER = "user";
+process.env.SMTP_PASS = "pass";
 process.env.MAIL_FROM = '"EtuDocs" <noreply@etudocs.uac.bj>';
 
 // Mock nodemailer
@@ -35,10 +35,10 @@ describe("Email Service", () => {
     process.env.FRONTEND_URL = "http://localhost:3000";
     process.env.NODE_ENV = "test";
     // Ensure transport uses mocked nodemailer
-    process.env.BREVO_SMTP_HOST = "smtp.example";
-    process.env.BREVO_SMTP_PORT = "587";
-    process.env.BREVO_SMTP_USER = "user";
-    process.env.BREVO_SMTP_PASS = "pass";
+    process.env.SMTP_HOST = "smtp.example";
+    process.env.SMTP_PORT = "587";
+    process.env.SMTP_USER = "user";
+    process.env.SMTP_PASS = "pass";
   });
 
   describe("sendVerificationEmail", () => {
@@ -118,23 +118,23 @@ describe("Email Service", () => {
   });
 
   describe("sendPasswordResetEmail", () => {
-    it("should send reset email with correct link and subject", async () => {
+    it("should send reset email with the code and correct subject", async () => {
       const mockRender = require("ejs").renderFile;
       mockRender.mockResolvedValue("<html>Reset</html>");
 
       const mockSendMail = require("nodemailer").createTransport().sendMail;
       mockSendMail.mockResolvedValue(true);
 
-      await emailService.sendPasswordResetEmail("test@example.com", "rtok");
+      await emailService.sendPasswordResetEmail("test@example.com", "K7P2QM");
 
       expect(mockRender).toHaveBeenCalledWith(
         expect.stringContaining("password-reset.ejs"),
-        { link: "http://localhost:3000/auth/reset-password/rtok?email=test%40example.com" }
+        { code: "K7P2QM" }
       );
       expect(mockSendMail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: "test@example.com",
-          subject: "Réinitialisation de mot de passe — EtuDocs",
+          subject: "Code de réinitialisation — EtuDocs",
           html: "<html>Reset</html>",
         })
       );

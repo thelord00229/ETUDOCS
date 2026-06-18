@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  getDemandes,
   getDemandeById,
   avancerDemande,
-  getChefDivisionStats,
   validerPiece,
 } from "../../services/api";
+import { useDemandes, useChefDivisionStats } from "../../hooks/queries";
 import { useNotifications } from "../../hooks/useNotifications";
 
 const styles = `
@@ -931,12 +931,22 @@ export default function ChefDivisionExamens() {
   const [pieceBusy, setPieceBusy] = useState(null);
   const [preview, setPreview] = useState(null);
   const [genBusy, setGenBusy] = useState(false);
-  const [demandes, setDemandes] = useState([]);
-  const [stats, setStats] = useState({
-    aSigner: 0,
-    signesCeMois: 0,
-    refuses: 0,
-  });
+
+  const queryClient = useQueryClient();
+  const { data: rawDemandes } = useDemandes();
+  const { data: cdStats } = useChefDivisionStats();
+  const demandes = useMemo(
+    () => (Array.isArray(rawDemandes) ? rawDemandes : rawDemandes?.demandes ?? []),
+    [rawDemandes]
+  );
+  const stats = useMemo(
+    () => ({
+      aSigner: cdStats?.attenteDirecteur ?? 0,
+      signesCeMois: cdStats?.documentGenere ?? 0,
+      refuses: cdStats?.rejetees ?? 0,
+    }),
+    [cdStats]
+  );
 
   // État modal mot de passe + toast
   const [showPwd, setShowPwd] = useState(false);
@@ -944,38 +954,9 @@ export default function ChefDivisionExamens() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  useEffect(() => {
-    chargerDemandes();
-    chargerStats();
-  }, []);
-
   const showToast = (msg, isError = false) => {
     setToast({ msg, isError });
     setTimeout(() => setToast(null), 3500);
-  };
-
-  const chargerDemandes = async () => {
-    try {
-      const data = await getDemandes();
-      setDemandes(Array.isArray(data) ? data : data?.demandes ?? []);
-    } catch (e) {
-      console.error(e);
-      setDemandes([]);
-    }
-  };
-
-  const chargerStats = async () => {
-    try {
-      const data = await getChefDivisionStats();
-      setStats({
-        aSigner: data?.attenteDirecteur ?? 0,
-        signesCeMois: data?.documentGenere ?? 0,
-        refuses: data?.rejetees ?? 0,
-      });
-    } catch (e) {
-      console.error(e);
-      setStats({ aSigner: 0, signesCeMois: 0, refuses: 0 });
-    }
   };
 
   const openTraitement = async (d) => {
@@ -1069,7 +1050,8 @@ export default function ChefDivisionExamens() {
     try {
       setGenBusy(true);
       await avancerDemande(selected.id, "GENERER_DOCUMENT");
-      await Promise.all([chargerDemandes(), chargerStats()]);
+      await queryClient.invalidateQueries({ queryKey: ["demandes"] });
+      queryClient.invalidateQueries({ queryKey: ["statsChefDivision"] });
       setModal(null);
       setView("dashboard");
     } catch (e) {
@@ -1092,7 +1074,8 @@ export default function ChefDivisionExamens() {
       setGenBusy(true);
       const notificationMessage = `Rejet de demande: ${globalComment.trim()}`;
       await avancerDemande(selected.id, "REJETER", notificationMessage);
-      await Promise.all([chargerDemandes(), chargerStats()]);
+      await queryClient.invalidateQueries({ queryKey: ["demandes"] });
+      queryClient.invalidateQueries({ queryKey: ["statsChefDivision"] });
       setModal(null);
       setView("dashboard");
     } catch (e) {
@@ -1158,8 +1141,10 @@ export default function ChefDivisionExamens() {
                 <button
                   className="actualiser-btn"
                   onClick={() => {
-                    chargerDemandes();
-                    chargerStats();
+                    queryClient.invalidateQueries({ queryKey: ["demandes"] });
+                    queryClient.invalidateQueries({
+                      queryKey: ["statsChefDivision"],
+                    });
                   }}
                 >
                   Actualiser
