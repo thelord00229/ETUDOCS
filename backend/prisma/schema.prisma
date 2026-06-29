@@ -139,6 +139,9 @@ model PieceJustificative {
   typePiece    TypePiece
   nom          String
   url          String
+  quittanceFingerprint String?      @unique
+  ocrStatut    String?
+  ocrTexte     String?      @db.Text
   createdAt    DateTime     @default(now())
   statut       StatutPiece  @default(SOUMISE)
   commentaire  String?

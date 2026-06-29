@@ -81,6 +81,36 @@ async function telecharger(reference, userId) {
   return { urlPdf: doc.urlPdf };
 }
 
+async function renvoyerEmail(reference, userId) {
+  const doc = await prisma.document.findUnique({
+    where: { reference },
+    include: {
+      demande: {
+        include: {
+          utilisateur: { select: { id: true, email: true, prenom: true } },
+        },
+      },
+    },
+  });
+
+  if (!doc) return { error: { code: 404, message: "Document introuvable" } };
+  if (doc.demande.utilisateur.id !== userId) {
+    return { error: { code: 403, message: "Acces refuse" } };
+  }
+  if (doc.statut !== "DISPONIBLE" && doc.demande.statut !== "DISPONIBLE") {
+    return { error: { code: 400, message: "Le document n'est pas encore disponible" } };
+  }
+
+  await emailService.sendDocumentDisponible(
+    doc.demande.utilisateur.email,
+    doc.demande.utilisateur.prenom,
+    doc.demande.typeDocument,
+    [toMailDocument(doc, doc.demande.typeDocument)]
+  );
+
+  return { success: true, message: "Email renvoye avec succes." };
+}
+
 async function preview(reference) {
   return getDocumentByReference(reference);
 }
@@ -226,6 +256,7 @@ module.exports = {
   getDocumentByReference,
   listerPourUtilisateur,
   telecharger,
+  renvoyerEmail,
   preview,
   supprimer,
   verifier,

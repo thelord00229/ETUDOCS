@@ -1,6 +1,8 @@
 // src/modules/demande/demande.service.js
 
 const prisma = require("../../config/prisma");
+const fs = require("fs");
+const crypto = require("crypto");
 const {
   assertPermission,
   getNextStatut,
@@ -89,7 +91,125 @@ const parseSemestres = (semestres) => {
   return Number.isFinite(n) ? [n] : [];
 };
 
-async function generateUniqueReference(typeDocument, semestres, anneeAcademique, etudiant) {
+const levelRank = (niveau) => {
+  const raw = String(niveau || "").toUpperCase();
+  const match = raw.match(/(?:L|LICENCE)\s*([123])|(?:M|MASTER)\s*([12])|DOCTORAT\s*([123])/);
+  if (!match) return 1;
+  if (match[1]) return Number(match[1]);
+  if (match[2]) return 3 + Number(match[2]);
+  if (match[3]) return 5 + Number(match[3]);
+  return 1;
+};
+
+const assertAcademicScopeAllowed = (etudiant, docKey, parsedSemestres, anneeAcademique) => {
+  const rank = levelRank(etudiant?.niveau);
+  const maxSemester = Math.min(rank * 2, 6);
+
+  if (docKey === RELEVE_NOTES && parsedSemestres.some((s) => s > maxSemester)) {
+    const err = new Error(
+      `Votre niveau actuel ne permet pas de demander un releve au-dela du semestre ${maxSemester}.`
+    );
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (docKey === ATTESTATION_INSCRIPTION && anneeAcademique) {
+    const allYears = ["2022-2023", "2023-2024", "2024-2025", "2025-2026"];
+    const allowedYears = allYears.slice(Math.max(0, allYears.length - Math.min(rank, allYears.length)));
+    if (!allowedYears.includes(String(anneeAcademique).trim())) {
+      const err = new Error("Votre niveau actuel ne permet pas de demander ce document pour cette annee.");
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+};
+
+const sameSemestres = (a = [], b = []) => {
+  const left = [...a].map(Number).filter(Number.isFinite).sort((x, y) => x - y);
+  const right = [...b].map(Number).filter(Number.isFinite).sort((x, y) => x - y);
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+};
+
+const normalizeAnnee = (anneeAcademique) =>
+  anneeAcademique ? String(anneeAcademique).trim() : null;
+
+const hashFile = (filePath) => {
+  if (!filePath || !fs.existsSync(filePath)) return null;
+  return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
+};
+
+async function assertNoExistingDemande(utilisateurId, docKey, parsedSemestres, anneeAcademique) {
+  const existing = await prisma.demande.findMany({
+    where: {
+      utilisateurId,
+      typeDocument: docKey,
+      anneeAcademique: normalizeAnnee(anneeAcademique),
+    },
+    include: {
+      documents: {
+        select: { reference: true, deliveredAt: true, urlPdf: true },
+        orderBy: { createdAt: "asc" },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const match = existing.find((d) => sameSemestres(d.semestres, parsedSemestres));
+  if (!match) return;
+
+  const hasDeliveredDoc = match.statut === "DISPONIBLE";
+  const references = match.documents.length
+    ? match.documents.map((d) => d.reference).join(", ")
+    : match.reference;
+
+  const err = new Error(
+    hasDeliveredDoc
+      ? `Ce document a deja ete genere (${references}). Verifiez votre email; si vous l'avez perdu, demandez le renvoi du mail depuis vos demandes.`
+      : `Une demande existe deja pour ce document (${match.reference}). Consultez son statut dans Mes demandes.`
+  );
+  err.statusCode = 409;
+  err.code = hasDeliveredDoc ? "DOCUMENT_ALREADY_DELIVERED" : "DEMANDE_ALREADY_EXISTS";
+  err.references = references;
+  throw err;
+}
+
+async function assertQuittanceNotUsed(filesObj) {
+  const quittanceFile = Object.values(filesObj || {})
+    .flat()
+    .find((file) => normalizeField(file.fieldname) === "QUITTANCE");
+
+  if (!quittanceFile) return null;
+
+  const fingerprint = hashFile(quittanceFile.path);
+  if (!fingerprint) return null;
+
+  const existing = await prisma.pieceJustificative.findFirst({
+    where: {
+      typePiece: "QUITTANCE",
+      quittanceFingerprint: fingerprint,
+    },
+    include: {
+      demande: {
+        select: {
+          reference: true,
+          utilisateur: { select: { nom: true, prenom: true } },
+        },
+      },
+    },
+  });
+
+  if (existing) {
+    const ref = existing.demande?.reference || "une demande existante";
+    const err = new Error(`Cette quittance a deja ete utilisee pour ${ref}.`);
+    err.statusCode = 409;
+    err.code = "QUITTANCE_ALREADY_USED";
+    throw err;
+  }
+
+  return fingerprint;
+}
+
+function generateReference(typeDocument, semestres, anneeAcademique, etudiant) {
   const formatNomPrenom = (nom, prenom) => {
     const n = String(nom || "").trim();
     const p = String(prenom || "").trim();
@@ -120,22 +240,10 @@ async function generateUniqueReference(typeDocument, semestres, anneeAcademique,
   }
 
   const baseRef = `${prefix}_${nomPrenom}${sPart}_${annee}`;
-  let finalRef = baseRef;
-  let counter = 1;
-
-  // Ensure uniqueness across both Demande.reference and Document.reference
-  while (
-    (await prisma.demande.findUnique({ where: { reference: finalRef } })) ||
-    (await prisma.document.findUnique({ where: { reference: finalRef } }))
-  ) {
-    counter++;
-    finalRef = `${baseRef}_${counter}`;
-  }
-
-  return finalRef;
+  return baseRef;
 }
 
-async function generateUniqueDocumentReference(typeDocument, semestre, anneeAcademique, etudiant) {
+function generateDocumentReference(typeDocument, semestre, anneeAcademique, etudiant) {
   const formatNomPrenom = (nom, prenom) => {
     const n = String(nom || "").trim();
     const p = String(prenom || "").trim();
@@ -154,15 +262,7 @@ async function generateUniqueDocumentReference(typeDocument, semestre, anneeAcad
     : new Date().getFullYear();
   const prefix = typeDocument === "RELEVE_NOTES" ? "REL-NOTES" : "DOC";
   const baseRef = `${prefix}_${nomPrenom}_S${semestre}_${annee}`;
-  let finalRef = baseRef;
-  let counter = 1;
-
-  while (await prisma.document.findUnique({ where: { reference: finalRef } })) {
-    counter++;
-    finalRef = `${baseRef}_${counter}`;
-  }
-
-  return finalRef;
+  return baseRef;
 }
 
 // Notifie tous les super admins (activité globale du workflow)
@@ -205,7 +305,23 @@ exports.soumettre = async (utilisateurId, institutionId, body, files) => {
 
   const etudiant = await prisma.utilisateur.findUnique({ where: { id: utilisateurId } });
   const parsedSemestres = parseSemestres(semestres);
-  const reference = await generateUniqueReference(docKey, parsedSemestres, anneeAcademique, etudiant);
+  assertAcademicScopeAllowed(etudiant, docKey, parsedSemestres, anneeAcademique);
+  await assertNoExistingDemande(utilisateurId, docKey, parsedSemestres, anneeAcademique);
+  const quittanceFingerprint = await assertQuittanceNotUsed(filesObj);
+  const reference = generateReference(docKey, parsedSemestres, anneeAcademique, etudiant);
+
+  const [referenceTaken, documentReferenceTaken] = await Promise.all([
+    prisma.demande.findUnique({ where: { reference } }),
+    prisma.document.findUnique({ where: { reference } }),
+  ]);
+  if (referenceTaken || documentReferenceTaken) {
+    const err = new Error(
+      "Une reference identique existe deja. Verifiez les informations de l'etudiant avant de soumettre."
+    );
+    err.statusCode = 409;
+    err.code = "REFERENCE_ALREADY_EXISTS";
+    throw err;
+  }
 
   const demande = await prisma.demande.create({
     data: {
@@ -222,6 +338,12 @@ exports.soumettre = async (utilisateurId, institutionId, body, files) => {
           typePiece: normalizeField(f.fieldname),
           nom: f.originalname,
           url: f.path,
+          quittanceFingerprint:
+            normalizeField(f.fieldname) === "QUITTANCE" ? quittanceFingerprint : null,
+          ocrStatut:
+            normalizeField(f.fieldname) === "QUITTANCE"
+              ? (quittanceFingerprint ? "FINGERPRINT_OK" : "NON_ANALYSEE")
+              : null,
           statut: "SOUMISE",
         })),
       },
@@ -495,12 +617,21 @@ async function generateDocumentsOutsideTransaction({ demande, institutionId }) {
     const semestres = demande.semestres?.length ? demande.semestres : [1];
 
     for (const semestre of semestres) {
-      const docReference = await generateUniqueDocumentReference(
+      const docReference = generateDocumentReference(
         demande.typeDocument,
         semestre,
         demande.anneeAcademique,
         etudiant
       );
+      const existingDoc = await prisma.document.findUnique({
+        where: { reference: docReference },
+        select: { id: true },
+      });
+      if (existingDoc) {
+        const err = new Error(`Document deja genere pour la reference ${docReference}.`);
+        err.statusCode = 409;
+        throw err;
+      }
       const docQrData = `${baseUrl}/verify/${docReference}`;
       const demandeSemestre = { ...demande, semestre, semestres: [semestre] };
 

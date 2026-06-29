@@ -320,6 +320,9 @@ export const downloadDocument = async (reference, filename) => {
   window.URL.revokeObjectURL(url);
 };
 
+export const resendDocumentEmail = async (reference) =>
+  apiRequest(`/api/documents/resend-email/${reference}`, { method: "POST" });
+
 export const deleteDocument = async (reference) =>
   apiRequest(`/api/documents/${reference}`, { method: "DELETE" });
 

@@ -8,6 +8,7 @@ router.get("/", auth, ctrl.lister);
 // Download: propriétaire uniquement, incrémente le compteur
 router.get("/download/:reference", auth, ctrl.telecharger);
 
+router.post("/resend-email/:reference", auth, role("ETUDIANT"), ctrl.renvoyerEmail);
 
 router.get(
   "/preview/:reference",

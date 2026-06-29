@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
-import { getCachedDemandes, getDemandes } from "../../services/api";
+import { getCachedDemandes, getDemandes, resendDocumentEmail } from "../../services/api";
+import Toast from "../../components/Toast.jsx";
+import { useToast } from "../../hooks/useToast.js";
 
 /* ─────────────────────────────────────────────────────────────
    STYLES
@@ -444,12 +446,13 @@ const groupLabel = (k) => {
 /* ─────────────────────────────────────────────────────────────
    DETAIL
 ───────────────────────────────────────────────────────────── */
-function DetailDemande({ demande, onBack, onNewReclamation }) {
+function DetailDemande({ demande, onBack, onNewReclamation, onResendEmail, resendLoading }) {
   const title = labelType(demande.typeDocument);
   const uiStatus = computeUiStatus(demande);
 
-  const doc0 = Array.isArray(demande.documents) ? demande.documents[0] : null;
-  const reference = doc0?.reference || null;
+  const docs = Array.isArray(demande.documents) ? demande.documents : [];
+  const doc0 = docs[0] || null;
+  const reference = docs.length ? docs.map((doc) => doc.reference).filter(Boolean).join(", ") : null;
   const ref = reference || demande.id;
 
   const dateStr = demande.createdAt
@@ -576,9 +579,14 @@ function DetailDemande({ demande, onBack, onNewReclamation }) {
 
         <div className="detail-right">
           {uiStatus === "Disponible" && (
-            <button className="btn-dl" type="button" onClick={onNewReclamation}>
-              Signaler une anomalie
-            </button>
+            <>
+              <button className="btn-dl" type="button" onClick={onResendEmail} disabled={resendLoading || !doc0?.reference}>
+                {resendLoading ? "Renvoi en cours..." : "Renvoyer l'email"}
+              </button>
+              <button className="btn-dl" type="button" onClick={onNewReclamation}>
+                Signaler une anomalie
+              </button>
+            </>
           )}
 
           <div className="meta-card">
@@ -627,6 +635,8 @@ export default function MesDemandes() {
     Array.isArray(cachedDemandes) ? cachedDemandes : []
   );
   const [detailItem, setDetailItem] = useState(null);
+  const [resendLoading, setResendLoading] = useState(false);
+  const { toast, showToast, hideToast } = useToast();
 
   const location = useLocation();
 
@@ -673,8 +683,9 @@ export default function MesDemandes() {
 
   const flatRows = useMemo(() => {
     return demandes.map((d) => {
-      const doc0 = Array.isArray(d.documents) ? d.documents[0] : null;
-      const ref = uiRef(doc0?.reference || d.id);
+      const docs = Array.isArray(d.documents) ? d.documents : [];
+      const refs = docs.map((doc) => doc.reference).filter(Boolean);
+      const ref = uiRef(refs.length ? refs.join(", ") : (d.reference || d.id));
       const type = labelType(d.typeDocument);
       const dateObj = d.createdAt ? new Date(d.createdAt) : null;
       const date = dateObj
@@ -735,12 +746,27 @@ export default function MesDemandes() {
         <DetailDemande
           demande={detailItem}
           onBack={() => setDetailItem(null)}
+          resendLoading={resendLoading}
+          onResendEmail={async () => {
+            const reference = detailItem.documents?.[0]?.reference;
+            if (!reference) return;
+            try {
+              setResendLoading(true);
+              await resendDocumentEmail(reference);
+              showToast("Email renvoye avec succes.", "success");
+            } catch (e) {
+              showToast(e?.message || "Impossible de renvoyer l'email.", "error");
+            } finally {
+              setResendLoading(false);
+            }
+          }}
           onNewReclamation={() =>
             navigate(
               `/dashboardEtu/nouvelle-reclamation?documentId=${detailItem.documents?.[0]?.id || ""}`
             )
           }
         />
+        {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
       </DashboardLayout>
     );
   }

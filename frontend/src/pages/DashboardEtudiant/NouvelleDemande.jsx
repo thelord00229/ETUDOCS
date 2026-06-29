@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
 import Stepper from "../../components/DashboardEtudiant/Stepper.jsx";
-import { submitDemande } from "../../services/api";
+import { getStoredUser, submitDemande } from "../../services/api";
 import Toast from "../../components/Toast.jsx";
 import { useToast } from "../../hooks/useToast.js";
 
@@ -222,6 +222,27 @@ const InfoIcon = () => (
 
 const RIB = "BJ6600100100000104477437";
 
+const levelRank = (niveau) => {
+  const raw = String(niveau || "").toUpperCase();
+  const match = raw.match(/(?:L|LICENCE)\s*([123])|(?:M|MASTER)\s*([12])|DOCTORAT\s*([123])/);
+  if (!match) return 1;
+  if (match[1]) return Number(match[1]);
+  if (match[2]) return 3 + Number(match[2]);
+  if (match[3]) return 5 + Number(match[3]);
+  return 1;
+};
+
+const allowedSemestersForLevel = (niveau) => {
+  const max = Math.min(levelRank(niveau) * 2, 6);
+  return Array.from({ length: max }, (_, index) => `S${index + 1}`);
+};
+
+const allowedAcademicYearsForLevel = (niveau) => {
+  const all = ["2022-2023", "2023-2024", "2024-2025", "2025-2026"];
+  const count = Math.min(levelRank(niveau), all.length);
+  return all.slice(Math.max(0, all.length - count));
+};
+
 export default function NouvelleDemande() {
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState(null);
@@ -234,6 +255,10 @@ export default function NouvelleDemande() {
   const [anneeAcademique, setAnneeAcademique] = useState("");
   const navigate = useNavigate();
   const { toast, showToast, hideToast } = useToast();
+  const user = getStoredUser();
+  const niveauEtudiant = user?.niveau || "";
+  const semestresDisponibles = allowedSemestersForLevel(niveauEtudiant);
+  const anneesDisponibles = allowedAcademicYearsForLevel(niveauEtudiant);
 
   const cipInputRef  = useRef(null);
   const qttInputRef  = useRef(null);
@@ -318,7 +343,7 @@ export default function NouvelleDemande() {
               <div style={{ fontFamily:"Sora,sans-serif", fontWeight:700, color:"#2e7d32", marginBottom:10 }}>
                 Pour quel(s) semestre(s) ?
               </div>
-              {["S1","S2","S3","S4","S5","S6"].map(s => (
+              {semestresDisponibles.map(s => (
                 <label key={s} style={{ display:"flex", gap:10, alignItems:"center", marginBottom:8, color:"#475569", cursor:"pointer" }}>
                   <input type="checkbox" checked={semestreChoix.includes(s)} onChange={() => toggleSemestre(s)} />
                   {`Semestre ${s.replace("S","")}`}
@@ -333,7 +358,7 @@ export default function NouvelleDemande() {
                 Pour quelle année académique ?
               </div>
               <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
-                {["2022-2023","2023-2024","2024-2025","2025-2026"].map(a => (
+                {anneesDisponibles.map(a => (
                   <label key={a} style={{
                     display:"flex", alignItems:"center", gap:8, cursor:"pointer",
                     padding:"8px 14px", borderRadius:8, border:"1.5px solid",

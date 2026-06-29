@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import logo from "../assets/logo.png";
 
 const css = `
@@ -280,9 +280,10 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [okMsg, setOkMsg]     = useState("");
-
-  const [institutions, setInstitutions] = useState(FALLBACK_INSTITUTIONS);
-  const [instLoading, setInstLoading]   = useState(false);
+  const institution = "IFRI";
+  const institutions = FALLBACK_INSTITUTIONS.filter((i) => i.value === "IFRI");
+  const instLoading = false;
+  const setInstitution = () => {};
 
   const [numEtudiant, setNumEtudiant] = useState("");
   const [prenom, setPrenom]           = useState("");
@@ -291,43 +292,10 @@ export default function Register() {
   const [password, setPassword]       = useState("");
   const [confirm, setConfirm]         = useState("");
 
-  const [institution, setInstitution] = useState("");
   const [filiere, setFiliere]         = useState("");
   const [niveau, setNiveau]           = useState("");
 
-  useEffect(() => {
-    const load = async () => {
-      setInstLoading(true);
-      try {
-        const res  = await fetch(`${API_URL}/api/institutions`);
-        const data = await res.json().catch(() => []);
-        if (Array.isArray(data) && data.length) {
-          const mapped = data
-            .map((x) => {
-              const code = normalizeCode(x.sigle);
-              return code ? { value: code, label: `${code} - ${x.nom}` } : null;
-            })
-            .filter(Boolean);
-          setInstitutions(mapped.length ? mapped : FALLBACK_INSTITUTIONS);
-          setInstitution((prev) => {
-            const p = normalizeCode(prev);
-            return mapped.some((m) => m.value === p) ? p : (mapped[0]?.value || "IFRI");
-          });
-        } else {
-          setInstitutions(FALLBACK_INSTITUTIONS);
-          setInstitution((prev) => normalizeCode(prev) || "IFRI");
-        }
-      } catch {
-        setInstitutions(FALLBACK_INSTITUTIONS);
-        setInstitution((prev) => normalizeCode(prev) || "IFRI");
-      } finally {
-        setInstLoading(false);
-      }
-    };
-    load();
-  }, [API_URL]);
-
-  const filieresDisponibles = useMemo(() => FILIERES[institution] || [], [institution]);
+  const filieresDisponibles = FILIERES.IFRI;
   const passwordMismatch    = useMemo(() => confirm.length > 0 && password !== confirm, [password, confirm]);
 
   const goStep2 = (e) => {
@@ -352,7 +320,7 @@ export default function Register() {
   const submit = async (e) => {
     e.preventDefault();
     setErrorMsg(""); setOkMsg("");
-    if (!institution || !filiere.trim() || !niveau) {
+    if (!filiere.trim() || !niveau) {
       setErrorMsg("Veuillez compléter les informations académiques."); return;
     }
     if (passwordMismatch) {
@@ -369,7 +337,7 @@ export default function Register() {
           nom: nom.trim(),
           email: email.trim().toLowerCase(),
           password,
-          institutionSigle: normalizeCode(institution),
+          institutionSigle: "IFRI",
           filiere: filiere.trim(),
           niveau,
         }),

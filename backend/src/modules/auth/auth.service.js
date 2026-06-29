@@ -28,8 +28,7 @@ const genToken = (user) =>
   );
 
 async function resolveInstitutionId({ institutionId, institutionSigle }) {
-  const raw = (institutionId ?? institutionSigle ?? "").toString().trim();
-  if (!raw) return null;
+  const raw = (institutionId ?? institutionSigle ?? "IFRI").toString().trim();
 
   const value = raw.trim();
   const sigle = normalize(value);
@@ -98,8 +97,8 @@ exports.register = async ({
   }
 
   const resolvedInstitutionId = await resolveInstitutionId({
-    institutionId,
-    institutionSigle,
+    institutionId: null,
+    institutionSigle: "IFRI",
   });
 
   // ✅ Institution obligatoire (MVP multi-institutions)

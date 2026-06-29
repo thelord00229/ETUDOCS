@@ -24,6 +24,17 @@ exports.telecharger = asyncHandler(async (req, res) => {
   return res.download(absPath, `${reference}.pdf`);
 });
 
+exports.renvoyerEmail = asyncHandler(async (req, res) => {
+  const { reference } = req.params;
+  const result = await documentService.renvoyerEmail(reference, req.user.id);
+
+  if (result?.error) {
+    return res.status(result.error.code).json({ message: result.error.message });
+  }
+
+  return res.json(result);
+});
+
 exports.preview = asyncHandler(async (req, res) => {
   const { reference } = req.params;
   const doc = await documentService.preview(reference);
