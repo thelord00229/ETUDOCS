@@ -5,8 +5,8 @@
     "semantic_hash": ""
   },
   ".claude/settings.local.json": {
-    "mtime": 1781744037.3945029,
-    "ast_hash": "7c7ad53bf383d251ccb10c15c05cfdd3",
+    "mtime": 1781624846.0444655,
+    "ast_hash": "336abd6de648fef0073d1ebe2cebbde8",
     "semantic_hash": ""
   },
   "backend/package.json": {
@@ -60,9 +60,9 @@
     "semantic_hash": "00f10df75dc986762791aaa0a1dbab3c"
   },
   "backend/src/middlewares/rateLimit.middleware.js": {
-    "mtime": 1781743496.6992514,
-    "ast_hash": "8c8c160c85bfecb56d8f7a4d36d8ecf3",
-    "semantic_hash": ""
+    "mtime": 1775345752.0647445,
+    "ast_hash": "57461cb1181063b58f35e09f2f32c130",
+    "semantic_hash": "57461cb1181063b58f35e09f2f32c130"
   },
   "backend/src/middlewares/requiresa.middleware.js": {
     "mtime": 1775047388.15948,
@@ -110,9 +110,9 @@
     "semantic_hash": ""
   },
   "backend/src/modules/auth/auth.controller.js": {
-    "mtime": 1781743490.7740748,
-    "ast_hash": "69fb1b81b22fec498a2dec34fcc789cc",
-    "semantic_hash": ""
+    "mtime": 1777809208.7130792,
+    "ast_hash": "bf9021854a7ce9024fa729169f0b2684",
+    "semantic_hash": "bf9021854a7ce9024fa729169f0b2684"
   },
   "backend/src/modules/auth/auth.me.js": {
     "mtime": 1775047388.1634445,
@@ -120,14 +120,14 @@
     "semantic_hash": "33f3f3d83843c1f1b9102ece30642f10"
   },
   "backend/src/modules/auth/auth.routes.js": {
-    "mtime": 1781743506.0184047,
-    "ast_hash": "869f2e4a180ffd29835315342c0b5707",
-    "semantic_hash": ""
+    "mtime": 1775345752.066761,
+    "ast_hash": "7163a0939289010098a5289398691fc1",
+    "semantic_hash": "7163a0939289010098a5289398691fc1"
   },
   "backend/src/modules/auth/auth.service.js": {
-    "mtime": 1781743485.9208632,
-    "ast_hash": "98a896b16f531280e2c33796ac233f52",
-    "semantic_hash": ""
+    "mtime": 1777809208.7130792,
+    "ast_hash": "f118306b5c74de0e8b891c1a52bc22b9",
+    "semantic_hash": "f118306b5c74de0e8b891c1a52bc22b9"
   },
   "backend/src/modules/auth/security/validatePassword.js": {
     "mtime": 1781625443.3509574,
@@ -215,8 +215,8 @@
     "semantic_hash": ""
   },
   "backend/src/services/email.service.js": {
-    "mtime": 1781743511.2125282,
-    "ast_hash": "a45f2a2cf07c0a8ffbd8cedeecd93dbe",
+    "mtime": 1781532376.6712625,
+    "ast_hash": "ccb7fbad574b25a7f54c7f795f8febe5",
     "semantic_hash": ""
   },
   "backend/src/services/pdf.service.js": {
@@ -280,8 +280,8 @@
     "semantic_hash": "c3ec52a974a7a547a793a67924beb7ec"
   },
   "backend/tests/unit/email.service.test.js": {
-    "mtime": 1781743530.1912558,
-    "ast_hash": "e7a26f54c91b0ecdd7a4b3745ea7f0e9",
+    "mtime": 1781532376.6751077,
+    "ast_hash": "67a137ef7edaa5b51ddca097a9e8c1ad",
     "semantic_hash": ""
   },
   "bulletin-preview/bulletin.template.js": {
@@ -390,8 +390,8 @@
     "semantic_hash": ""
   },
   "frontend/src/main.jsx": {
-    "mtime": 1781634410.9493601,
-    "ast_hash": "caaf7e364a523cd6731dbd1a78ac14d4",
+    "mtime": 1781627945.9371302,
+    "ast_hash": "53ab9bb8e054818058efc6937d8b1dde",
     "semantic_hash": ""
   },
   "frontend/src/pages/DashboardAdmin/SAAcad\u00e9mique.jsx": {
@@ -495,8 +495,8 @@
     "semantic_hash": "92d101b513d40eeeb1074e5228f6b303"
   },
   "frontend/src/routes/Router.jsx": {
-    "mtime": 1781743637.6139407,
-    "ast_hash": "1f5d7bdf2f06fab1a0c5924b7c09703a",
+    "mtime": 1781624399.7708821,
+    "ast_hash": "43a6594d7a273d8337b9560fa65556b4",
     "semantic_hash": ""
   },
   "frontend/src/services/admin.service.js": {
@@ -505,8 +505,8 @@
     "semantic_hash": "544d11a97ad99fbe8413fa802dac7c87"
   },
   "frontend/src/services/api.js": {
-    "mtime": 1781743535.7183816,
-    "ast_hash": "465968762f399c4a59f34d2b18b73164",
+    "mtime": 1781624390.3710847,
+    "ast_hash": "1d0f159e2f75bb8e2761169d9bdaeee3",
     "semantic_hash": ""
   },
   "frontend/vite.config.js": {
@@ -1385,8 +1385,8 @@
     "semantic_hash": ""
   },
   "frontend/src/routes/routeModules.js": {
-    "mtime": 1781743630.3507485,
-    "ast_hash": "31c3472996b74b1805884a4c804efde3",
+    "mtime": 1781624392.2412295,
+    "ast_hash": "cc214120b8d68125402cbc2ffee3f915",
     "semantic_hash": ""
   },
   "frontend/src/services/queryCache.js": {
@@ -1405,8 +1405,8 @@
     "semantic_hash": ""
   },
   "backend/COLLABORATION_SUPABASE.md": {
-    "mtime": 1781740375.2044623,
-    "ast_hash": "cedf912903361089ed63eaed7fef995e",
+    "mtime": 1781532376.6562028,
+    "ast_hash": "d9af853a3d56be479319c6d1b955dd22",
     "semantic_hash": ""
   },
   "backend/uploads/pdfs/REL-NOTES_AGBETIT_S1-2_2026.pdf": {
@@ -1440,13 +1440,13 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/ForgotPassword.jsx": {
-    "mtime": 1781743567.2120214,
-    "ast_hash": "dee3a495183ff9def74296347fcab638",
+    "mtime": 1781624339.0803447,
+    "ast_hash": "4e2a1faf7edf84990450747b576ee580",
     "semantic_hash": ""
   },
   "frontend/src/pages/ResetPassword.jsx": {
-    "mtime": 1781743625.2659159,
-    "ast_hash": "058cf90fc3db209f2f06e779a4b05070",
+    "mtime": 1781625466.8105547,
+    "ast_hash": "16b4c3c3947bdee3baeb79eea689a21f",
     "semantic_hash": ""
   },
   "frontend/src/utils/passwordValidator.js": {
@@ -1455,13 +1455,8 @@
     "semantic_hash": ""
   },
   "frontend/src/hooks/queries.js": {
-    "mtime": 1781634413.079523,
-    "ast_hash": "045a8bd8e3cb70196b9c685132e36c53",
-    "semantic_hash": ""
-  },
-  "frontend/src/pages/VerifyEmail.jsx": {
-    "mtime": 1781742688.417822,
-    "ast_hash": "3f0bfd394878eac0fc3c81f7685b1622",
+    "mtime": 1781633710.9869661,
+    "ast_hash": "a268bceac362d1247d70f69eef7e8239",
     "semantic_hash": ""
   }
 }

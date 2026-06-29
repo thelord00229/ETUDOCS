@@ -88,6 +88,16 @@ export const avancerDocument = async (reference, action, commentaire = "") => {
   });
 };
 
+// Redirige vers /login une seule fois quand la session expire (401),
+// sauf si l'on est déjà sur une page publique (évite les boucles).
+const PUBLIC_PATHS = ["/", "/login", "/register", "/forgot-password", "/reset-password"];
+const redirectToLogin = () => {
+  if (typeof window === "undefined") return;
+  const path = window.location.pathname;
+  if (PUBLIC_PATHS.includes(path) || path.startsWith("/auth/verify")) return;
+  window.location.assign("/login?expired=1");
+};
+
 export const clearSession = () => {
   clearQueryCache();
   localStorage.removeItem("etudocs_token");
@@ -117,7 +127,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (r) => r,
   (error) => {
-    if (error?.response?.status === 401) clearSession();
+    if (error?.response?.status === 401) {
+      clearSession();
+      redirectToLogin();
+    }
     return Promise.reject(error);
   }
 );
@@ -143,6 +156,7 @@ const parseErrorMessage = async (res) => {
 
 const handleUnauthorized = () => {
   clearSession();
+  redirectToLogin();
   throw new Error("UNAUTHORIZED");
 };
 
@@ -249,7 +263,6 @@ export const getCachedDemandes = () => getCachedQuery("student:demandes");
 
 export const invalidateStudentData = () => {
   invalidateQuery("student:demandes");
-  invalidateQuery("student:documents");
   invalidateQuery("student:mes-reclamations");
 };
 

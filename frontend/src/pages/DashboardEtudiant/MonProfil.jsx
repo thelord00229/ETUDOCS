@@ -289,7 +289,12 @@ export default function MonProfil() {
       setPwdMsg("ok:Mot de passe modifié avec succès.");
       setPwdActuel(""); setPwdNew(""); setPwdConfirm("");
     } catch (e) {
-      setPwdMsg(`error:${e?.message}`);
+      const raw = String(e?.message || "");
+      // On affiche les messages métier du backend, mais jamais les erreurs techniques (réseau, etc.)
+      const friendly = raw && !/failed to fetch|networkerror|unauthorized|erreur serveur|erreur interne/i.test(raw)
+        ? raw
+        : "Une erreur est survenue. Veuillez réessayer.";
+      setPwdMsg(`error:${friendly}`);
     }
   };
 

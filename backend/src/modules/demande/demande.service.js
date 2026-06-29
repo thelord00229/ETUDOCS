@@ -5,11 +5,11 @@ const {
   assertPermission,
   getNextStatut,
 } = require("../../modules/workflow/workflow");
-const emailService = require("../../services/email.service");
+const emailService = require("../../services/email/email.service");
+const documentService = require("../document/document.service");
 const notifService = require("../notification/notification.service");
 const { ATTESTATION_INSCRIPTION, RELEVE_NOTES } = require("../../constants/typeDocument");
 const { EXAMENS, SCOLARITE } = require("../../constants/services");
-const { toSafeAbsolutePath } = require("../../utils/fileUtils");
 
 const normalizeField = (v) =>
   String(v || "")
@@ -20,21 +20,6 @@ const labelType = (t) => {
   if (t === "RELEVE_NOTES") return "relevé de notes";
   if (t === "ATTESTATION_INSCRIPTION") return "attestation d'inscription";
   return String(t || "document").toLowerCase();
-};
-
-const documentLabel = (t) => {
-  if (t === "RELEVE_NOTES") return "Releve de notes";
-  if (t === "ATTESTATION_INSCRIPTION") return "Attestation d'inscription";
-  return "Document";
-};
-
-const toMailDocument = (doc, typeDocument) => {
-  const absPath = toSafeAbsolutePath(doc.urlPdf);
-  return {
-    reference: doc.reference,
-    filename: `${documentLabel(typeDocument)} - ${doc.reference}.pdf`,
-    absPath,
-  };
 };
 
 const normalizeService = (s) => {
@@ -449,8 +434,8 @@ exports.getById = async (demandeId, user) => {
 
 async function generateDocumentsOutsideTransaction({ demande, institutionId }) {
   const { v4: uuidv4 } = require("uuid");
-  const pdfService = require("../../services/pdf.service");
-  const qrcodeService = require("../../services/qrcode.service");
+  const pdfService = require("../../services/pdf/pdf.service");
+  const qrcodeService = require("../../services/qrcode/qrcode.service");
 
   const [institution, etudiant] = await Promise.all([
     prisma.institution.findUnique({ where: { id: institutionId } }),
@@ -660,12 +645,12 @@ exports.avancer = async (
         select: { reference: true, urlPdf: true },
         orderBy: { createdAt: "asc" },
       });
-      await emailService.sendDocumentDisponible(
-        demande.utilisateur.email,
-        demande.utilisateur.prenom,
-        demande.typeDocument,
-        documents.map((doc) => toMailDocument(doc, demande.typeDocument))
-      );
+      await documentService.livrerEtNettoyer({
+        email: demande.utilisateur.email,
+        prenom: demande.utilisateur.prenom,
+        typeDocument: demande.typeDocument,
+        documents,
+      });
     } else {
       // Pour les autres statuts, notifier l'agent suivant
       const prochainRole = getProchainRole(prochainStatut);

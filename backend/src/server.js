@@ -51,10 +51,16 @@ app.get("/api/health", (req, res) => {
 
 // Gestion erreurs globale — toujours en dernier
 app.use((err, req, res, next) => {
-  console.error(`[ERROR] ${err.message}`);
-  res.status(err.statusCode || 500).json({
-    message: err.message || "Erreur interne",
-  });
+  const status = err.statusCode || 500;
+
+  // 5xx : on logge les détails côté serveur, on ne fuit rien au client
+  if (status >= 500) {
+    console.error(`[ERROR] ${req.method} ${req.originalUrl} —`, err.stack || err.message);
+    return res.status(status).json({ message: "Erreur interne du serveur" });
+  }
+
+  // 4xx : erreurs métier → message explicite autorisé
+  return res.status(status).json({ message: err.message || "Requête invalide" });
 });
 
 const PORT = process.env.PORT || 5000;

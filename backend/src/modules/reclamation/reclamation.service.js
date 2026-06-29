@@ -1,29 +1,15 @@
 const path = require("path");
 const prisma = require("../../config/prisma");
-const pdfService = require("../../services/pdf.service");
-const qrcodeService = require("../../services/qrcode.service");
-const emailService = require("../../services/email.service");
-const { toSafeAbsolutePath } = require("../../utils/fileUtils");
+const pdfService = require("../../services/pdf/pdf.service");
+const qrcodeService = require("../../services/qrcode/qrcode.service");
+const emailService = require("../../services/email/email.service");
+const documentService = require("../document/document.service");
 
 const AGENT_ROLES = new Set(["SECRETAIRE_GENERAL", "CHEF_DIVISION", "SUPER_ADMIN"]);
 const RESOLUTION_ACTIONS = new Set(["REGENERER_DOC", "EXPLIQUER"]);
 
 const normalize = (value) => String(value || "").trim();
 const normalizeUpper = (value) => normalize(value).toUpperCase();
-
-function documentLabel(typeDocument) {
-  if (typeDocument === "RELEVE_NOTES") return "Releve de notes";
-  if (typeDocument === "ATTESTATION_INSCRIPTION") return "Attestation d'inscription";
-  return "Document";
-}
-
-function toMailDocument(doc, typeDocument) {
-  return {
-    reference: doc.reference,
-    filename: `${documentLabel(typeDocument)} - ${doc.reference}.pdf`,
-    absPath: toSafeAbsolutePath(doc.urlPdf),
-  };
-}
 
 function assertAgent(user) {
   if (!AGENT_ROLES.has(user?.role)) {
@@ -309,12 +295,12 @@ exports.resoudreReclamation = async ({ id, user, action, reponseAgent }) => {
       updated.id,
       path.basename(nouveauDocument.urlPdf)
     );
-    await emailService.sendDocumentDisponible?.(
-      updated.etudiant.email,
-      updated.etudiant.prenom,
-      updated.document?.demande?.typeDocument || "Document",
-      [toMailDocument(nouveauDocument, updated.document?.demande?.typeDocument)]
-    );
+    await documentService.livrerEtNettoyer({
+      email: updated.etudiant.email,
+      prenom: updated.etudiant.prenom,
+      typeDocument: updated.document?.demande?.typeDocument || "Document",
+      documents: [nouveauDocument],
+    });
     return exposeDocumentType(updated);
   }
 

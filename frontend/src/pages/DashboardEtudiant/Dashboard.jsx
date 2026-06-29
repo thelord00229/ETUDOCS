@@ -671,7 +671,10 @@ export default function Dashboard() {
     () => (Array.isArray(demandesData) ? demandesData : []),
     [demandesData]
   );
-  const errorMsg = error && error.message !== "UNAUTHORIZED" ? error.message : "";
+  const errorMsg =
+    error && error.message !== "UNAUTHORIZED"
+      ? "Impossible de charger vos données pour le moment. Veuillez réessayer."
+      : "";
   const [detailDemande, setDetailDemande] = useState(null);
 
   // Redirection si la session a expiré

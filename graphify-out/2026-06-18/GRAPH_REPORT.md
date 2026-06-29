@@ -1,16 +1,16 @@
-# Graph Report - ETUDOCS  (2026-06-18)
+# Graph Report - ETUDOCS  (2026-06-16)
 
 ## Corpus Check
-- 154 files · ~1,322,876 words
+- 153 files · ~1,321,825 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1195 nodes · 1680 edges · 82 communities (73 shown, 9 thin omitted)
+- 1187 nodes · 1668 edges · 81 communities (74 shown, 7 thin omitted)
 - Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 103 edges (avg confidence: 0.92)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `f4ea99bf`
+- Built from commit: `18403909`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -82,26 +82,25 @@
 - [[_COMMUNITY_Community 71|Community 71]]
 - [[_COMMUNITY_Community 72|Community 72]]
 - [[_COMMUNITY_Community 73|Community 73]]
-- [[_COMMUNITY_Community 74|Community 74]]
 - [[_COMMUNITY_Community 75|Community 75]]
 - [[_COMMUNITY_Community 76|Community 76]]
-- [[_COMMUNITY_Community 77|Community 77]]
 - [[_COMMUNITY_Community 78|Community 78]]
 - [[_COMMUNITY_Community 79|Community 79]]
 - [[_COMMUNITY_Community 80|Community 80]]
+- [[_COMMUNITY_Community 82|Community 82]]
 - [[_COMMUNITY_Community 83|Community 83]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `apiRequest()` - 22 edges
+1. `apiRequest()` - 21 edges
 2. `useDemandes()` - 17 edges
 3. `useNotifications()` - 17 edges
 4. `getDemandes()` - 13 edges
 5. `fetchCachedQuery()` - 10 edges
-6. `Collaboration Supabase - EtuDocs` - 9 edges
-7. `Depannage` - 9 edges
+6. `imageToDataUrl()` - 9 edges
+7. `toSafeAbsolutePath()` - 9 edges
 8. `getMe()` - 9 edges
-9. `imageToDataUrl()` - 9 edges
-10. `toSafeAbsolutePath()` - 9 edges
+9. `Collaboration Supabase - EtuDocs` - 9 edges
+10. `Depannage` - 9 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Bloc signatures Directeur-Adjoint et Directeur avec tampon` --semantically_similar_to--> `Relevé de notes Semestre 1 IFRI — Document généré ETD-2026-IFRI-S1-A7AFA-9DDF`  [INFERRED] [semantically similar]
@@ -123,7 +122,7 @@
 - **Composants structurels du bulletin de notes (UE/ECU, récapitulatif, signatures, barème)** — bulletin_preview_output_releve_notes, bulletin_preview_output_summary_bar, bulletin_preview_output_signature_block, concept_grading_scale_lmd, pdfs_etd_2026_ifri_s1_ue_structure [INFERRED 0.90]
 - **Fonctionnalités principales d'EtuDocs : auth JWT, workflow multi-niveaux, gestion documents** — etudocs_readme_jwt_auth, etudocs_readme_workflow_multiniveaux, etudocs_readme_gestion_documents, etudocs_readme_techstack [EXTRACTED 1.00]
 
-## Communities (82 total, 9 thin omitted)
+## Communities (81 total, 7 thin omitted)
 
 ### Community 0 - "Dependances npm"
 Cohesion: 0.01
@@ -131,7 +130,7 @@ Nodes (144): dependencies, accepts, ansi-regex, ansi-styles, anymatch, apache-cr
 
 ### Community 1 - "Module Authentification"
 Cohesion: 0.24
-Nodes (9): auth, ctrl, { loginRateLimit, resetPasswordRateLimit, verifyResetCodeRateLimit }, { me }, router, loginRateLimit, rateLimit, resetPasswordRateLimit (+1 more)
+Nodes (8): auth, ctrl, { loginRateLimit, resetPasswordRateLimit }, { me }, router, loginRateLimit, rateLimit, resetPasswordRateLimit
 
 ### Community 2 - "Generation PDF et Templates"
 Cohesion: 0.06
@@ -142,8 +141,8 @@ Cohesion: 0.08
 Nodes (38): Windows Display Settings Screenshot (July 2025), Make.com Integration Weather Scenario Screenshot (July 2025), Make.com AI Automation Scenario with Telegram, Mistral, Supabase (July 2025), Make.com Supabase Table 'memoire' Configuration Screenshot (July 2025), TP-Link Repeater 404 Error Page Screenshot (July 2025), Make.com 'recherche' Scenario with Webhooks/Relevance/Google Sheets (July 2025), Make.com Relevance Agent Configuration Screenshot (July 2025), Make.com HTTP OpenAI ChatGPT Completion Module Screenshot (July 2025) (+30 more)
 
 ### Community 4 - "Layout Dashboard et Utilitaires UI"
-Cohesion: 0.06
-Nodes (32): COLORS, ICONS, DashboardLayout(), getInstitutionCodeFromUser(), getUser(), normalizeInst(), MesReclamations(), typeLabels (+24 more)
+Cohesion: 0.08
+Nodes (12): COLORS, ICONS, DashboardLayout(), getInstitutionCodeFromUser(), getUser(), normalizeInst(), MesReclamations(), typeLabels (+4 more)
 
 ### Community 5 - "Configuration Backend Node.js"
 Cohesion: 0.06
@@ -205,16 +204,16 @@ Nodes (14): {
 }, { ATTESTATION_INSCRIPTION, RELEVE_NOTES }, DEFAULT_REQUIRED, emailService, { EXAMENS, SCOLARITE }, generateDocumentsOutsideTransaction(), generateUniqueDocumentReference(), getServiceCible() (+6 more)
 
 ### Community 19 - "Dashboard Chef de Section"
-Cohesion: 0.14
-Nodes (6): DashboardCS(), getReferenceDoc(), getStrength(), ModalMotDePasse(), NAV, useDemandes()
+Cohesion: 0.13
+Nodes (6): DashboardCS(), getReferenceDoc(), getStrength(), ModalMotDePasse(), NAV, Topbar()
 
 ### Community 20 - "Etats Workflow et Permissions"
 Cohesion: 0.16
 Nodes (12): avancerStatut(), assertAction(), assertPermission(), assertStatut(), { ETUDIANT, SECRETAIRE_ADJOINT, SECRETAIRE_GENERAL, CHEF_DIVISION, DIRECTEUR_ADJOINT, DIRECTEUR }, getNextStatut(), getStatutMeta(), getTimelineIndex() (+4 more)
 
 ### Community 21 - "Dashboard Secretaire General"
-Cohesion: 0.16
-Nodes (4): DashboardSG(), getStrength(), ModalMotDePasse(), useStatsSG()
+Cohesion: 0.15
+Nodes (5): DashboardSG(), getStrength(), ModalMotDePasse(), useStatsSG(), getStatsSG()
 
 ### Community 22 - "Screenshots ETUDOCS Core"
 Cohesion: 0.16
@@ -225,8 +224,8 @@ Cohesion: 0.18
 Nodes (10): 1. Cloner le projet, Backend, Base de données, 📌 Description, 🚀 Digital Minds – HACKBYIFRI 2026, 🔐 Fonctionnalités principales, Frontend, 🚀 Installation (+2 more)
 
 ### Community 24 - "Dashboard Secretaire Adjoint"
-Cohesion: 0.17
-Nodes (13): badgeLabel(), DashboardSA(), fmtDate(), getStrength(), initials(), ModalMotDePasse(), ModalVerifier(), NAV (+5 more)
+Cohesion: 0.18
+Nodes (12): badgeLabel(), DashboardSA(), fmtDate(), getStrength(), initials(), ModalMotDePasse(), ModalVerifier(), NAV (+4 more)
 
 ### Community 25 - "Service Document Backend"
 Cohesion: 0.16
@@ -257,8 +256,8 @@ Cohesion: 0.22
 Nodes (7): auth, ctrl, express, prisma, role, router, STEPS
 
 ### Community 33 - "Dashboard Directeur"
-Cohesion: 0.15
-Nodes (10): Topbar(), Topbar(), Topbar(), DashboardDI(), getStrength(), ModalMotDePasse(), Topbar(), useStatsDI() (+2 more)
+Cohesion: 0.11
+Nodes (13): Topbar(), DashboardDA(), getStrength(), ModalMotDePasse(), Topbar(), DashboardDI(), getStrength(), ModalMotDePasse() (+5 more)
 
 ### Community 34 - "Controleur Documents"
 Cohesion: 0.20
@@ -270,31 +269,31 @@ Nodes (8): Répertoire des logos d'institutions (backend assets), Répertoire de
 
 ### Community 36 - "Super Admin Institutions"
 Cohesion: 0.07
-Nodes (24): Dashboard, DashboardCE, DashboardCS, DashboardDA, DashboardDI, DashboardSA, DashboardSG, ForgotPassword (+16 more)
+Nodes (23): Dashboard, DashboardCE, DashboardCS, DashboardDA, DashboardDI, DashboardSA, DashboardSG, ForgotPassword (+15 more)
 
 ### Community 37 - "Middleware JWT Auth"
-Cohesion: 0.15
-Nodes (9): auth, ctrl, path, role, router, auth, ctrl, role (+1 more)
+Cohesion: 0.12
+Nodes (11): auth, ctrl, path, role, router, auth, ctrl, role (+3 more)
 
 ### Community 38 - "Inscription Etudiant"
 Cohesion: 0.12
 Nodes (9): FILIERES, NIVEAUX, FALLBACK_INSTITUTIONS, FILIERES, NIVEAUX, ResetPassword(), isPasswordValid(), PASSWORD_RULES (+1 more)
 
 ### Community 39 - "Service et Controleur Agent"
-Cohesion: 0.15
-Nodes (9): bcrypt, emailService, prisma, adapter, prisma, { PrismaClient }, agentService, emailService (+1 more)
+Cohesion: 0.22
+Nodes (6): adapter, prisma, { PrismaClient }, agentService, emailService, prisma
 
 ### Community 40 - "Routes Agents"
-Cohesion: 0.22
-Nodes (6): agentService, agentController, authMiddleware, express, requireSA, router
+Cohesion: 0.29
+Nodes (5): agentController, authMiddleware, express, requireSA, router
 
 ### Community 41 - "Template Bulletin Notes"
 Cohesion: 0.33
 Nodes (5): buildHtml(), { buildHtml }, fs, html, mockPayload
 
 ### Community 42 - "Client Prisma ORM"
-Cohesion: 0.20
-Nodes (6): asyncHandler, authService, asyncHandler, prisma, asyncHandler, prisma
+Cohesion: 0.17
+Nodes (6): asyncHandler, authService, asyncHandler, prisma, asyncHandler, service
 
 ### Community 43 - "Community 43"
 Cohesion: 0.18
@@ -353,7 +352,7 @@ Cohesion: 0.67
 Nodes (3): Photo sportif avec trophée Champions League - Fichier non lié au projet, Photo sportif avec trophée Champions League - Fichier non lié au projet, Photo sportif avec trophée Champions League - Fichier non lié au projet
 
 ### Community 62 - "Tests Service Email"
-Cohesion: 0.14
+Cohesion: 0.15
 Nodes (9): bcrypt, crypto, emailService, { ETUDIANT }, jwt, normalize(), prisma, resolveInstitutionId() (+1 more)
 
 ### Community 71 - "Community 71"
@@ -377,20 +376,24 @@ Cohesion: 0.29
 Nodes (6): Commandes Prisma, Guide de migration - Reclamations et paiements de telechargement, Seeds, Tests manuels, Variables d'environnement, Verification technique
 
 ### Community 78 - "Community 78"
-Cohesion: 0.11
-Nodes (33): api, apiBlob(), apiForm(), apiRequest(), buildHeaders(), clearSession(), deleteAllNotifications(), deleteDocument() (+25 more)
+Cohesion: 0.10
+Nodes (36): api, apiBlob(), apiForm(), apiRequest(), avancerDocument(), buildHeaders(), clearSession(), deleteAllNotifications() (+28 more)
 
 ### Community 79 - "Community 79"
-Cohesion: 0.16
-Nodes (9): DashboardDA(), getStrength(), ModalMotDePasse(), useStatsDA(), avancerDocument(), getCachedDemandes(), getChefDivisionStats(), getStatsDA() (+1 more)
+Cohesion: 0.12
+Nodes (23): NouvelleReclamation(), TYPES, STATUTS, TYPES, useDocuments(), getCachedDemandes(), getCachedMe(), getDemandes() (+15 more)
 
 ### Community 80 - "Community 80"
 Cohesion: 0.33
 Nodes (3): KPIS_DEFAULT, miniIcon(), SAAnalytics()
 
+### Community 82 - "Community 82"
+Cohesion: 0.29
+Nodes (4): agentService, bcrypt, emailService, prisma
+
 ### Community 83 - "Community 83"
-Cohesion: 0.25
-Nodes (5): jwt, prisma, auth, ctrl, router
+Cohesion: 0.29
+Nodes (5): asyncHandler, prisma, auth, ctrl, router
 
 ## Ambiguous Edges - Review These
 - `Campus France - Interface candidature en ligne (formations demandées en licence/DAP)` → `EtuDocs - Application de gestion administrative académique`  [AMBIGUOUS]
@@ -401,9 +404,9 @@ Nodes (5): jwt, prisma, auth, ctrl, router
   frontend/src/assets/Capture d'écran 2025-07-18 184203.png · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **502 isolated node(s):** `MIGRATION TERMINEE`, `Acces au projet Supabase`, `Roles et permissions`, `Configuration .env par developpeur`, `Commandes quotidiennes` (+497 more)
+- **501 isolated node(s):** `frontend-design@claude-plugins-official`, `PreToolUse`, `allow`, `name`, `version` (+496 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **9 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -415,10 +418,10 @@ _Questions this graph is uniquely positioned to answer:_
 - **What is the exact relationship between `ETUDOCS Project (Academic Administrative Document Management)` and `Make.com Automation Platform`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
 - **Why does `dependencies` connect `Dependances npm` to `Configuration Vite Frontend`?**
-  _High betweenness centrality (0.019) - this node is a cross-community bridge._
-- **Why does `useDemandes()` connect `Dashboard Chef de Section` to `Dashboard Directeur`, `Community 6`, `Dashboard Chef Etablissement`, `Gestion des Demandes Frontend`, `Community 79`, `Dashboard Secretaire General`, `Dashboard Secretaire Adjoint`?**
-  _High betweenness centrality (0.004) - this node is a cross-community bridge._
-- **What connects `MIGRATION TERMINEE`, `Acces au projet Supabase`, `Roles et permissions` to the rest of the system?**
-  _503 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Dependances npm` be split into smaller, more focused modules?**
-  _Cohesion score 0.013888888888888888 - nodes in this community are weakly interconnected._
+  _High betweenness centrality (0.026) - this node is a cross-community bridge._
+- **Why does `useNotifications()` connect `Dashboard Directeur` to `Layout Dashboard et Utilitaires UI`, `Dashboard Chef Etablissement`, `Routes Documents`, `Community 78`, `Dashboard Chef de Section`, `Dashboard Secretaire General`, `Dashboard Secretaire Adjoint`?**
+  _High betweenness centrality (0.005) - this node is a cross-community bridge._
+- **Why does `toSafeAbsolutePath()` connect `Controleur Documents` to `Service Document Backend`, `Service Metier Demandes`, `Service QR Code`?**
+  _High betweenness centrality (0.005) - this node is a cross-community bridge._
+- **What connects `frontend-design@claude-plugins-official`, `PreToolUse`, `allow` to the rest of the system?**
+  _502 weakly-connected nodes found - possible documentation gaps or missing edges._

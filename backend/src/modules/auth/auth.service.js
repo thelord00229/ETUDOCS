@@ -3,7 +3,7 @@ const prisma = require("../../config/prisma");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const emailService = require("../../services/email.service");
+const emailService = require("../../services/email/email.service");
 const validatePassword = require("./security/validatePassword");
 const { ETUDIANT } = require("../../constants/roles");
 

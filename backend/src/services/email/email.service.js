@@ -44,7 +44,7 @@ if (hasSmtpConfig) {
 
 // Helper function to render email templates
 const renderTemplate = async (templateName, data) => {
-  const templatePath = path.join(__dirname, "templates", "emails", `${templateName}.ejs`);
+  const templatePath = path.join(__dirname, "templates", `${templateName}.ejs`);
   return await ejs.renderFile(templatePath, data);
 };
 
@@ -64,9 +64,11 @@ const sendEmail = async (to, subject, html, options = {}) => {
 
     await transporter.sendMail(message);
     console.log(`[EMAIL SENT] To: ${to} | Subject: ${subject}`);
+    return true;
   } catch (error) {
     console.error(`[EMAIL ERROR] To: ${to} | Subject: ${subject} | Error: ${error.message}`);
     // Don't throw, just log
+    return false;
   }
 };
 
@@ -110,7 +112,7 @@ exports.sendDocumentDisponible = async (email, prenom, typeDocument, documents =
     reclamationUrl,
   });
 
-  await sendEmail(email, "Votre document est prêt — EtuDocs", html, {
+  return await sendEmail(email, "Votre document est prêt — EtuDocs", html, {
     attachments,
   });
 };

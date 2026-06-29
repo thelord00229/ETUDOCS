@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
 const prisma = require("../../config/prisma");
-const emailService = require("../../services/email.service");
+const emailService = require("../../services/email/email.service");
 
 const DEFAULT_PASSWORD = "Password123!";
 

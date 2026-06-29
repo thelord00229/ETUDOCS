@@ -1,7 +1,7 @@
 /**
  * pdf.service.js
  * Service de génération PDF pour EtuDocs
- * Chemin: backend/src/services/pdf.service.js
+ * Chemin: backend/src/services/pdf/pdf.service.js
  */
 
 const puppeteer = require("puppeteer");
@@ -20,7 +20,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // CONFIG
 // ─────────────────────────────────────────────
 
-const ASSETS_DIR = path.resolve(__dirname, "../assets");
+const ASSETS_DIR = path.resolve(__dirname, "../../assets");
 const OUTPUT_DIR = path.resolve(process.cwd(), "uploads", "pdfs");
 
 const PDF_TIMEOUT_MS = Number(process.env.PDF_TIMEOUT_MS || 60000);

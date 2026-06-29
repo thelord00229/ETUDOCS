@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import logo from "../assets/logo.png";
 import ThemeToggle, { useTheme } from "../components/dark-light-theme";
-import photo1 from "../assets/screencapture-localhost-5173-dashboardEtu-2026-04-10-00_04_43 1.png";
-import photo2 from "../assets/Capture d'écran 2025-07-18 021923.png";
-import photo3 from "../assets/Capture d'écran 2025-07-18 184203.png";
-import photo4 from "../assets/Capture d'écran 2025-07-23 184718.png";
-import photo5 from "../assets/Capture d'écran 2025-07-23 202528.png";
+import photo1 from "../assets/screenshots/screencapture-localhost-5173-dashboardEtu-2026-04-10-00_04_43 1.png";
+import photo2 from "../assets/screenshots/Capture d'écran 2025-07-18 021923.png";
+import photo3 from "../assets/screenshots/Capture d'écran 2025-07-18 184203.png";
+import photo4 from "../assets/screenshots/Capture d'écran 2025-07-23 184718.png";
+import photo5 from "../assets/screenshots/Capture d'écran 2025-07-23 202528.png";
 
 // px  → fixe, ne change jamais          → bordures, arrondis, ombres
 // rem → relatif à html (1rem = 16px)    → textes, padding, margin
