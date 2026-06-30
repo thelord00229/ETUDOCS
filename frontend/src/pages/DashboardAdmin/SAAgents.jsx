@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import SALayout from "../../components/DashboardAdmin/SALayout.jsx";
 import SAToggle from "../../components/DashboardAdmin/SAToggle.jsx";
-import api from "../../services/api"; // ✅ AJOUT : axios instance avec token
+import { useAgents, useInstitutions } from "../../hooks/queries";
 import {
-  getAgents,
   toggleAgentActif,
   createAgent,
   deleteAgent,
@@ -165,6 +165,20 @@ const css = `
     .agents-table-wrap { overflow-x: auto; }
     .modal-box { max-width: 95vw !important; }
     .modal-sm  { max-width: 95vw !important; }
+  }
+  @media (max-width: 600px) {
+    .agents-table-wrap { background: transparent; border: none; overflow: visible; }
+    .agents-tbl, .agents-tbl tbody, .agents-tbl tr, .agents-tbl td { display: block; width: 100%; }
+    .agents-tbl thead { display: none; }
+    .agents-tbl tbody tr { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 4px 14px; margin-bottom: 12px; }
+    .agents-tbl td { border: none; padding: 9px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: right; }
+    .agents-tbl td + td { border-top: 1px solid #f1f5f9; }
+    .agents-tbl td::before {
+      content: attr(data-label); font-weight: 700; font-size: .7rem; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .04em; text-align: left; flex-shrink: 0;
+    }
+    .agents-tbl .ag-actions { justify-content: flex-end; }
+    .agents-tbl .ag-email { word-break: break-all; }
   }
   @media (max-width: 480px) {
     .sa-agents-header { padding: 16px; }
@@ -462,9 +476,20 @@ function ModalAddAgent({ onClose, onSubmit, loading, institutions }) {
 
 /* ─── Page principale ─── */
 export default function SAAgents() {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [agents, setAgents] = useState([]);
-  const [loading, setLoading] = useState(true);
+
+  // ── Agents (React Query) ──
+  const { data: agentsData, isLoading: loading } = useAgents();
+  // ✅ On exclut SUPER_ADMIN et ETUDIANT de l'affichage
+  const agentsRaw = Array.isArray(agentsData) ? agentsData : agentsData ?? [];
+  const agents = agentsRaw.filter(
+    (a) => a.role !== "SUPER_ADMIN" && a.role !== "ETUDIANT"
+  );
+
+  // ── Institutions (React Query, pour le select) ──
+  const { data: institutionsData } = useInstitutions();
+  const institutions = Array.isArray(institutionsData) ? institutionsData : [];
 
   // Modals
   const [toDelete, setToDelete] = useState(null);
@@ -474,9 +499,6 @@ export default function SAAgents() {
   // Chargement en cours dans une modal
   const [modalLoading, setModalLoading] = useState(false);
 
-  // ✅ Institutions (pour le select)
-  const [institutions, setInstitutions] = useState([]);
-
   // ── Toast ──
   const [toast, setToast] = useState(null); // { message, type: 'success'|'error' }
   const showToast = useCallback((message, type = "success") => {
@@ -484,48 +506,11 @@ export default function SAAgents() {
     setTimeout(() => setToast(null), 3500);
   }, []);
 
-  /* ── Chargement agents ── */
-  const loadAgents = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await getAgents();
-      // ✅ CORRECTION : On exclut SUPER_ADMIN et ETUDIANT de l'affichage
-      setAgents(
-        res.data.filter(
-          (a) => a.role !== "SUPER_ADMIN" && a.role !== "ETUDIANT"
-        )
-      );
-    } catch (err) {
-      console.error(err);
-      showToast("Erreur lors du chargement des agents", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [showToast]);
-
-  /* ── Chargement institutions ── */
-  const loadInstitutions = useCallback(async () => {
-    try {
-      const res = await api.get("/api/institutions"); // ✅ IMPORTANT
-      setInstitutions(Array.isArray(res.data) ? res.data : []);
-    } catch (e) {
-      console.error("Erreur chargement institutions", e);
-      setInstitutions([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadInstitutions();
-    loadAgents();
-  }, [loadAgents, loadInstitutions]);
-
   /* ── Toggle actif/inactif ── */
   const handleToggle = async (agent) => {
     try {
       await toggleAgentActif(agent.id);
-      setAgents((prev) =>
-        prev.map((a) => (a.id === agent.id ? { ...a, actif: !a.actif } : a))
-      );
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
     } catch (err) {
       console.error(err);
       showToast("Erreur lors du changement de statut", "error");
@@ -537,7 +522,7 @@ export default function SAAgents() {
     setModalLoading(true);
     try {
       await deleteAgent(toDelete.id);
-      setAgents((prev) => prev.filter((a) => a.id !== toDelete.id));
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
       setToDelete(null);
       showToast("Agent supprimé avec succès", "success");
     } catch (err) {
@@ -567,8 +552,8 @@ export default function SAAgents() {
   const handleCreateAgent = async (form) => {
     setModalLoading(true);
     try {
-      const res = await createAgent(form);
-      setAgents((prev) => [...prev, res.data]);
+      await createAgent(form);
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
       setShowAddModal(false);
     } catch (err) {
       console.error(err);
@@ -665,23 +650,23 @@ export default function SAAgents() {
             <tbody>
               {filtered.map((a) => (
                 <tr key={a.id}>
-                  <td className="ag-name">
+                  <td className="ag-name" data-label="Nom">
                     {a.prenom} {a.nom}
                   </td>
-                  <td>
+                  <td data-label="Institution">
                     <InstLogo sigle={a.institution?.sigle || a.institutionId} />
                   </td>
-                  <td className="ag-email">{a.email}</td>
-                  <td style={{ fontSize: ".85rem", color: "#475569" }}>{a.role}</td>
-                  <td>
+                  <td className="ag-email" data-label="Email">{a.email}</td>
+                  <td data-label="Rôle" style={{ fontSize: ".85rem", color: "#475569" }}>{a.role}</td>
+                  <td data-label="Statut">
                     <span className={a.actif ? "badge-actif" : "badge-inactif"}>
                       {a.actif ? "Actif" : "Inactif"}
                     </span>
                   </td>
-                  <td className="ag-date">
+                  <td className="ag-date" data-label="Créé le">
                     {a.createdAt ? new Date(a.createdAt).toLocaleDateString("fr-FR") : "—"}
                   </td>
-                  <td>
+                  <td data-label="">
                     <div className="ag-actions">
                       <SAToggle defaultOn={a.actif} onChange={() => handleToggle(a)} />
 

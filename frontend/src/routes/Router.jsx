@@ -1,9 +1,14 @@
 import React, { Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { routeModules } from "./routeModules";
+import ProtectedRoute from "./ProtectedRoute";
+import NotFound from "../pages/NotFound";
 
 const Login = lazy(routeModules["/login"]);
 const Register = lazy(routeModules["/register"]);
+const ForgotPassword = lazy(routeModules["/forgot-password"]);
+const ResetPassword = lazy(routeModules["/reset-password"]);
+const VerifyEmail = lazy(routeModules["/auth/verify/:token"]);
 const Landingpage = lazy(routeModules["/"]);
 
 const Dashboard = lazy(routeModules["/dashboardEtu"]);
@@ -48,28 +53,33 @@ const Router = () => {
         <Route path="/" element={<Landingpage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/auth/verify/:token" element={<VerifyEmail />} />
 
-        <Route path="/dashboardEtu" element={<Dashboard />} />
-        <Route path="/dashboardEtu/nouvelle" element={<NouvelleDemande />} />
-        <Route path="/dashboardEtu/demandes" element={<MesDemandes />} />
-        <Route path="/dashboardEtu/documents" element={<Navigate to="/dashboardEtu/reclamations" replace />} />
-        <Route path="/dashboardEtu/profil" element={<MonProfil />} />
-        <Route path="/dashboardEtu/reclamations" element={<MesReclamations />} />
-        <Route path="/dashboardEtu/nouvelle-reclamation" element={<NouvelleReclamation />} />
+        <Route path="/dashboardEtu" element={<ProtectedRoute roles={["ETUDIANT"]}><Dashboard /></ProtectedRoute>} />
+        <Route path="/dashboardEtu/nouvelle" element={<ProtectedRoute roles={["ETUDIANT"]}><NouvelleDemande /></ProtectedRoute>} />
+        <Route path="/dashboardEtu/demandes" element={<ProtectedRoute roles={["ETUDIANT"]}><MesDemandes /></ProtectedRoute>} />
+        <Route path="/dashboardEtu/documents" element={<ProtectedRoute roles={["ETUDIANT"]}><Navigate to="/dashboardEtu/reclamations" replace /></ProtectedRoute>} />
+        <Route path="/dashboardEtu/profil" element={<ProtectedRoute roles={["ETUDIANT"]}><MonProfil /></ProtectedRoute>} />
+        <Route path="/dashboardEtu/reclamations" element={<ProtectedRoute roles={["ETUDIANT"]}><MesReclamations /></ProtectedRoute>} />
+        <Route path="/dashboardEtu/nouvelle-reclamation" element={<ProtectedRoute roles={["ETUDIANT"]}><NouvelleReclamation /></ProtectedRoute>} />
 
-        <Route path="/dashboardsa" element={<DashboardSA />} />
-        <Route path="/dashboardsc" element={<DashboardCS />} />
-        <Route path="/dashboardda" element={<DashboardDA />} />
-        <Route path="/dashboarddi" element={<DashboardDI />} />
-        <Route path="/dashboardsg" element={<DashboardSG />} />
-        <Route path="/dashboardsg/reclamations" element={<GestionReclamations />} />
-        <Route path="/dashboardce" element={<DashboardCE />} />
+        <Route path="/dashboardsa" element={<ProtectedRoute roles={["SECRETAIRE_ADJOINT"]}><DashboardSA /></ProtectedRoute>} />
+        <Route path="/dashboardsc" element={<ProtectedRoute roles={["CHEF_DIVISION"]}><DashboardCS /></ProtectedRoute>} />
+        <Route path="/dashboardda" element={<ProtectedRoute roles={["DIRECTEUR_ADJOINT"]}><DashboardDA /></ProtectedRoute>} />
+        <Route path="/dashboarddi" element={<ProtectedRoute roles={["DIRECTEUR"]}><DashboardDI /></ProtectedRoute>} />
+        <Route path="/dashboardsg" element={<ProtectedRoute roles={["SECRETAIRE_GENERAL"]}><DashboardSG /></ProtectedRoute>} />
+        <Route path="/dashboardsg/reclamations" element={<ProtectedRoute roles={["SECRETAIRE_GENERAL"]}><GestionReclamations /></ProtectedRoute>} />
+        <Route path="/dashboardce" element={<ProtectedRoute roles={["CHEF_DIVISION"]}><DashboardCE /></ProtectedRoute>} />
 
-        <Route path="/superadmin" element={<SADashboard />} />
-        <Route path="/superadmin/institutions" element={<SAInstitutions />} />
-        <Route path="/superadmin/agents" element={<SAAgents />} />
-        <Route path="/superadmin/academique" element={<SAAcademique />} />
-        <Route path="/superadmin/analytics" element={<SAAnalytics />} />
+        <Route path="/superadmin" element={<ProtectedRoute roles={["SUPER_ADMIN"]}><SADashboard /></ProtectedRoute>} />
+        <Route path="/superadmin/institutions" element={<ProtectedRoute roles={["SUPER_ADMIN"]}><SAInstitutions /></ProtectedRoute>} />
+        <Route path="/superadmin/agents" element={<ProtectedRoute roles={["SUPER_ADMIN"]}><SAAgents /></ProtectedRoute>} />
+        <Route path="/superadmin/academique" element={<ProtectedRoute roles={["SUPER_ADMIN"]}><SAAcademique /></ProtectedRoute>} />
+        <Route path="/superadmin/analytics" element={<ProtectedRoute roles={["SUPER_ADMIN"]}><SAAnalytics /></ProtectedRoute>} />
+
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
   );

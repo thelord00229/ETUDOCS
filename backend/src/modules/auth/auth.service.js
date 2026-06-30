@@ -3,11 +3,30 @@ const prisma = require("../../config/prisma");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const emailService = require("../../services/email.service");
+const emailService = require("../../services/email/email.service");
 const validatePassword = require("./security/validatePassword");
 const { ETUDIANT } = require("../../constants/roles");
 
 const normalize = (v) => String(v || "").trim().toUpperCase();
+
+// ── Réinitialisation par code OTP ──
+// Jeu de caractères sans ambiguïté visuelle (pas de I, L, O, 0, 1)
+const RESET_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const RESET_CODE_LENGTH = 6;
+const RESET_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+/**
+ * Génère un code de réinitialisation aléatoire (6 caractères alphanumériques majuscules).
+ * @returns {string} ex: "K7P2QM"
+ */
+const generateResetCode = () => {
+  const bytes = crypto.randomBytes(RESET_CODE_LENGTH);
+  let code = "";
+  for (let i = 0; i < RESET_CODE_LENGTH; i++) {
+    code += RESET_CODE_CHARS[bytes[i] % RESET_CODE_CHARS.length];
+  }
+  return code;
+};
 
 const REQUIRE_EMAIL_VERIFICATION =
   String(process.env.REQUIRE_EMAIL_VERIFICATION ?? "true").toLowerCase() !==
@@ -252,32 +271,40 @@ exports.requestPasswordReset = async (email) => {
     select: { id: true, email: true },
   });
 
-  if (!user) return { message: "Si cet email existe, un lien a été envoyé." };
+  // Réponse identique que l'email existe ou non (anti-énumération)
+  if (!user) return { message: "Si cet email existe, un code a été envoyé." };
 
-  const token = crypto.randomBytes(32).toString("hex");
-  const hashedToken = await bcrypt.hash(token, 12);
+  const code = generateResetCode();
+  const hashedCode = await bcrypt.hash(code, 12);
 
   await prisma.utilisateur.update({
     where: { id: user.id },
     data: {
-      tokenResetPassword: hashedToken,
-      tokenResetExpiry: new Date(Date.now() + 3600000),
+      tokenResetPassword: hashedCode,
+      tokenResetExpiry: new Date(Date.now() + RESET_CODE_TTL_MS),
     },
   });
 
   try {
-    await emailService.sendPasswordResetEmail(cleanEmail, token);
+    await emailService.sendPasswordResetEmail(cleanEmail, code);
   } catch (e) {
     console.log("[EMAIL SKIPPED]", e.message);
   }
 
-  return { message: "Si cet email existe, un lien a été envoyé." };
+  return { message: "Si cet email existe, un code a été envoyé." };
 };
 
-exports.resetPassword = async (token, newPassword, email) => {
+exports.resetPassword = async (email, code, newPassword) => {
   validatePassword(newPassword);
 
   const cleanEmail = String(email || "").trim().toLowerCase();
+  const cleanCode = String(code || "").trim().toUpperCase();
+
+  if (cleanCode.length !== RESET_CODE_LENGTH) {
+    const err = new Error("Code invalide ou expiré");
+    err.statusCode = 400;
+    throw err;
+  }
 
   const user = await prisma.utilisateur.findUnique({
     where: { email: cleanEmail },
@@ -285,14 +312,14 @@ exports.resetPassword = async (token, newPassword, email) => {
   });
 
   if (!user || !user.tokenResetPassword || user.tokenResetExpiry < new Date()) {
-    const err = new Error("Token invalide ou expiré");
+    const err = new Error("Code invalide ou expiré");
     err.statusCode = 400;
     throw err;
   }
 
-  const isValid = await bcrypt.compare(token, user.tokenResetPassword);
+  const isValid = await bcrypt.compare(cleanCode, user.tokenResetPassword);
   if (!isValid) {
-    const err = new Error("Token invalide ou expiré");
+    const err = new Error("Code invalide ou expiré");
     err.statusCode = 400;
     throw err;
   }

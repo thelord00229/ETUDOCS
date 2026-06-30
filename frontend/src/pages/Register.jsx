@@ -1,7 +1,10 @@
 import { useMemo, useState } from "react";
 import logo from "../assets/logo.png";
+import { PASSWORD_RULES, isPasswordValid } from "../utils/passwordValidator";
 
 const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
@@ -304,8 +307,8 @@ export default function Register() {
     if (!numEtudiant.trim() || !prenom.trim() || !nom.trim() || !email.trim()) {
       setErrorMsg("Veuillez remplir tous les champs obligatoires."); return;
     }
-    if (password.length < 8) {
-      setErrorMsg("Le mot de passe doit contenir au moins 8 caractères."); return;
+    if (!isPasswordValid(password)) {
+      setErrorMsg("Le mot de passe doit respecter tous les critères (8 caractères, une majuscule, un caractère spécial)."); return;
     }
     if (passwordMismatch) {
       setErrorMsg("Les mots de passe ne correspondent pas."); return;
@@ -436,7 +439,17 @@ export default function Register() {
               <input type="password" placeholder="••••••••"
                 value={password} onChange={(e) => setPassword(e.target.value)}
                 minLength={8} required disabled={loading} />
-              <span className="hint">Minimum 8 caractères</span>
+              <div style={{ display:"flex", flexDirection:"column", gap:3, marginTop:4 }}>
+                {PASSWORD_RULES.map((rule) => {
+                  const ok = rule.test(password);
+                  return (
+                    <span key={rule.key} className="hint"
+                      style={{ color: ok ? "#2e7d32" : undefined }}>
+                      {ok ? "✓" : "○"} {rule.label}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="field">

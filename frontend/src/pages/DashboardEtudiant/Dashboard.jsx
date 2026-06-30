@@ -1,11 +1,6 @@
 // frontend/src/pages/DashboardEtudiant/Dashboard.jsx
 import { useEffect, useMemo, useState } from "react";
-import {
-  getCachedDemandes,
-  getCachedMe,
-  getMe,
-  getDemandes,
-} from "../../services/api";
+import { useMe, useDemandes } from "../../hooks/queries";
 
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
 import StatCard from "../../components/DashboardEtudiant/Statcard.jsx";
@@ -15,6 +10,8 @@ import DemandRow from "../../components/DashboardEtudiant/Demandrow.jsx";
    STYLES GLOBAUX
 ───────────────────────────────────────────────────────────── */
 const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap');
+
 /* HERO BANNER */
   .dash-hero {
     background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 60%, #388e3c 100%);
@@ -277,6 +274,17 @@ const css = `
     .detail-body { grid-template-columns: 1fr; }
     .stepper { flex-wrap: wrap; gap: 16px; }
     .stepper::before { display: none; }
+  }
+  @media (max-width: 600px) {
+    .dash-hero { flex-direction: column; align-items: flex-start; gap: 14px; padding: 24px 22px; }
+    .dash-hero p { margin-bottom: 4px; }
+    .btn-new-demand { width: 100%; justify-content: center; }
+    .card-section, .promo-card { padding: 20px 18px; }
+    .support-card { padding: 24px 20px; }
+    .support-card__links { flex-direction: column; gap: 8px; }
+    .support-card__sep { display: none; }
+    .detail-header { flex-wrap: wrap; gap: 12px; }
+    .stepper-card, .pieces-card, .detail-meta-card, .detail-help-card { padding: 20px 18px; }
   }
   @media (max-width: 480px) {
     .stats-grid { grid-template-columns: 1fr; }
@@ -653,14 +661,31 @@ function DetailDemande({ demande, onBack }) {
    DASHBOARD PRINCIPAL
 ───────────────────────────────────────────────────────────── */
 export default function Dashboard() {
-  const cachedDemandes = useMemo(() => getCachedDemandes(), []);
-  const [user, setUser] = useState(() => getCachedMe() || null);
-  const [demandes, setDemandes] = useState(() =>
-    Array.isArray(cachedDemandes) ? cachedDemandes : []
+  const { data: user } = useMe();
+  const {
+    data: demandesData,
+    isLoading: loading,
+    error,
+  } = useDemandes({ refetchInterval: 15000 });
+  const demandes = useMemo(
+    () => (Array.isArray(demandesData) ? demandesData : []),
+    [demandesData]
   );
-  const [loading, setLoading] = useState(() => !Array.isArray(cachedDemandes));
-  const [errorMsg, setErrorMsg] = useState("");
+  const errorMsg =
+    error && error.message !== "UNAUTHORIZED"
+      ? "Impossible de charger vos données pour le moment. Veuillez réessayer."
+      : "";
   const [detailDemande, setDetailDemande] = useState(null);
+
+  // Redirection si la session a expiré
+  useEffect(() => {
+    if (error?.message === "UNAUTHORIZED") {
+      localStorage.removeItem("etudocs_token");
+      localStorage.removeItem("token");
+      localStorage.removeItem("etudocs_user");
+      window.location.href = "/login";
+    }
+  }, [error]);
 
   /* ✅ Compteurs */
   const nbEnCours = useMemo(
@@ -714,66 +739,6 @@ export default function Dashboard() {
         status: uiStatus(d.statut),
       }));
   }, [demandes]);
-
-  const hardLogout = () => {
-    localStorage.removeItem("etudocs_token");
-    localStorage.removeItem("token");
-    localStorage.removeItem("etudocs_user");
-    window.location.href = "/login";
-  };
-
-  // ✅ fetch demandes (les notifications sont gérées par le backend via la cloche)
-  const refreshDemandes = async ({ force = false } = {}) => {
-    const list = await getDemandes({ force });
-    setDemandes(Array.isArray(list) ? list : []);
-  };
-
-  // ✅ Load initial + start polling
-  useEffect(() => {
-    const token =
-      localStorage.getItem("etudocs_token") || localStorage.getItem("token");
-    if (!token) {
-      window.location.href = "/login";
-      return;
-    }
-
-    let timer = null;
-    let alive = true;
-
-    const init = async () => {
-      setLoading(!Array.isArray(cachedDemandes));
-      setErrorMsg("");
-      try {
-        const me = await getMe().catch(() => null);
-        if (!alive) return;
-        if (me) {
-          localStorage.setItem("etudocs_user", JSON.stringify(me));
-          setUser(me);
-        } else {
-          const cached = localStorage.getItem("etudocs_user");
-          if (cached) setUser(JSON.parse(cached));
-        }
-
-        await refreshDemandes({ force: Array.isArray(cachedDemandes) });
-
-        timer = setInterval(() => {
-          refreshDemandes({ force: true });
-        }, 15000);
-      } catch (err) {
-        if (!alive) return;
-        if (err?.message === "UNAUTHORIZED") hardLogout();
-      } finally {
-        if (alive) setLoading(false);
-      }
-    };
-
-    init();
-
-    return () => {
-      alive = false;
-      if (timer) clearInterval(timer);
-    };
-  }, [cachedDemandes]);
 
   return (
     <DashboardLayout>

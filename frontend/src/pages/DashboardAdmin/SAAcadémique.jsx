@@ -101,6 +101,7 @@ export default function SAAcademique() {
     const [uploading, setUploading] = useState(false);
     const [institution, setInstitution] = useState("IFRI");
     const [annee, setAnnee] = useState("2025-2026");
+    const [uploadMsg, setUploadMsg] = useState(null);
 
     const handleFileChange = (e) => {
         const selected = e.target.files[0];
@@ -115,13 +116,13 @@ export default function SAAcademique() {
         formData.append("annee", annee);
 
         setUploading(true);
+        setUploadMsg(null);
         try {
             await importNotes(formData);
-            alert("Import réussi !");
+            setUploadMsg({ type: "ok", text: "Import réussi." });
             setFile(null);
         } catch (err) {
-            console.error(err);
-            alert("Erreur lors de l'import");
+            setUploadMsg({ type: "error", text: "Échec de l'import. Vérifiez le fichier et réessayez." });
         } finally {
             setUploading(false);
         }
@@ -172,6 +173,20 @@ export default function SAAcademique() {
             {tab === "excel" && (
                 <div className="da-import-card">
                     <div className="da-import-title">Import via fichier Excel</div>
+
+                    {uploadMsg && (
+                        <div style={{
+                            margin: "8px 0 4px",
+                            padding: "10px 12px",
+                            borderRadius: 8,
+                            fontSize: 14,
+                            color: uploadMsg.type === "ok" ? "#14532d" : "#991b1b",
+                            background: uploadMsg.type === "ok" ? "#f0fdf4" : "#fef2f2",
+                            border: `1px solid ${uploadMsg.type === "ok" ? "#bbf7d0" : "#fecaca"}`,
+                        }}>
+                            {uploadMsg.text}
+                        </div>
+                    )}
 
                     <button className="btn-dl-model" onClick={downloadModel}>
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

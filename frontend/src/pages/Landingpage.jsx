@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import logo from "../assets/logo.png";
 import ThemeToggle, { useTheme } from "../components/dark-light-theme";
-import photo1 from "../assets/screencapture-localhost-5173-dashboardEtu-2026-04-10-00_04_43 1.png";
-import photo2 from "../assets/Capture d'écran 2025-07-18 021923.png";
-import photo3 from "../assets/Capture d'écran 2025-07-18 184203.png";
-import photo4 from "../assets/Capture d'écran 2025-07-23 184718.png";
-import photo5 from "../assets/Capture d'écran 2025-07-23 202528.png";
+import photo1 from "../assets/screenshots/screencapture-localhost-5173-dashboardEtu-2026-04-10-00_04_43 1.png";
+import photo2 from "../assets/screenshots/Capture d'écran 2025-07-18 021923.png";
+import photo3 from "../assets/screenshots/Capture d'écran 2025-07-18 184203.png";
+import photo4 from "../assets/screenshots/Capture d'écran 2025-07-23 184718.png";
+import photo5 from "../assets/screenshots/Capture d'écran 2025-07-23 202528.png";
 
 // px  → fixe, ne change jamais          → bordures, arrondis, ombres
 // rem → relatif à html (1rem = 16px)    → textes, padding, margin
@@ -135,7 +135,7 @@ const styles = `
     box-shadow: 0 1px 3px rgba(0,0,0,0.15);
   }
   
-  .theme-toggle-icon-btn__icon {
+  .theme-toggle-icon-btn i {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -460,36 +460,13 @@ const styles = `
   padding: 2rem;
 }
 
- .workflow-panel {
+ iframe {
   width: 760px;
-  min-height: 320px;
+  height: 450px;
+  border: none;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  border: 1px solid var(--border);
-  background: var(--white);
-  padding: 2rem;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-}
 
-.workflow-step {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1.25rem;
-  background: var(--bg-secondary);
-}
-
-.workflow-step strong {
-  display: block;
-  color: var(--uac-green);
-  margin-bottom: .5rem;
-  font-size: 1.05rem;
-}
-
-.workflow-step p {
-  color: var(--text-muted);
-  line-height: 1.6;
 }
 
 #faq{
@@ -702,7 +679,7 @@ color: var(--uac-green);
     .services-container-photo { width:100%; height:240px; }
     .services-content-right { max-width:100%; }
 
-    .workflow-panel { width:100%; max-width:760px; grid-template-columns:1fr; }
+    iframe { width:100%; max-width:760px; height:clamp(220px, 56vw, 450px); }
 
     #faq-real { flex-direction:column; width:95%; }
     #faq-images { display:none; }
@@ -795,13 +772,13 @@ const Landingpage = () => {
             }
             title={theme === "dark" ? "Mode clair" : "Mode sombre"}
           >
-            <span className="theme-toggle-icon-btn__icon" aria-hidden="true">
-              {theme === "dark" ? "☀" : "☾"}
-            </span>
+            <i
+              className={`fa-regular ${theme === "dark" ? "fa-sun" : "fa-moon"}`}
+            ></i>
           </button>
           <a href="/login" className="nav__buttons--login">
             <button id="nav_button">
-              Se connecter <span aria-hidden="true">→</span>
+              Se connecter <i className="fa-regular fa-user"></i>
             </button>
           </a>
         </div>
@@ -812,16 +789,17 @@ const Landingpage = () => {
             <h1 id="hero_content_left_h1">Suivez chaque étape en temps</h1>
             <h1 id="hero_content_left_h2">réel sans stress</h1>
             <p>
-              Demandez vos attestations et relevés en ligne, suivez chaque
-              validation et recevez votre document certifié sans vous déplacer
-              inutilement.
+              Stop managing reservations on WhatsApp. Plateforme de réservation
+              locale Africaine lets professionals across West Africa accept
+              bookings and receive Mobile Money payments automatically. Simple,
+              fast, and built for Africa.
             </p>
             <div className="hero_buttons">
               <a href="/login">
                 <button id="hero_button_1">Se connecter</button>
               </a>
               <a href="#working">
-                <button id="hero_button_2">Voir le fonctionnement</button>
+                <button id="hero_button_2">See how it works</button>
               </a>
             </div>
           </div>
@@ -907,26 +885,22 @@ const Landingpage = () => {
           <div className="services_content_up">
             <h2 id="services_content_up_h1">Comment ça marche ?</h2>
             <p>
-              Trois étapes simples pour soumettre une demande, suivre son
-              traitement et recevoir le document final.
+              Stop managing reservations on WhatsApp. Plateforme de réservation
+              locale Africaine lets professionals
             </p>
           </div>
         </div>
         <div>
-          <div className="workflow-panel" aria-label="Fonctionnement EtuDocs">
-            <div className="workflow-step">
-              <strong>1. Soumission</strong>
-              <p>Choisissez le document, ajoutez les pièces requises et envoyez votre demande.</p>
-            </div>
-            <div className="workflow-step">
-              <strong>2. Validation</strong>
-              <p>Les agents traitent le dossier selon le workflow de votre institution.</p>
-            </div>
-            <div className="workflow-step">
-              <strong>3. Réception</strong>
-              <p>Le document signé et authentifié est transmis dès qu'il est disponible.</p>
-            </div>
-          </div>
+          <iframe
+            width="560"
+            height="315"
+            src="https://www.youtube.com/embed/NETb44ylBak?si=gdbSmS_kAGDK_eBl"
+            title="YouTube video player"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+          ></iframe>
         </div>
       </section>
       <section id="faq">
@@ -934,8 +908,8 @@ const Landingpage = () => {
           <div className="services_content_up">
             <h2 id="services_content_up_h1">FAQs</h2>
             <p>
-              Retrouvez les réponses aux questions les plus fréquentes sur les
-              demandes, les pièces et le suivi.
+              Stop managing reservations on WhatsApp. Plateforme de réservation
+              locale Africaine lets professionals
             </p>
           </div>
         </div>
@@ -975,10 +949,10 @@ const Landingpage = () => {
             quelques clics
           </p>
           <div id="footer1-content">
-            <span>Facebook</span>
-            <span>Twitter</span>
-            <span>Instagram</span>
-            <span>LinkedIn</span>
+            <i className="fab fa-facebook-f"></i>
+            <i className="fab fa-twitter"></i>
+            <i className="fab fa-instagram"></i>
+            <i className="fab fa-linkedin-in"></i>
           </div>
         </div>
         <div className="footer-content">

@@ -2,6 +2,9 @@ export const routeModules = {
   "/": () => import("../pages/Landingpage.jsx"),
   "/login": () => import("../pages/Login.jsx"),
   "/register": () => import("../pages/Register.jsx"),
+  "/forgot-password": () => import("../pages/ForgotPassword.jsx"),
+  "/reset-password": () => import("../pages/ResetPassword.jsx"),
+  "/auth/verify/:token": () => import("../pages/VerifyEmail.jsx"),
 
   "/dashboardEtu": () => import("../pages/DashboardEtudiant/Dashboard.jsx"),
   "/dashboardEtu/nouvelle": () => import("../pages/DashboardEtudiant/NouvelleDemande.jsx"),

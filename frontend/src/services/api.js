@@ -88,6 +88,16 @@ export const avancerDocument = async (reference, action, commentaire = "") => {
   });
 };
 
+// Redirige vers /login une seule fois quand la session expire (401),
+// sauf si l'on est déjà sur une page publique (évite les boucles).
+const PUBLIC_PATHS = ["/", "/login", "/register", "/forgot-password", "/reset-password"];
+const redirectToLogin = () => {
+  if (typeof window === "undefined") return;
+  const path = window.location.pathname;
+  if (PUBLIC_PATHS.includes(path) || path.startsWith("/auth/verify")) return;
+  window.location.assign("/login?expired=1");
+};
+
 export const clearSession = () => {
   clearQueryCache();
   localStorage.removeItem("etudocs_token");
@@ -117,7 +127,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (r) => r,
   (error) => {
-    if (error?.response?.status === 401) clearSession();
+    if (error?.response?.status === 401) {
+      clearSession();
+      redirectToLogin();
+    }
     return Promise.reject(error);
   }
 );
@@ -143,6 +156,7 @@ const parseErrorMessage = async (res) => {
 
 const handleUnauthorized = () => {
   clearSession();
+  redirectToLogin();
   throw new Error("UNAUTHORIZED");
 };
 
@@ -205,6 +219,22 @@ export const login = async ({ email, password }) => {
 export const register = async (payload) =>
   apiRequest("/api/auth/register", { method: "POST", body: payload });
 
+// ── Réinitialisation de mot de passe ──
+export const requestPasswordReset = (email) =>
+  apiRequest("/api/auth/reset-password", { method: "POST", body: { email } });
+
+export const resetPassword = ({ email, code, newPassword }) =>
+  apiRequest("/api/auth/reset-password/confirm", {
+    method: "POST",
+    body: { email, code, newPassword },
+  });
+
+// ── Vérification de l'email (lien reçu à l'inscription) ──
+export const verifyEmail = ({ token, email }) =>
+  apiRequest(
+    `/api/auth/verify/${token}?email=${encodeURIComponent(email)}`
+  );
+
 export const getCachedMe = () => getCachedQuery("auth:me") || getStoredUser();
 
 export const getMe = async ({ force = false } = {}) => {
@@ -233,7 +263,6 @@ export const getCachedDemandes = () => getCachedQuery("student:demandes");
 
 export const invalidateStudentData = () => {
   invalidateQuery("student:demandes");
-  invalidateQuery("student:documents");
   invalidateQuery("student:mes-reclamations");
 };
 

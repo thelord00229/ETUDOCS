@@ -25,7 +25,20 @@ const resetPasswordRateLimit = rateLimit({
   legacyHeaders: false,
 });
 
+// Middleware pour limiter les tentatives de saisie du code de réinitialisation
+const verifyResetCodeRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 essais de code par fenêtre
+  message: {
+    error: 'Trop de tentatives. Réessayez dans 15 minutes.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Ne compte pas les succès
+});
+
 module.exports = {
   loginRateLimit,
   resetPasswordRateLimit,
+  verifyResetCodeRateLimit,
 };

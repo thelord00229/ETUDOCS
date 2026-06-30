@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  getDemandes,
-  avancerDemande,
-  downloadDocumentBlob,
-  getStatsSG,
-} from "../../services/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { avancerDemande, downloadDocumentBlob } from "../../services/api";
+import { useDemandes, useStatsSG } from "../../hooks/queries";
 import logo from "../../assets/logo.png";
 import { useNotifications } from "../../hooks/useNotifications";
 
 const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700&family=DM+Mono:wght@400;500&display=swap');
+
 .sg-layout { display: flex; min-height: 100vh; background: #f4f6f9; font-family: 'DM Sans', sans-serif; }
 
   .sg-sidebar {
@@ -270,6 +269,25 @@ const css = `
     .sg-topbar__burger { display: flex; align-items: center; justify-content: center; }
     .sg-topbar__user-info { display: none; }
     .sg-search-input { width: 100% !important; max-width: 200px; }
+  }
+  @media (max-width: 600px) {
+    .sg-table-card { background: transparent; border: none; overflow: visible; }
+    .sg-table-header { flex-direction: column; align-items: stretch; gap: 12px; padding: 4px 0 14px; }
+    .sg-table-divider { display: none; }
+    .sg-table-wrapper { overflow: visible; }
+    .sg-table, .sg-table tbody, .sg-table tr, .sg-table td { display: block; width: 100%; }
+    .sg-table thead { display: none; }
+    .sg-table tbody tr { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 4px 14px; margin-bottom: 12px; }
+    .sg-table tbody tr:hover { background: #fff; }
+    .sg-table tbody td { border-top: none; border-bottom: 1px solid #f1f5f9; padding: 10px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: right; }
+    .sg-table tbody tr td:last-child { border-bottom: none; }
+    .sg-table tbody td::before {
+      content: attr(data-label); font-family: 'Sora', sans-serif; font-weight: 700;
+      font-size: .7rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .04em;
+      text-align: left; flex-shrink: 0;
+    }
+    .sg-table tbody td:last-child { flex-wrap: wrap; }
+    .sg-table .sg-btn { flex: 1; justify-content: center; }
   }
   @media (max-width: 480px) {
     .sg-stats-grid { grid-template-columns: 1fr !important; }
@@ -630,10 +648,9 @@ function ModalMotDePasse({ onClose, onSuccess }) {
 /* ── COMPOSANT PRINCIPAL ── */
 export default function DashboardSG() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState(null);
-  const [demandes, setDemandes] = useState([]);
   const [preview, setPreview] = useState(null);
   const [showPwd, setShowPwd] = useState(false);
   const [toast, setToast] = useState(null);
@@ -648,41 +665,26 @@ export default function DashboardSG() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
   const fmtTime = (ts) => { try { return new Date(ts).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }); } catch { return ""; } };
-  const [statsExternes, setStatsExternes] = useState({
-    transmises: 0,
-    rejetees: 0,
-  });
+  const { data: rawDemandes, isLoading: loading, error } = useDemandes();
+  const { data: statsExternes = { transmises: 0, rejetees: 0 } } = useStatsSG();
+
+  const demandes = useMemo(() => {
+    const list = Array.isArray(rawDemandes)
+      ? rawDemandes
+      : rawDemandes?.demandes ?? [];
+    return list
+      .filter((d) => d.statut === "TRANSMISE_SECRETAIRE_ADJOINT")
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  }, [rawDemandes]);
 
   const showToast = useCallback((msg, isError = false) => {
     setToast({ msg, isError });
     setTimeout(() => setToast(null), 3500);
   }, []);
 
-  const charger = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [data, statsData] = await Promise.all([
-        getDemandes(),
-        getStatsSG().catch(() => ({ transmises: 0, rejetees: 0 })),
-      ]);
-      const list = Array.isArray(data) ? data : data?.demandes ?? [];
-      const demandesATransmettre = list
-        .filter((d) => d.statut === "TRANSMISE_SECRETAIRE_ADJOINT")
-        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-      setDemandes(demandesATransmettre);
-      setStatsExternes(statsData);
-    } catch (e) {
-      console.error(e);
-      setDemandes([]);
-      showToast(e?.message || "Erreur chargement demandes", true);
-    } finally {
-      setLoading(false);
-    }
-  }, [showToast]);
-
   useEffect(() => {
-    charger();
-  }, [charger]);
+    if (error) showToast(error?.message || "Erreur chargement demandes", true);
+  }, [error, showToast]);
 
   const filtered = useMemo(() => {
     const q = (searchQuery || "").trim().toLowerCase();
@@ -706,7 +708,8 @@ export default function DashboardSG() {
     setBusyId(demande.id);
     try {
       await avancerDemande(demande.id, "TRANSMETTRE");
-      await charger();
+      await queryClient.invalidateQueries({ queryKey: ["demandes"] });
+      queryClient.invalidateQueries({ queryKey: ["statsSG"] });
     } catch (e) {
       console.error(e);
       showToast(e?.message || "Erreur transmission", true);
@@ -885,7 +888,10 @@ export default function DashboardSG() {
                 <p>Transmission des demandes au Chef de Division</p>
                 <button
                   className="sg-hero__btn"
-                  onClick={charger}
+                  onClick={() => {
+                    queryClient.invalidateQueries({ queryKey: ["demandes"] });
+                    queryClient.invalidateQueries({ queryKey: ["statsSG"] });
+                  }}
                   disabled={loading}
                 >
                   <svg
@@ -986,10 +992,10 @@ export default function DashboardSG() {
                   <tbody>
                     {filtered.map((d) => (
                       <tr key={d.id || getReferenceDoc(d)}>
-                        <td>
+                        <td data-label="Référence">
                           <span className="sg-mono">{getReferenceDoc(d)}</span>
                         </td>
-                        <td>
+                        <td data-label="Étudiant">
                           <div style={{ fontWeight: 700 }}>
                             {getEtudiantLabel(d)}
                           </div>
@@ -997,12 +1003,13 @@ export default function DashboardSG() {
                             N° {getNumeroEtudiant(d)}
                           </div>
                         </td>
-                        <td>{d?.typeDocument || "—"}</td>
-                        <td className="sg-muted">{formatDate(d?.createdAt)}</td>
-                        <td>
+                        <td data-label="Document">{d?.typeDocument || "—"}</td>
+                        <td className="sg-muted" data-label="Soumission">{formatDate(d?.createdAt)}</td>
+                        <td data-label="Statut">
                           <span className="sg-chip">{d?.statut || "—"}</span>
                         </td>
                         <td
+                          data-label=""
                           style={{
                             display: "flex",
                             gap: 10,

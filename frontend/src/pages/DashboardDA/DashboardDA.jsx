@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  getDemandes,
   previewDocumentBlob,
-  getStatsDA,
   avancerDocument,
 } from "../../services/api";
+import { useDemandes, useStatsDA } from "../../hooks/queries";
 import { useNotifications } from "../../hooks/useNotifications";
 
 // ── Styles ────────────────────────────────────────────────
 const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap');
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
@@ -185,6 +187,23 @@ const css = `
     .agent-topbar__burger { display:flex; align-items:center; justify-content:center; }
     .agent-topbar__info { display:none; }
     .search-box input { width:120px !important; }
+  }
+  @media (max-width: 600px) {
+    .agent-table-card { background: transparent; border: none; overflow: visible; }
+    .agent-table-header { flex-direction: column; align-items: stretch; gap: 12px; }
+    .agent-table, .agent-table tbody, .agent-table tr, .agent-table td { display: block; width: 100%; }
+    .agent-table thead { display: none; }
+    .agent-table tbody tr { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 4px 14px; margin-bottom: 12px; }
+    .agent-table tbody tr:hover { background: #fff; }
+    .agent-table tbody td { border-bottom: 1px solid #f1f5f9; padding: 10px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: right; }
+    .agent-table tbody tr td:last-child { border-bottom: none; }
+    .agent-table tbody td::before {
+      content: attr(data-label); font-family: 'Sora', sans-serif; font-weight: 700;
+      font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em;
+      text-align: left; flex-shrink: 0;
+    }
+    .agent-table tbody td[style] > div { display: flex !important; flex-wrap: wrap; gap: 8px; width: 100%; }
+    .agent-table tbody td[style] .btn-outline, .agent-table tbody td[style] .btn-traiter { flex: 1; justify-content: center; }
   }
   @media (max-width: 480px) {
     .agent-stats { grid-template-columns:1fr !important; }
@@ -657,14 +676,9 @@ const getReferenceDoc = (d) => {
 };
 
 export default function DashboardDA() {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState(null);
   const [search, setSearch] = useState("");
-  const [rows, setRows] = useState([]);
-  const [stats, setStats] = useState({
-    aSigner: 0,
-    signesCeMois: 0,
-    refuses: 0,
-  });
   const [busyId, setBusyId] = useState(null);
   const [preview, setPreview] = useState(null);
   const [showPwd, setShowPwd] = useState(false);
@@ -673,13 +687,63 @@ export default function DashboardDA() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  const { data: rawDemandes } = useDemandes();
+  const { data: rawStatsDA } = useStatsDA();
+
+  // Reproduit fidèlement la transformation de l'ancienne fonction `charger` :
+  // chaque demande est éclatée en une ligne par document (ou une ligne vide si
+  // aucun document), avec extraction du semestre depuis la référence.
+  const rows = useMemo(() => {
+    const demandes = Array.isArray(rawDemandes)
+      ? rawDemandes
+      : rawDemandes?.demandes ?? [];
+    const lignes = [];
+    for (const d of demandes) {
+      const docs = Array.isArray(d.documents) ? d.documents : [];
+      if (docs.length === 0) {
+        lignes.push({
+          reference: getReferenceDoc(d),
+          etudiant: `${d.utilisateur?.prenom ?? ""} ${
+            d.utilisateur?.nom ?? ""
+          }`.trim(),
+          typeDocument: d.typeDocument,
+          semestre: null,
+          createdAt: d.createdAt,
+          statut: d.statut,
+          demandeId: d.id,
+        });
+      } else {
+        for (const doc of docs) {
+          const sMatch = doc.reference?.match(/_S(\d+)(?:_|$)/);
+          lignes.push({
+            reference: doc.reference || getReferenceDoc(d),
+            etudiant: `${d.utilisateur?.prenom ?? ""} ${
+              d.utilisateur?.nom ?? ""
+            }`.trim(),
+            typeDocument: d.typeDocument,
+            semestre: sMatch ? `S${sMatch[1]}` : null,
+            createdAt: d.createdAt,
+            statut: doc.statut || d.statut,
+            demandeId: d.id,
+          });
+        }
+      }
+    }
+    return lignes;
+  }, [rawDemandes]);
+
+  // Stats stockées telles quelles, avec valeurs par défaut identiques à l'origine.
+  const stats = useMemo(
+    () => rawStatsDA ?? { aSigner: 0, signesCeMois: 0, refuses: 0 },
+    [rawStatsDA]
+  );
+
   useEffect(() => {
     try {
       const raw =
         localStorage.getItem("etudocs_user") || localStorage.getItem("user");
       if (raw) setUser(JSON.parse(raw));
     } catch {}
-    charger();
   }, []);
 
   const showToast = (msg, isError = false) => {
@@ -695,52 +759,9 @@ export default function DashboardDA() {
     window.location.href = "/";
   };
 
-  const charger = async () => {
-    try {
-      const [demandesData, statsData] = await Promise.all([
-        getDemandes(),
-        getStatsDA(),
-      ]);
-      const demandes = Array.isArray(demandesData)
-        ? demandesData
-        : demandesData?.demandes ?? [];
-      const lignes = [];
-      for (const d of demandes) {
-        const docs = Array.isArray(d.documents) ? d.documents : [];
-        if (docs.length === 0) {
-          lignes.push({
-            reference: getReferenceDoc(d),
-            etudiant: `${d.utilisateur?.prenom ?? ""} ${
-              d.utilisateur?.nom ?? ""
-            }`.trim(),
-            typeDocument: d.typeDocument,
-            semestre: null,
-            createdAt: d.createdAt,
-            statut: d.statut,
-            demandeId: d.id,
-          });
-        } else {
-          for (const doc of docs) {
-            const sMatch = doc.reference?.match(/_S(\d+)(?:_|$)/);
-            lignes.push({
-              reference: doc.reference || getReferenceDoc(d),
-              etudiant: `${d.utilisateur?.prenom ?? ""} ${
-                d.utilisateur?.nom ?? ""
-              }`.trim(),
-              typeDocument: d.typeDocument,
-              semestre: sMatch ? `S${sMatch[1]}` : null,
-              createdAt: d.createdAt,
-              statut: doc.statut || d.statut,
-              demandeId: d.id,
-            });
-          }
-        }
-      }
-      setRows(lignes);
-      setStats(statsData ?? { aSigner: 0, signesCeMois: 0, refuses: 0 });
-    } catch (e) {
-      console.error(e);
-    }
+  const rafraichir = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["demandes"] });
+    queryClient.invalidateQueries({ queryKey: ["statsDA"] });
   };
 
   const filtered = useMemo(() => {
@@ -779,7 +800,7 @@ export default function DashboardDA() {
     try {
       await avancerDocument(row.reference, "APPROUVER");
       showToast("Document approuvé avec succès ✓");
-      await charger();
+      await rafraichir();
     } catch (e) {
       showToast(e?.message || "Erreur lors de l'approbation", true);
     } finally {
@@ -822,7 +843,7 @@ export default function DashboardDA() {
                 Consultez et approuvez les documents en attente de signature.
               </p>
             </div>
-            <button className="btn-actualiser" onClick={charger} type="button">
+            <button className="btn-actualiser" onClick={rafraichir} type="button">
               <svg
                 width="16"
                 height="16"
@@ -966,17 +987,17 @@ export default function DashboardDA() {
               <tbody>
                 {filtered.map((row) => (
                   <tr key={row.reference}>
-                    <td className="td-ref">{row.reference}</td>
-                    <td>
+                    <td className="td-ref" data-label="Référence">{row.reference}</td>
+                    <td data-label="Étudiant">
                       <div className="td-etudiant-name">{row.etudiant}</div>
                     </td>
-                    <td className="td-doc">{row.typeDocument}</td>
-                    <td className="td-date">{row.semestre ?? "—"}</td>
-                    <td className="td-date">{formatDate(row.createdAt)}</td>
-                    <td>
+                    <td className="td-doc" data-label="Document">{row.typeDocument}</td>
+                    <td className="td-date" data-label="Semestre">{row.semestre ?? "—"}</td>
+                    <td className="td-date" data-label="Date">{formatDate(row.createdAt)}</td>
+                    <td data-label="Statut">
                       <span className="badge gray">{row.statut}</span>
                     </td>
-                    <td style={{ textAlign: "right" }}>
+                    <td data-label="" style={{ textAlign: "right" }}>
                       <div style={{ display: "inline-flex", gap: 8 }}>
                         <button
                           className="btn-outline"

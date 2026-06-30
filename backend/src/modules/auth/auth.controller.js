@@ -22,11 +22,8 @@ exports.requestReset = asyncHandler(async (req, res) => {
 });
 
 exports.resetPassword = asyncHandler(async (req, res) => {
-  const result = await authService.resetPassword(
-    req.params.token,
-    req.body.newPassword,
-    req.query.email
-  );
+  const { email, code, newPassword } = req.body;
+  const result = await authService.resetPassword(email, code, newPassword);
   res.json(result);
 });
 

@@ -5,12 +5,14 @@ import TopBar from "./Topbar.jsx";
 import { useNotifications } from "../../hooks/useNotifications";
 
 const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
+
 .dash-layout {
     display:flex; min-height:100vh;
     background:#f4f6f9;
     font-family:'DM Sans',sans-serif;
   }
-  .dash-main   { margin-left:200px; padding-top:64px; flex:1; min-width:0; }
+  .dash-main   { margin-left: var(--sidebar-w, 200px); padding-top:64px; flex:1; min-width:0; transition: margin-left 0.25s ease; }
   .dash-content {
     padding:28px 32px;
     display:flex; flex-direction:column; gap:24px;
@@ -97,7 +99,7 @@ export default function DashboardLayout({ children }) {
         onToggleCollapse={() => setSidebarCollapsed(v => !v)}
       />
 
-      <div className="dash-main" style={{ marginLeft: sidebarCollapsed ? 62 : 200, transition: 'margin-left 0.25s ease' }}>
+      <div className="dash-main" style={{ "--sidebar-w": sidebarCollapsed ? "62px" : "200px" }}>
         <TopBar
           name={fullName}
           meta={meta}

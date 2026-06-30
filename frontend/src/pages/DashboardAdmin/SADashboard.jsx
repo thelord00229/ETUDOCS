@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
 import SALayout from "../../components/DashboardAdmin/SALayout.jsx";
 import SAStatCard from "../../components/DashboardAdmin/SAStatCard.jsx";
 import SAInstBadge from "../../components/DashboardAdmin/SAInstBadge.jsx";
-import { getDashboard } from "../../services/admin.service";
+import { useAdminDashboard } from "../../hooks/queries";
 
 const css = `
   .sa-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
@@ -41,6 +40,17 @@ const css = `
   @media (max-width: 768px) {
     .sa-card { overflow-x: auto; }
   }
+  @media (max-width: 600px) {
+    .inst-tbl, .inst-tbl tbody, .inst-tbl tr, .inst-tbl td { display: block; width: 100%; }
+    .inst-tbl thead { display: none; }
+    .inst-tbl tbody tr { border: 1px solid #e2e8f0; border-radius: 12px; padding: 4px 12px; margin-bottom: 10px; }
+    .inst-tbl td { border: none; padding: 8px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: right; }
+    .inst-tbl td + td { border-top: 1px solid #f1f5f9; }
+    .inst-tbl td::before {
+      content: attr(data-label); font-weight: 700; font-size: .7rem; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .04em; text-align: left; flex-shrink: 0;
+    }
+  }
   @media (max-width: 480px) {
     .sa-stats-grid { grid-template-columns: 1fr; }
     .sa-card { padding: 16px; }
@@ -48,24 +58,8 @@ const css = `
 `;
 
 export default function SADashboard() {
-  const [stats, setStats] = useState(null); // {kpis, parInstitution}
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchAll = async () => {
-      setLoading(true);
-      try {
-        const res = await getDashboard();
-        setStats(res.data);
-      } catch (err) {
-        console.error(err);
-        setStats(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAll();
-  }, []);
+  const { data, isLoading: loading, error } = useAdminDashboard();
+  const stats = error ? null : data; // {kpis, parInstitution}
 
   const statCards = stats
     ? [
@@ -173,19 +167,19 @@ export default function SADashboard() {
                 <tbody>
                   {(stats.parInstitution || []).map((row) => (
                     <tr key={row.code}>
-                      <td>
+                      <td data-label="Institution">
                         <div className="td-inst-name">
                           <SAInstBadge code={row.code} size="md" />
                           {row.code}
                         </div>
                       </td>
-                      <td>
+                      <td data-label="En attente">
                         <span className="num-orange">{row.attente}</span>
                       </td>
-                      <td>
+                      <td data-label="Traitées">
                         <span className="num-green">{row.traitees}</span>
                       </td>
-                      <td>{row.agents}</td>
+                      <td data-label="Agents">{row.agents}</td>
                     </tr>
                   ))}
                 </tbody>

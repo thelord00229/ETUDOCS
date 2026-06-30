@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
-import { getCachedDemandes, getDemandes, resendDocumentEmail } from "../../services/api";
+import { resendDocumentEmail } from "../../services/api";
 import Toast from "../../components/Toast.jsx";
 import { useToast } from "../../hooks/useToast.js";
+import { useDemandes } from "../../hooks/queries";
 
 /* ─────────────────────────────────────────────────────────────
    STYLES
 ───────────────────────────────────────────────────────────── */
 const css = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
+
 .md-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
   .md-title { font-family:'Sora',sans-serif; font-weight:800; font-size:1.5rem; color:#1e293b; margin-bottom:4px; }
   .md-sub   { color:#475569; font-size:.9rem; }
@@ -203,8 +206,49 @@ const css = `
     .stepper { flex-wrap:wrap; gap:16px; }
     .stepper::before { display:none; }
   }
-  @media (max-width:480px) {
-    .table-card { overflow-x: auto; }
+  @media (max-width:600px) {
+    .md-header { flex-direction:column; align-items:stretch; gap:14px; }
+    .btn-new-orange { justify-content:center; width:100%; }
+
+    .filter-bar { padding:12px 14px; gap:8px; }
+    .search-wrap { order:-1; flex:1 1 100%; min-width:0; }
+    .filter-tab { flex:1 1 calc(50% - 8px); text-align:center; padding:9px 8px; font-size:.8rem; }
+
+    /* Tableau -> cartes empilées */
+    .table-card { background:transparent; border:none; border-radius:0; overflow:visible; }
+    .table, .table tbody, .table tr, .table td { display:block; width:100%; }
+    .table thead { display:none; }
+
+    .table tbody tr:not(.group-row) {
+      background:#fff; border:1px solid #e2e8f0; border-radius:14px;
+      padding:6px 16px; margin-bottom:12px; box-shadow:0 1px 2px rgba(16,24,40,.04);
+    }
+    .table tbody tr:not(.group-row):hover { background:#fff; }
+
+    .table td {
+      border:none !important; padding:9px 0; gap:14px; text-align:right;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .table td + td { border-top:1px solid #f1f5f9 !important; }
+    .table td::before {
+      content:attr(data-label);
+      font-family:'Sora',sans-serif; font-weight:600; font-size:.72rem;
+      color:#94a3b8; text-transform:uppercase; letter-spacing:.04em;
+      text-align:left; flex-shrink:0;
+    }
+    .td-type { font-size:.95rem; }
+    .td-actions { justify-content:flex-end; }
+
+    /* En-tête de groupe (Aujourd'hui, Cette semaine…) */
+    .table tbody tr.group-row {
+      display:flex; align-items:center; justify-content:space-between;
+      background:transparent; border:none; padding:16px 2px 6px; margin:0;
+    }
+    .group-row td { padding:0; background:transparent; }
+    .group-row td::before { display:none; }
+
+    .detail-toprow { flex-wrap:wrap; }
+    .stepper-card, .pieces-card, .meta-card, .help-card { padding:18px 16px; }
   }
 `;
 
@@ -628,33 +672,16 @@ export default function MesDemandes() {
 
   const [filter, setFilter] = useState("Toutes");
   const [search, setSearch] = useState("");
-  const cachedDemandes = useMemo(() => getCachedDemandes(), []);
-  const [loading, setLoading] = useState(() => !Array.isArray(cachedDemandes));
-  const [error, setError] = useState("");
-  const [demandes, setDemandes] = useState(() =>
-    Array.isArray(cachedDemandes) ? cachedDemandes : []
-  );
+  const { data, isLoading: loading, error: queryError } = useDemandes();
+  const demandes = useMemo(() => (Array.isArray(data) ? data : []), [data]);
+  const error = queryError
+    ? queryError.message || "Échec du chargement des demandes."
+    : "";
   const [detailItem, setDetailItem] = useState(null);
   const [resendLoading, setResendLoading] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   const location = useLocation();
-
-  useEffect(() => {
-    const load = async () => {
-      setLoading(!Array.isArray(cachedDemandes));
-      setError("");
-      try {
-        const list = await getDemandes({ force: Array.isArray(cachedDemandes) });
-        setDemandes(Array.isArray(list) ? list : []);
-      } catch (e) {
-        setError(e?.message || "Échec du chargement des demandes.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [cachedDemandes]);
 
   // Auto-ouvre le détail si on arrive depuis le Dashboard
   useEffect(() => {
@@ -867,15 +894,15 @@ export default function MesDemandes() {
                       key={d.raw.id}
                       className={d.isExpired ? "row-expired" : ""}
                     >
-                      <td className="td-ref">{d.ref}</td>
-                      <td className="td-type">{d.type}</td>
-                      <td className="td-date">{d.date}</td>
-                      <td>
+                      <td className="td-ref" data-label="Réf.">{d.ref}</td>
+                      <td className="td-type" data-label="Type">{d.type}</td>
+                      <td className="td-date" data-label="Date">{d.date}</td>
+                      <td data-label="Statut">
                         <span className={`badge ${badgeClass(d.status)}`}>
                           {d.status}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="">
                         <div className="td-actions">
                           <button
                             className="btn-view"

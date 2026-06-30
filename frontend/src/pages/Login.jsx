@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import logo from "../assets/logo.png";
 import { login as apiLogin, setSession, clearSession } from "../services/api";
+import { routeForUser } from "../utils/roleRoutes";
 
 const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   html, body, #root {
@@ -156,26 +159,20 @@ const css = `
   }
 `;
 
-const routeForUser = (user) => {
-  const role = user?.role;
-  if (role === "ETUDIANT")            return "/dashboardEtu";
-  if (role === "SUPER_ADMIN")         return "/superadmin";
-  if (role === "SECRETAIRE_ADJOINT")  return "/dashboardsa";
-  if (role === "SECRETAIRE_GENERAL")  return "/dashboardsg";
-  if (role === "CHEF_DIVISION") {
-    return user?.service === "SCOLARITE" ? "/dashboardsc" : "/dashboardce";
-  }
-  if (role === "DIRECTEUR_ADJOINT")   return "/dashboardda";
-  if (role === "DIRECTEUR")           return "/dashboarddi";
-  return "/dashboardsa";
-};
-
 export default function Login() {
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
+
+  // Message clair si l'utilisateur a été redirigé ici après expiration de session (?expired=1)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("expired") === "1") {
+      setError("Votre session a expiré. Veuillez vous reconnecter.");
+    }
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();

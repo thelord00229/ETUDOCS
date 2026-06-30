@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardEtudiant/DashboardLayout.jsx";
 import Toggle from "../../components/DashboardEtudiant/Toggle.jsx";
 import { getMe } from "../../services/api.js";
+import { PASSWORD_RULES, isPasswordValid } from "../../utils/passwordValidator.js";
 
 const css = `
   .profil-title { font-family:'Sora',sans-serif; font-weight:800; font-size:1.5rem; color:#1e293b; margin-bottom:4px; }
@@ -135,6 +136,14 @@ const css = `
   @media (max-width: 768px) {
     .form-grid-3 { grid-template-columns: 1fr 1fr; }
   }
+  @media (max-width: 600px) {
+    .profil-section { padding: 22px 18px; }
+    .avatar-row { gap: 14px; padding: 14px 16px; margin-bottom: 22px; }
+    .avatar-big { width: 54px; height: 54px; font-size: 1.05rem; }
+    .form-actions { flex-direction: column-reverse; gap: 10px; }
+    .btn-cancel, .btn-save, .btn-pwd { width: 100%; text-align: center; }
+    .identity-banner { align-items: flex-start; }
+  }
   @media (max-width: 480px) {
     .form-grid-2 { grid-template-columns: 1fr; }
     .form-grid-3 { grid-template-columns: 1fr; }
@@ -267,7 +276,7 @@ export default function MonProfil() {
     setPwdMsg("");
     if (!pwdActuel || !pwdNew || !pwdConfirm) { setPwdMsg("error:Remplissez tous les champs."); return; }
     if (pwdNew !== pwdConfirm) { setPwdMsg("error:Les mots de passe ne correspondent pas."); return; }
-    if (pwdNew.length < 8) { setPwdMsg("error:Minimum 8 caractères requis."); return; }
+    if (!isPasswordValid(pwdNew)) { setPwdMsg("error:Le mot de passe doit respecter tous les critères (8 caractères, une majuscule, un caractère spécial)."); return; }
     try {
       const token = localStorage.getItem("etudocs_token") || localStorage.getItem("token");
       const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/change-password`, {
@@ -280,7 +289,12 @@ export default function MonProfil() {
       setPwdMsg("ok:Mot de passe modifié avec succès.");
       setPwdActuel(""); setPwdNew(""); setPwdConfirm("");
     } catch (e) {
-      setPwdMsg(`error:${e?.message}`);
+      const raw = String(e?.message || "");
+      // On affiche les messages métier du backend, mais jamais les erreurs techniques (réseau, etc.)
+      const friendly = raw && !/failed to fetch|networkerror|unauthorized|erreur serveur|erreur interne/i.test(raw)
+        ? raw
+        : "Une erreur est survenue. Veuillez réessayer.";
+      setPwdMsg(`error:${friendly}`);
     }
   };
 
@@ -411,6 +425,19 @@ export default function MonProfil() {
             <div className="form-field">
               <label>Nouveau mot de passe</label>
               <input className="form-input" type="password" value={pwdNew} onChange={e => setPwdNew(e.target.value)} />
+              {pwdNew.length > 0 && (
+                <div style={{ display:"flex", flexDirection:"column", gap:3, marginTop:6 }}>
+                  {PASSWORD_RULES.map((rule) => {
+                    const ok = rule.test(pwdNew);
+                    return (
+                      <span key={rule.key}
+                        style={{ fontSize:".78rem", color: ok ? "#2e7d32" : "#94a3b8" }}>
+                        {ok ? "✓" : "○"} {rule.label}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             <div className="form-field">
               <label>Confirmer le nouveau mot de passe</label>

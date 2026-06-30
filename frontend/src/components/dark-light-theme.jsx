@@ -46,9 +46,9 @@ export default function ThemeToggle({ className }) {
   const { theme, setTheme } = useTheme();
 
   const themes = [
-    { id: "light", icon: "☀", label: "Clair" },
-    { id: "dark", icon: "☾", label: "Sombre" },
-    { id: "system", icon: "▣", label: "Système" },
+    { id: "light", icon: "fa-sun", label: "Clair" },
+    { id: "dark", icon: "fa-moon", label: "Sombre" },
+    { id: "system", icon: "fa-desktop", label: "Système" },
   ];
 
   const styles = {
@@ -93,7 +93,9 @@ export default function ThemeToggle({ className }) {
           aria-label={`Mode ${t.label}`}
           title={t.label}
         >
-          <span aria-hidden="true">{t.icon}</span>
+          <i
+            className={`${t.id === "system" ? "fa-solid" : "fa-regular"} ${t.icon}`}
+          ></i>
         </button>
       ))}
     </div>

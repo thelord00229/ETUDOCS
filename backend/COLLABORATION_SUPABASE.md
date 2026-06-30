@@ -39,7 +39,7 @@ Les migrations Prisma doivent etre lancees uniquement par un membre designe pour
 1. Copier `backend/.env.supabase.example` vers `backend/.env`.
 2. Remplacer `DATABASE_URL` avec la connexion Supabase personnelle ou partagee par l'equipe.
 3. Remplacer `DIRECT_URL` avec la connexion directe ou session pooler utilisee par Prisma Migrate.
-4. Remplir les variables sensibles locales : `JWT_SECRET`, `BREVO_SMTP_USER`, `BREVO_SMTP_PASS`, `MAIL_FROM`.
+4. Remplir les variables sensibles locales : `JWT_SECRET`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`.
 5. Ne jamais commiter `backend/.env`, `backend/.env.supabase` ou un dump SQL.
 
 ## Commandes quotidiennes

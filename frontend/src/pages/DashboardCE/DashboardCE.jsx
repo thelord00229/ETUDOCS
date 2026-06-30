@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  getDemandes,
   getDemandeById,
   avancerDemande,
-  getChefDivisionStats,
   validerPiece,
 } from "../../services/api";
+import { useDemandes, useChefDivisionStats } from "../../hooks/queries";
 import { useNotifications } from "../../hooks/useNotifications";
 
 const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap');
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
@@ -374,6 +376,21 @@ const styles = `
     .topbar__burger { display:flex; align-items:center; justify-content:center; }
     .topbar__user-info { display:none; }
     .sidebar__close { display:flex; align-items:center; justify-content:center; }
+  }
+  @media (max-width: 600px) {
+    .table-wrapper { overflow: visible; }
+    .table-wrapper table, .table-wrapper tbody, .table-wrapper tr, .table-wrapper td { display: block; width: 100%; }
+    .table-wrapper thead { display: none; }
+    .table-wrapper tbody tr { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 4px 14px; margin-bottom: 12px; }
+    .table-wrapper tbody tr:hover { background: #fff; }
+    .table-wrapper tbody td { border-top: none; border-bottom: 1px solid #f1f5f9; padding: 10px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: right; }
+    .table-wrapper tbody tr td:last-child { border-bottom: none; }
+    .table-wrapper tbody td::before {
+      content: attr(data-label); font-family: 'Sora', sans-serif; font-weight: 700;
+      font-size: .7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em;
+      text-align: left; flex-shrink: 0;
+    }
+    .table-wrapper .btn-action { flex: 1; justify-content: center; }
   }
   @media (max-width: 480px) {
     .stats-grid { grid-template-columns:1fr !important; }
@@ -914,12 +931,22 @@ export default function ChefDivisionExamens() {
   const [pieceBusy, setPieceBusy] = useState(null);
   const [preview, setPreview] = useState(null);
   const [genBusy, setGenBusy] = useState(false);
-  const [demandes, setDemandes] = useState([]);
-  const [stats, setStats] = useState({
-    aSigner: 0,
-    signesCeMois: 0,
-    refuses: 0,
-  });
+
+  const queryClient = useQueryClient();
+  const { data: rawDemandes } = useDemandes();
+  const { data: cdStats } = useChefDivisionStats();
+  const demandes = useMemo(
+    () => (Array.isArray(rawDemandes) ? rawDemandes : rawDemandes?.demandes ?? []),
+    [rawDemandes]
+  );
+  const stats = useMemo(
+    () => ({
+      aSigner: cdStats?.attenteDirecteur ?? 0,
+      signesCeMois: cdStats?.documentGenere ?? 0,
+      refuses: cdStats?.rejetees ?? 0,
+    }),
+    [cdStats]
+  );
 
   // État modal mot de passe + toast
   const [showPwd, setShowPwd] = useState(false);
@@ -927,38 +954,9 @@ export default function ChefDivisionExamens() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  useEffect(() => {
-    chargerDemandes();
-    chargerStats();
-  }, []);
-
   const showToast = (msg, isError = false) => {
     setToast({ msg, isError });
     setTimeout(() => setToast(null), 3500);
-  };
-
-  const chargerDemandes = async () => {
-    try {
-      const data = await getDemandes();
-      setDemandes(Array.isArray(data) ? data : data?.demandes ?? []);
-    } catch (e) {
-      console.error(e);
-      setDemandes([]);
-    }
-  };
-
-  const chargerStats = async () => {
-    try {
-      const data = await getChefDivisionStats();
-      setStats({
-        aSigner: data?.attenteDirecteur ?? 0,
-        signesCeMois: data?.documentGenere ?? 0,
-        refuses: data?.rejetees ?? 0,
-      });
-    } catch (e) {
-      console.error(e);
-      setStats({ aSigner: 0, signesCeMois: 0, refuses: 0 });
-    }
   };
 
   const openTraitement = async (d) => {
@@ -1052,7 +1050,8 @@ export default function ChefDivisionExamens() {
     try {
       setGenBusy(true);
       await avancerDemande(selected.id, "GENERER_DOCUMENT");
-      await Promise.all([chargerDemandes(), chargerStats()]);
+      await queryClient.invalidateQueries({ queryKey: ["demandes"] });
+      queryClient.invalidateQueries({ queryKey: ["statsChefDivision"] });
       setModal(null);
       setView("dashboard");
     } catch (e) {
@@ -1075,7 +1074,8 @@ export default function ChefDivisionExamens() {
       setGenBusy(true);
       const notificationMessage = `Rejet de demande: ${globalComment.trim()}`;
       await avancerDemande(selected.id, "REJETER", notificationMessage);
-      await Promise.all([chargerDemandes(), chargerStats()]);
+      await queryClient.invalidateQueries({ queryKey: ["demandes"] });
+      queryClient.invalidateQueries({ queryKey: ["statsChefDivision"] });
       setModal(null);
       setView("dashboard");
     } catch (e) {
@@ -1141,8 +1141,10 @@ export default function ChefDivisionExamens() {
                 <button
                   className="actualiser-btn"
                   onClick={() => {
-                    chargerDemandes();
-                    chargerStats();
+                    queryClient.invalidateQueries({ queryKey: ["demandes"] });
+                    queryClient.invalidateQueries({
+                      queryKey: ["statsChefDivision"],
+                    });
                   }}
                 >
                   Actualiser
@@ -1256,15 +1258,16 @@ export default function ChefDivisionExamens() {
                           const urgent = h >= 48;
                           return (
                             <tr key={d.id ?? ref}>
-                              <td>
+                              <td data-label="Référence">
                                 <span className="td-ref">{ref}</span>
                               </td>
-                              <td>
+                              <td data-label="Étudiant">
                                 <div className="td-student">{nom}</div>
                                 <div className="td-sub">N° {num}</div>
                               </td>
-                              <td style={{ fontSize: 13 }}>{type}</td>
+                              <td data-label="Document" style={{ fontSize: 13 }}>{type}</td>
                               <td
+                                data-label="Date"
                                 style={{
                                   fontSize: 13,
                                   color: "var(--text-muted)",
@@ -1272,7 +1275,7 @@ export default function ChefDivisionExamens() {
                               >
                                 {date}
                               </td>
-                              <td>
+                              <td data-label="Délai">
                                 <span
                                   className={`td-delay ${
                                     urgent ? "urgent" : "ok"
@@ -1281,8 +1284,8 @@ export default function ChefDivisionExamens() {
                                   {delai} {urgent && "⚠"}
                                 </span>
                               </td>
-                              <td>{statutBadge(d.statut)}</td>
-                              <td>
+                              <td data-label="Statut">{statutBadge(d.statut)}</td>
+                              <td data-label="">
                                 <button
                                   className="btn-action primary"
                                   onClick={() => openTraitement(d)}

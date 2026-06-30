@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=DM+Sans:wght@400;500&display=swap');
+
 .topbar {
     height: 64px; background: #fff;
     border-bottom: 1px solid #e2e8f0;

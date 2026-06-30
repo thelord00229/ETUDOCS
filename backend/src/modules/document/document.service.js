@@ -1,7 +1,44 @@
+const fs = require("fs");
+const path = require("path");
 const prisma = require("../../config/prisma");
 const { toSafeAbsolutePath } = require("../../utils/fileUtils");
 const { assertPermission, getNextStatut } = require("../../modules/workflow/workflow");
-const emailService = require("../../services/email.service");
+const emailService = require("../../services/email/email.service");
+
+/**
+ * Envoie le ou les documents par email puis supprime les fichiers du disque
+ * UNIQUEMENT si l'email est réellement parti (les documents ne sont pas
+ * régénérables à l'identique → on ne supprime jamais une livraison ratée).
+ * @param {{ email: string, prenom: string, typeDocument: string, documents: Array<{reference: string, urlPdf: string}> }} params
+ * @returns {Promise<boolean>} true si l'email a été envoyé
+ */
+async function livrerEtNettoyer({ email, prenom, typeDocument, documents }) {
+  if (!email || !Array.isArray(documents) || documents.length === 0) return false;
+
+  const mailDocs = documents.map((doc) => toMailDocument(doc, typeDocument));
+  const sent = await emailService.sendDocumentDisponible(
+    email,
+    prenom,
+    typeDocument,
+    mailDocs
+  );
+
+  if (!sent) return false;
+
+  for (const doc of documents) {
+    const pdfPath = toSafeAbsolutePath(doc.urlPdf);
+    if (pdfPath && fs.existsSync(pdfPath)) {
+      try { fs.unlinkSync(pdfPath); } catch {}
+    }
+
+    const qrPath = toSafeAbsolutePath(path.join("uploads", `qr_${doc.reference}.png`));
+    if (qrPath && fs.existsSync(qrPath)) {
+      try { fs.unlinkSync(qrPath); } catch {}
+    }
+  }
+
+  return sent;
+}
 
 async function getDocumentByReference(reference) {
   return prisma.document.findUnique({
@@ -172,12 +209,12 @@ async function envoyerDocumentDisponible(documentId) {
 
   if (!deliveredDoc?.demande?.utilisateur?.email) return;
 
-  await emailService.sendDocumentDisponible(
-    deliveredDoc.demande.utilisateur.email,
-    deliveredDoc.demande.utilisateur.prenom,
-    deliveredDoc.demande.typeDocument,
-    [toMailDocument(deliveredDoc, deliveredDoc.demande.typeDocument)]
-  );
+  await livrerEtNettoyer({
+    email: deliveredDoc.demande.utilisateur.email,
+    prenom: deliveredDoc.demande.utilisateur.prenom,
+    typeDocument: deliveredDoc.demande.typeDocument,
+    documents: [deliveredDoc],
+  });
 }
 
 async function avancerStatut(reference, action, userRole, userInstitutionId) {
@@ -261,4 +298,5 @@ module.exports = {
   supprimer,
   verifier,
   avancerStatut,
+  livrerEtNettoyer,
 };
